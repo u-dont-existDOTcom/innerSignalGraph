@@ -129,7 +129,7 @@ test("a copy whose passages whole messages find, with true answers, passes, and 
     found: { same_words: { found: 40, of: 40 }, other_words: { found: 0, of: 10 } },
     right: { same_words: { right: 40, of: 40 }, other_words: { right: 0, of: 10 }, unanswerable: { right: 20, of: 20 }, unanswerable_without_passages: { right: 10, of: 10 } },
     wrong: 0, answers: 60, disputed: 0, incomplete: 10, left_out: { timed_out: 0, refused: 0 },
-    planted: { caught: 20, of: 20, by_kind: Object.fromEntries(PLANTED_KINDS.map((kind) => [kind, { caught: 4, of: 4 }])) },
+    planted: { caught: 20, of: 20, refused: 0, by_kind: Object.fromEntries(PLANTED_KINDS.map((kind) => [kind, { caught: 4, of: 4 }])) },
     same_snapshot: true, not_met: [], passed: true });
   assert.deepEqual(byQuestion.map(({ n }) => n), Array.from({ length: 80 }, (_, index) => index + 1));
   const entry = (n) => { const { passages, ...rest } = byQuestion[n - 1]; return [passages > 0, rest]; };
@@ -708,9 +708,46 @@ test("a question whose search takes longer than a reply waits, or that a model r
   // Of the whole file: one in ten, of both kinds together.
   const refusedMany = (count) => run(refusing("cold_consumer", numbers(count)), slow([PLANTS + 20]));
   assert.deepEqual([(await refusedMany(7)).report.not_met, (await refusedMany(8)).report.not_met], [[], ["too_many_left_out"]]);
-  // A planted answer the judge refuses wasn't judged.
+  // A planted answer the judge refuses isn't one of those the file needs.
   const plants = await run(standIns({ reply: async (count, request, usual) => { if (request.user.includes(`${PLANTED} 3.`)) throw new ProviderError("A synthetic refusal.", { code: "REFUSED" }); return usual(); } }));
-  assert.deepEqual([plants.report.planted.of, plants.report.by_question[3].planted, plants.report.by_question[3].result, plants.report.left_out.refused, plants.report.not_met], [19, { kind: "happened", verdict: null }, "right", 0, ["too_few_planted"]]);
+  assert.deepEqual([plants.report.questions.planted, plants.report.planted.refused, plants.report.by_question[3].planted, plants.report.by_question[3].result, plants.report.left_out.refused, plants.report.not_met],
+    [19, 1, { kind: "happened", verdict: null }, "right", 0, ["too_few_planted"]]);
+});
+
+test("a planted wrong answer the judge refuses, at any of its calls, is one it didn't catch, however many more the file has", async (t) => {
+  const { run } = await copyOf(t);
+  // Thirty, six of each kind, so that the twenty a file needs are judged whatever is refused below.
+  const thirty = QUESTIONS.map((entry, place) => (place < 30 ? { ...bare(entry), planted: plantOn(place) } : entry));
+  const numbersOf = (kind) => Array.from({ length: 30 }, (_, place) => place).filter((place) => PLANTED_KINDS[place % PLANTED_KINDS.length] === kind).map((place) => place + 1);
+  // Refused at the first call about it, or at the second, after a "wrong" that no other call confirms; those in `missed` are judged right.
+  const refusing = async (numbers, at = 1, missed = []) => {
+    const asked = new Map();
+    const { passed, receipt, report } = await run(standIns({ planted: (packet) => (missed.includes(numberOf(packet)) ? "right" : "wrong"), reply: async (count, request, usual) => {
+      const packet = JSON.parse(request.user);
+      if (request.stage !== "cold_judge" || !packet.answer.startsWith(PLANTED) || !numbers.includes(numberOf(packet))) return usual();
+      asked.set(numberOf(packet), (asked.get(numberOf(packet)) ?? 0) + 1);
+      if (asked.get(numberOf(packet)) < at) return usual();
+      throw new ProviderError("A synthetic refusal.", { code: "REFUSED" });
+    } }), { questions: thirty });
+    assert.deepEqual([report.planted.of, report.planted.refused, report.planted.caught, report.questions.planted, receipt !== null], [30, numbers.length, 30 - numbers.length - missed.length, 30 - numbers.length, passed]);
+    return [passed, report.not_met];
+  };
+  const first = (count) => Array.from({ length: count }, (_, place) => place + 1);
+  for (const at of [1, 2]) {
+    assert.deepEqual(await refusing(first(6), at), [true, []], `${at}: twenty-four of thirty are four in five`);
+    assert.deepEqual(await refusing(first(7), at), [false, ["judge_missed"]], `${at}: twenty-three aren't`);
+    assert.deepEqual(await refusing(first(10), at), [false, ["judge_missed"]], `${at}: twenty judged and caught, ten refused`);
+  }
+  // Of each kind too: half of its six, two refused ones among them.
+  for (const kind of PLANTED_KINDS) {
+    const [refusedOnes, others] = [numbersOf(kind).slice(0, 2), numbersOf(kind).slice(2)];
+    assert.deepEqual(await refusing(refusedOnes, 1, others.slice(0, 1)), [true, []], kind);
+    assert.deepEqual(await refusing(refusedOnes, 1, others.slice(0, 2)), [false, ["judge_missed"]], `${kind}: two of six, though two of the four judged`);
+  }
+  // Nor is it one of the three of its kind that a file needs, whatever the others.
+  const threeOfOne = QUESTIONS.map((entry, place) => (place < 25 ? { ...bare(entry), planted: { ...plantOn(place), kind: PLANTED_KINDS[place < 3 ? 0 : 1 + (place % 4)] } } : entry));
+  const { report } = await run(standIns({ reply: async (count, request, usual) => { if (request.user.includes(`${PLANTED} 0.`)) throw new ProviderError("A synthetic refusal.", { code: "REFUSED" }); return usual(); } }), { questions: threeOfOne });
+  assert.deepEqual([report.questions.planted, report.planted.by_kind[PLANTED_KINDS[0]], report.not_met], [24, { caught: 2, of: 3 }, ["too_few_planted"]]);
 });
 
 test("the file says who wrote it, and a copy doesn't pass on questions by the company whose model judged", async (t) => {

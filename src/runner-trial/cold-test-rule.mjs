@@ -8,7 +8,8 @@
 //   search returns a passage all the same (one that finds nothing is answered "not found" by anything);
 // - the judge catches planted wrong answers: the file holds at least `planted` of them, `planted_of_each_kind` of each kind, on questions
 //   the journal answers (it is told which it doesn't, so a plant there would test nothing), and at least `caught` of those are judged wrong,
-//   and `caught_of_each_kind` of each kind (a judge that sees nothing of one kind could pass by the others);
+//   and `caught_of_each_kind` of each kind (a judge that sees nothing of one kind could pass by the others). One it refuses isn't caught, nor
+//   is it one of those the file needs;
 // - no more than `wrong` of the answers are wrong. A wrong answer counts whatever its question; the share is of the answers the judge judged
 //   to the two kinds of questions above, so the others, and answers no one judged, don't raise how many may be;
 // - at least `right` of each of those two kinds of questions are right;

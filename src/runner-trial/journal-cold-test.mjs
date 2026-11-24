@@ -219,21 +219,23 @@ function tally(byQuestion, { author, judgeProvider, sameSnapshot }) {
   const count = (entries, test) => entries.filter(test).length;
   const found = (entries) => ({ found: count(entries, (entry) => entry.found), of: entries.length });
   const right = (entries) => ({ right: count(entries, (entry) => entry.result === "right"), of: entries.length });
-  const planted = byQuestion.map((entry) => entry.planted).filter((plant) => plant?.verdict);
+  // The planted answers the judge was given. One it refused isn't caught, nor is it one of those a file needs (`judged`).
+  const planted = byQuestion.map((entry) => entry.planted).filter(Boolean);
+  const judged = planted.filter((plant) => plant.verdict !== null);
   const caught = (plants) => ({ caught: count(plants, (plant) => plant.verdict === "wrong"), of: plants.length });
-  const ofKind = (kind) => planted.filter((plant) => plant.kind === kind);
+  const ofKind = (plants, kind) => plants.filter((plant) => plant.kind === kind);
   // What the share of wrong answers is of: the answers judged, to the questions the rule counts.
   const answers = count([...worded, ...tempted], (entry) => entry.verdict !== null);
   const leftOut = (why) => count(byQuestion, (entry) => entry.left_out === why);
   const scores = {
-    questions: { same_words: worded.length, other_words: otherwise.length, unanswerable: tempted.length, unanswerable_without_passages: untempted.length, planted: planted.length },
+    questions: { same_words: worded.length, other_words: otherwise.length, unanswerable: tempted.length, unanswerable_without_passages: untempted.length, planted: judged.length },
     found: { same_words: found(worded), other_words: found(otherwise) },
     right: { same_words: right(worded), other_words: right(otherwise), unanswerable: right(tempted), unanswerable_without_passages: right(untempted) },
     wrong: count(byQuestion, (entry) => entry.result === "wrong"), answers,
     disputed: count(byQuestion, (entry) => entry.verdict === "disputed"),
     incomplete: count(byQuestion, (entry) => entry.verdict === "incomplete"),
     left_out: { timed_out: leftOut("timed_out"), refused: leftOut("refused") },
-    planted: { ...caught(planted), by_kind: Object.fromEntries(PLANTED_KINDS.map((kind) => [kind, caught(ofKind(kind))])) },
+    planted: { ...caught(planted), refused: planted.length - judged.length, by_kind: Object.fromEntries(PLANTED_KINDS.map((kind) => [kind, caught(ofKind(planted, kind))])) },
     same_snapshot: sameSnapshot
   };
   // Whether `part` of `whole` is at least (or at most) the share the rule names.
@@ -244,7 +246,7 @@ function tally(byQuestion, { author, judgeProvider, sameSnapshot }) {
     && Object.values(scores.planted.by_kind).every((kind) => atLeast(rule.caught_of_each_kind, kind.caught, kind.of));
   const notMet = [
     ...(worded.length < rule.answerable || tempted.length < rule.unanswerable ? ["too_few_questions"] : []),
-    ...(planted.length < rule.planted || PLANTED_KINDS.some((kind) => ofKind(kind).length < rule.planted_of_each_kind) ? ["too_few_planted"] : []),
+    ...(judged.length < rule.planted || PLANTED_KINDS.some((kind) => ofKind(judged, kind).length < rule.planted_of_each_kind) ? ["too_few_planted"] : []),
     ...(enoughCaught ? [] : ["judge_missed"]),
     ...(atMost(rule.wrong, scores.wrong, answers) ? [] : ["wrong_answers"]),
     ...(enoughRight(worded) && enoughRight(tempted) ? [] : ["too_few_right"]),
