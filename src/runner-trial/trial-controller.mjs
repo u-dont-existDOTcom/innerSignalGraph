@@ -95,7 +95,9 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
   }
   const trialDirectory = runnerTrialDirectory(config);
   const clientCases = new Set(clientCaseIds);
-  const journalGate = evidenceOn && clientCases.size > 0 && trialDirectory && typeof privateCaseSource.verifyCaseAccess === "function"
+  // The gate exists whenever there are clients, so a case that read its journal stops when the gate closes even with response
+  // evidence off; the reader is attached only with it on.
+  const journalGate = clientCases.size > 0 && trialDirectory && typeof privateCaseSource.inspectJournalCorpus === "function"
     ? createRunnerJournalGate({ trialDir: trialDirectory, caseAccessService: privateCaseSource })
     : null;
   const runtime = createRunnerTrialRuntime({
@@ -115,7 +117,7 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
   });
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
   const controller = createPrivateTherapyTurnController({ privateCaseSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1,
-    ...(evidenceOn ? { responseEvidence: { enforced: true, journalTimeoutMs: 4000 } } : {}), ...(journalGate ? { journalEvidenceProvider: journalGate } : {}) });
+    ...(evidenceOn ? { responseEvidence: { enforced: true, journalTimeoutMs: 4000 } } : {}), ...(evidenceOn && journalGate ? { journalEvidenceProvider: journalGate } : {}) });
   const loadExisting = async (caseId, authContext) => {
     try {
       return await (typeof privateCaseSource.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource.load(caseId));
@@ -142,6 +144,7 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
     // staging once the copy step is built); the vault's deletion removes the case's journal copies.
     async deleteCase(input) {
       const result = await controller.deleteCase(input);
+      runtime.forgetCase(input.caseId);
       await logWriterFor(input.caseId).remove();
       if (clientCases.has(input.caseId) && trialDirectory) await fs.rm(clientJournalFolder(trialDirectory, input.caseId), { recursive: true, force: true });
       return result;

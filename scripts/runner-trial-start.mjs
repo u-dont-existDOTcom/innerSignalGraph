@@ -269,38 +269,34 @@ async function writePrivateFile(file, text) {
   await syncFolder(path.dirname(file));
 }
 
-// One command at a time changes the trial folder's credentials and client list (Codex's review 1, finding 7): a start, --add-client
-// and --journal-consent each read, change and write them under this lock, so none writes over another's change (an addition can't
-// bring back a consent just withdrawn). A lock whose process is gone is taken over. The running server holds it only while it starts.
+// One command at a time changes the trial folder's credentials and client list (Codex's reviews 1 and 2): a start, --add-client and
+// --journal-consent each read, change and write them under this lock, so none writes over another's change (an addition can't
+// bring back a consent just withdrawn). The lock is never taken over by a command: one left by a command that ended without
+// finishing is named in the refusal, for the owner to remove by hand, so two commands can't both decide to take it over. A command
+// removes only its own lock. The running server holds it only while it starts.
 const LOCK_FILE = ".trial-folder.lock";
 export async function withTrialFolderLock(home, operation, { pid = process.pid } = {}) {
   const lock = path.join(home, LOCK_FILE);
-  let handle = null;
-  for (let attempt = 0; attempt < 2 && handle === null; attempt += 1) {
-    try { handle = await fsp.open(lock, "wx", 0o600); }
-    catch (error) {
-      if (error?.code !== "EEXIST") throw error;
-      const holder = Number((await fsp.readFile(lock, "utf8").catch(() => "")).trim());
-      let alive;
-      if (Number.isSafeInteger(holder) && holder > 0) {
-        alive = true;
-        try { process.kill(holder, 0); } catch (probe) { alive = probe?.code === "EPERM"; }
-      } else {
-        // A lock file whose process id isn't written yet is being taken right now: held, unless it has stayed empty for long.
-        const info = await fsp.lstat(lock).catch(() => null);
-        alive = info !== null && Date.now() - info.mtimeMs < 10_000;
-      }
-      if (alive || attempt > 0) throw new StartError("Another runner-trial command is changing the trial folder (a start, --add-client or --journal-consent). Try again when it has finished.");
-      await fsp.rm(lock, { force: true });
-    }
+  const token = randomUUID();
+  let handle;
+  try { handle = await fsp.open(lock, "wx", 0o600); }
+  catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+    const holder = Number((await fsp.readFile(lock, "utf8").catch(() => "")).trim().split(/\s+/u)[0]);
+    let ended = false;
+    if (Number.isSafeInteger(holder) && holder > 0) { try { process.kill(holder, 0); } catch (probe) { ended = probe?.code === "ESRCH"; } }
+    throw new StartError(ended
+      ? `A runner-trial command ended without finishing and left its lock. If no other runner-trial command is running, remove ${lock} and try again.`
+      : "Another runner-trial command is changing the trial folder (a start, --add-client or --journal-consent). Try again when it has finished.");
   }
   try {
-    await handle.writeFile(`${pid}\n`, "utf8");
+    await handle.writeFile(`${pid} ${token}\n`, "utf8");
     await handle.sync();
     return await operation();
   } finally {
     await handle.close().catch(() => {});
-    await fsp.rm(lock, { force: true });
+    const current = await fsp.readFile(lock, "utf8").catch(() => "");
+    if (current.trim().split(/\s+/u)[1] === token) await fsp.rm(lock, { force: true });
   }
 }
 

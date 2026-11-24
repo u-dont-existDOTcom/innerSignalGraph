@@ -1123,7 +1123,7 @@ async function pageBlock() {
   const end = app.indexOf("// runner-trial-page:end");
   assert.ok(start > 0 && end > start, "the page marks its runner-trial block");
   const block = app.slice(start, end);
-  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, mergeRunnerTurn, showRunnerTurns, runnerRepliesShownAfter, runnerClosingReason, runnerProgressText, runnerReconcileRequest, forgetDeletedCase, PAGE_STATE_KEPT_AFTER_DELETION, runnerCaseChoices, runnerDefaultCaseId, runnerCaseWords, runnerConversationWords, runnerConfirmWords, runnerAsksBeforeFirstMessage, adoptRunnerCase, PAGE_STATE_KEPT_ON_ADOPTION, runnerArrangementText })`, { TextDecoder });
+  const exports = vm.runInNewContext(`${block}\n;({ EMERGENCY_LINE, PROVISIONAL_PREFIX, THINKING_LINE, CLOSING_REASONS, readRunnerStream, runnerEventEntry, runnerStoredEntries, runnerReplayEntries, mergeRunnerTurn, showRunnerTurns, runnerRepliesShownAfter, runnerClosingReason, runnerProgressText, runnerReconcileRequest, forgetDeletedCase, PAGE_STATE_KEPT_AFTER_DELETION, runnerCaseChoices, runnerDefaultCaseId, runnerCaseWords, runnerConversationWords, runnerConfirmWords, runnerAsksBeforeFirstMessage, runnerJournalNote, adoptRunnerCase, PAGE_STATE_KEPT_ON_ADOPTION, runnerArrangementText })`, { TextDecoder });
   return { block, ...exports };
 }
 
@@ -1241,8 +1241,11 @@ test("the page's cases: the owner's own and each client's with its number; no de
   const choices = plain(page.runnerCaseChoices(view));
   assert.deepEqual(choices, [
     { caseId: SYNTHETIC_TRIAL_CASE, kind: "own", number: null, label: null },
-    { caseId: CLIENT_A, kind: "client", number: 2, label: "Synthetic client A" }
+    { caseId: CLIENT_A, kind: "client", number: 2, label: "Synthetic client A", journalConsent: "none" }
   ], "only ids of the start script's form, with a number, once each");
+  assert.equal(page.runnerJournalNote(choices[1]), "");
+  assert.match(page.runnerJournalNote({ ...choices[1], journalConsent: "withdrawn" }), /^Journal consent withdrawn: if this case has used the journal, it gives no replies until/u);
+  assert.equal(page.runnerJournalNote(choices[0]), "", "never for the owner's own case");
   for (const unreadable of [null, {}, { cases: "x" }, { cases: [null, 42] }]) assert.deepEqual(plain(page.runnerCaseChoices(unreadable)), [], JSON.stringify(unreadable));
   assert.equal(page.runnerDefaultCaseId(choices), null, "with clients, nothing is chosen until the owner picks");
   assert.equal(page.runnerDefaultCaseId(choices.slice(0, 1)), SYNTHETIC_TRIAL_CASE, "the owner's own case alone is taken");
@@ -1272,7 +1275,7 @@ test("with the trial on, the badge shows who reads, writes and checks, from /hea
 // The page's health check and its case choice (checkHealth, loadRunnerCases, chooseRunnerCase and the case buckets), run in the
 // page's own markup with the runner-trial block, the page's empty state and its turn (beginRunnerTurn and the message form), and
 // the rest of the page stood in for: what it shows on its badge, which case it takes, and where each case's answers go.
-async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingRestart: 0 }, initial = {} }) {
+async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingRestart: 0 }, initial = {}, holdStates = false }) {
   const { html, app } = await pageSource();
   const dom = new JSDOM(html, { url: "http://127.0.0.1/" });
   t.after(() => dom.window.close());
@@ -1287,6 +1290,7 @@ async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingR
   const posted = [];
   const asked = [];
   const deletions = [];
+  const stateRequests = [];
   let answerConfirm = true;
   const context = vm.createContext({
     TextDecoder,
@@ -1310,7 +1314,12 @@ async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingR
     supervisorPanel: { clear: () => calls.push(["supervisorPanel.clear"]) },
     saveState: () => calls.push(["saveState", context.state.caseId]),
     renderTherapy: () => {},
-    getJson: async (url) => { calls.push(["getJson", url]); return {}; },
+    // A case's saved state can be held until the test lets it go (holdStates).
+    getJson: async (url) => {
+      calls.push(["getJson", url]);
+      if (!holdStates) return {};
+      return new Promise((resolve) => { stateRequests.push({ url, answer: (value) => resolve(value) }); });
+    },
     renderCaseState: () => {},
     renderHandoffStatus: () => {},
     syncRunnerResume: () => {},
@@ -1351,7 +1360,7 @@ async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingR
     for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setImmediate(resolve));
   };
   return {
-    context, document, calls, posted, asked, send, deletions,
+    context, document, calls, posted, asked, send, deletions, stateRequests,
     choose: (caseId) => vm.runInContext(`chooseRunnerCase(${JSON.stringify(caseId)})`, context),
     setConfirm: (value) => { answerConfirm = value; },
     badge: () => document.querySelector("#runtime-status").textContent
@@ -1439,6 +1448,22 @@ test("with clients, the page chooses no case until the owner picks one, asks bef
   page.posted[1].resolve({ answer: "A synthetic second reply.", provisional: null, emergencyLineShown: false });
   for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setImmediate(resolve));
   assert.equal(JSON.parse(JSON.stringify(page.context.state.therapy)).at(-1).content, "A synthetic second reply.");
+});
+
+test("a case's saved state asked for before its deletion never reaches the page after it", async (t) => {
+  const page = await casePickingPage(t, { health: pickingHealth(), view: pickingView, initial: { caseId: SYNTHETIC_TRIAL_CASE }, holdStates: true });
+  const picking = page.choose(PICKED_CLIENT_B);
+  for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(page.stateRequests.length, 1, "client B's saved state is on its way");
+  page.document.querySelector("#runner-delete-case").click();
+  for (let i = 0; i < 3; i += 1) await new Promise((resolve) => setImmediate(resolve));
+  page.deletions[0].answer();
+  for (let i = 0; i < 5; i += 1) await new Promise((resolve) => setImmediate(resolve));
+  page.stateRequests[0].answer({ durableCaseState: { synthetic: "deleted state" }, caseState: { synthetic: "deleted view" }, caseStateDiff: null });
+  await picking;
+  assert.equal(page.context.state.caseId, PICKED_CLIENT_B);
+  assert.equal(page.context.state.durableCaseState, null, "the deleted case's state stays out");
+  assert.equal(page.context.state.caseStateView, null);
 });
 
 test("switching keeps what was typed with its case and empties the case's forms; a deletion's answer goes to the case it was asked for", async (t) => {
@@ -1583,6 +1608,8 @@ test("after Delete this case the page holds nothing of the case: not in its stat
     // The case the page shows (the design for clients, point 3) and its bucket, which takes the emptied state.
     runnerChoiceFor: (caseId) => ({ caseId, kind: "own", number: null, label: null }),
     keepRunnerBucket: spy("keepRunnerBucket"),
+    runnerCases: { buckets: new Map(), epochs: new Map() },
+    runnerEpoch: () => 0,
     // The plan kept for next time: the page's question and its kept-plan line are cleared with the case.
     showRunnerResume: spy("showRunnerResume"),
     setRunnerKeptPlanStatus: spy("setRunnerKeptPlanStatus"),

@@ -84,7 +84,9 @@ A client's journal can inform their replies only through the session-use journal
    It lists the clients by number (their labels are on the page) and asks which. `--journal-consent withdraw` records a
    withdrawal, which holds at once, also while the trial runs. A consent gives the client's grant its `session_use` purpose from
    the next start; a withdrawal drops it at the next start. One of these commands, `--add-client` or a start changes the trial
-   folder at a time; another one meanwhile is refused with a message, and can simply be run again.
+   folder at a time; another one meanwhile is refused with a message, and can simply be run again. A command that ended without
+   finishing (a crash, say) leaves its lock behind: the next one names the file, to be removed by hand once no runner-trial
+   command is running.
 2. **A published copy.** The client's journal copy in their runner case, with an active generation published for session use.
    The copy step (an export on the server, on your go each time, and an import into the client's runner case checked against the
    export) **isn't built yet**, so no client has a copy.
@@ -96,12 +98,16 @@ A client's journal can inform their replies only through the session-use journal
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
 `cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.
 
-The whole gate is checked again right before every call of the writer, the checker and the repair in a turn that has read the
-journal (a retry included), and before its reply is delivered: a withdrawal, a lost or replaced receipt, another copy or a grant
-without the purpose closes it, as at a retrieval. Then no further call gets anything of that turn, its drafts included, and the
-turn closes as a failed check, also when a restart's reconcile finds it approved. What a withdrawal doesn't undo: replies already
-delivered stay in the conversation, and later turns' workers read the conversation as context; deleting the client's case removes
-them. With
+**Once a client's case has read its journal, the case is used only while the gate is open.** The gate is open when the owner's
+confirmation of the consent stands, the client list names the copy, the client's current grant opens it for session use, and a
+passing cold-test receipt names exactly the copy's current publication. It is asked when a turn starts, before every call of a
+reader, the writer, a checker or the repair (each retry included), by the worker itself at the last moment before its packet
+leaves, and before a reply is delivered. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, a
+grant without the purpose), that case makes no model call at all and delivers nothing: every turn closes as a failed check, also
+an approved one a restart's reconcile finds, because the case's drafts, findings, evidence and delivered replies may hold the
+journal's words. Confirming the consent again (with the copy's receipt in place) opens it; deleting the case removes the case,
+its copy and everything drawn from it, and the client starts afresh. The page says so under a client whose consent is
+withdrawn. Cases that never read a journal, the owner's own included, are never stopped by it. With
 `--response-evidence`, every turn (your own included) is checked against the sources it rests on: the writer sees the turn's
 evidence, the whole checker returns the evidence review the program then checks word for word, a declared journal quote must be
 word for word in its source, and the store admits the reply only with its evidence. It needs the whole checker. A reply resting on

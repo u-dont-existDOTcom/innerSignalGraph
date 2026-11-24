@@ -144,13 +144,14 @@ export async function writeRunnerClients(trialDir, value) {
   await syncFolder(trialDir);
 }
 
-// A rename is durable only once its folder is synced (Codex's review 1, finding 8): without it, a power cut could keep a newer client
-// list beside older credentials. Best effort where the filesystem refuses a folder sync.
+// A rename is durable only once its folder is synced (Codex's reviews 1 and 2): without it, a power cut could keep a newer client
+// list beside older credentials. A failed sync stops the command before anything that depends on it is written; only a filesystem
+// that can't sync a folder at all (EINVAL, ENOTSUP) is let through.
 export async function syncFolder(folder) {
-  let handle = null;
-  try { handle = await fs.open(folder, constants.O_RDONLY | constants.O_DIRECTORY); await handle.sync(); }
-  catch { /* best effort */ }
-  finally { try { await handle?.close(); } catch { /* best effort */ } }
+  const handle = await fs.open(folder, constants.O_RDONLY | constants.O_DIRECTORY);
+  try { await handle.sync(); }
+  catch (error) { if (!["EINVAL", "ENOTSUP", "EOPNOTSUPP"].includes(error?.code)) throw error; }
+  finally { await handle.close(); }
 }
 
 export function clientJournalFolder(trialDir, caseId) {

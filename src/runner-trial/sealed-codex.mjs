@@ -69,7 +69,9 @@ export class SealedCodexWorker {
     return capabilities;
   }
 
-  async call({ system, user, schema, timeoutMs, stage }) {
+  // `beforeSend`, when given, is asked after the preparation (the capability check, the folder) and right before the packet leaves:
+  // a check that must still hold then (the runner trial's journal gate) stops the call.
+  async call({ system, user, schema, timeoutMs, stage, beforeSend = null }) {
     const capabilities = await this.capabilities();
     const folder = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-runner-codex-"));
     const work = path.join(folder, "work");
@@ -84,6 +86,7 @@ export class SealedCodexWorker {
     const started = Date.now();
     try {
       const environment = { ...sealedInferenceEnvironment(this.environment), CODEX_HOME: codexHome };
+      if (beforeSend) await beforeSend();
       let run;
       try {
         run = await runSubprocess({ command: this.command, args: sealedCodexArgs({ model: this.model, effort: this.effort, instructionsPath, schemaPath, approvalFlag: Boolean(capabilities.flags.approval) }), stdin: `${user}\n`, cwd: work, env: environment, timeoutMs, label: `Runner ${stage}` });

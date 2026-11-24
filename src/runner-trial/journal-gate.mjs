@@ -47,28 +47,30 @@ export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor
       if (!read || !coldTestReceiptMatches(receipt, { caseId, corpusId: read.corpus_id, generation: read.generation, manifestObjectId: read.manifest_object_id, visibilityEpoch: read.visibility_epoch })) {
         return closed("unavailable", "cold_test_receipt_mismatch");
       }
-      // The consent again, now that the read is done: one withdrawn during it keeps every quotation out.
+      // The consent and the receipt again, now that the read is done: one withdrawn or replaced during it keeps every quotation out.
       const after = await clientFor(caseId);
       if (!journalConsentCurrent(after) || after.journal.corpus_id !== client.journal.corpus_id) return closed("not_authorized", "journal_consent_missing");
+      const receiptAfter = await readColdTestReceipt(trialDir, caseId);
+      if (!coldTestReceiptMatches(receiptAfter, { caseId, corpusId: read.corpus_id, generation: read.generation, manifestObjectId: read.manifest_object_id, visibilityEpoch: read.visibility_epoch })) {
+        return closed("unavailable", "cold_test_receipt_mismatch");
+      }
       return result;
     },
-    // Whether the whole gate still holds now for the journal snapshots a turn read (their corpus, generation, manifest and epoch, from
-    // the reader's receipts): the owner's confirmation of the consent, the same journal copy on the client list, a cold-test receipt
-    // for exactly each of those snapshots, and the client's current grant with session_use. Asked before every model call that would
-    // carry the journal's words and before the delivery of a reply written with them in view (design, point 5): a withdrawal, a lost
-    // or replaced receipt, another copy or a grant without the purpose all close the gate, as at a retrieval.
-    async stillOpen({ caseId, bindings, authContext } = {}) {
-      if (!Array.isArray(bindings) || bindings.length === 0) return false;
+    // Whether the client's journal gate is open now (design, point 5): the owner's confirmation of the consent stands, the client
+    // list names the copy, the client's current grant opens it for session_use, and a passing cold-test receipt names exactly its
+    // current publication (generation, manifest, epoch). A case that has read its journal makes no model call and delivers nothing
+    // while this is false (the trial's runtime), so a withdrawal, a lost or replaced receipt, a new publication without its own
+    // receipt or a grant without the purpose stops everything of that case at once.
+    async openNow({ caseId, authContext } = {}) {
       const client = await clientFor(caseId);
       if (!client || !journalConsentCurrent(client) || client.journal.corpus_id === null) return false;
       const receipt = await readColdTestReceipt(trialDir, caseId);
-      for (const binding of bindings) {
-        if (binding?.corpus_id !== client.journal.corpus_id) return false;
-        if (!coldTestReceiptMatches(receipt, { caseId, corpusId: binding.corpus_id, generation: binding.generation, manifestObjectId: binding.manifest_object_id, visibilityEpoch: binding.visibility_epoch })) return false;
-      }
-      try { await caseAccessService.verifyCaseAccess(caseId, { requiredScope: "case:read", requiredPurpose: "session_use" }, authContext); }
+      if (!receipt || receipt.corpus_id !== client.journal.corpus_id) return false;
+      let reference = null;
+      try { ({ reference } = await caseAccessService.inspectJournalCorpus(caseId, client.journal.corpus_id, { requiredScope: "case:read", requiredPurpose: "session_use" }, authContext)); }
       catch { return false; }
-      return true;
+      if (!reference?.active_generation) return false;
+      return coldTestReceiptMatches(receipt, { caseId, corpusId: client.journal.corpus_id, generation: reference.active_generation, manifestObjectId: reference.manifest_object_id, visibilityEpoch: reference.visibility_epoch });
     }
   });
 }

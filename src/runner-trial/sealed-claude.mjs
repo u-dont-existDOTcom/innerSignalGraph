@@ -46,7 +46,8 @@ export class SealedClaudeWorker {
     return capabilities;
   }
 
-  async call({ system, user, schema, timeoutMs, stage }) {
+  // `beforeSend`, when given, is asked after the preparation and right before the packet leaves (the runner trial's journal gate).
+  async call({ system, user, schema, timeoutMs, stage, beforeSend = null }) {
     const capabilities = await this.capabilities();
     const folder = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-runner-claude-"));
     const systemPath = path.join(folder, "system.txt");
@@ -58,6 +59,7 @@ export class SealedClaudeWorker {
       args.push("--output-format", "json", "--json-schema", JSON.stringify(schema), "--tools", "");
       if (capabilities.flags.maxTurns) args.push("--max-turns", "2");
       args.push("--no-session-persistence", "--permission-mode", "dontAsk", "--no-chrome", "--safe-mode", "--strict-mcp-config", "--system-prompt-file", systemPath);
+      if (beforeSend) await beforeSend();
       let run;
       try {
         const env = { ...sealedInferenceEnvironment(this.environment), ...(this.configDir ? { CLAUDE_CONFIG_DIR: this.configDir } : {}) };

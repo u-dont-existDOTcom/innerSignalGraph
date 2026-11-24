@@ -307,7 +307,7 @@ test("each client case has its own run log file, written and deleted with that c
   assert.equal((await s.service.loadPrivateRuntimeCase(s.ownCase, s.ownAuth)).raw_transcript.length, 2, "and the owner's own");
 });
 
-test("one command at a time changes the trial folder: a start, an addition or a consent change refuses while another holds it, and a lock left by an ended process is taken over", async (t) => {
+test("one command at a time changes the trial folder: a start, an addition or a consent change refuses while another holds it, and a lock left by an ended command is named, never taken over", async (t) => {
   const { home } = await clientFolder(t, ["Synthetic client one"]);
   let release = null;
   const held = withTrialFolderLock(home, () => new Promise((resolve) => { release = resolve; }));
@@ -320,12 +320,21 @@ test("one command at a time changes the trial folder: a start, an addition or a 
   release();
   await held;
   assert.equal((await readRunnerClients(home)).clients.length, 1, "nothing was written while the folder was held");
-  // A lock file being written (no process id yet) counts as held; one left by a process that ended is taken over.
-  await fs.writeFile(path.join(home, ".trial-folder.lock"), "", { mode: 0o600 });
+  // A lock being written (no process id yet) counts as held; one left by a command that ended is named for the owner to remove, so
+  // two commands can never both take it over.
+  const lock = path.join(home, ".trial-folder.lock");
+  await fs.writeFile(lock, "", { mode: 0o600 });
   await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), busy);
-  await fs.writeFile(path.join(home, ".trial-folder.lock"), "999999999\n", { mode: 0o600 });
+  await fs.writeFile(lock, "999999999 synthetic-token\n", { mode: 0o600 });
+  await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), (error) => error.message.includes("ended without finishing") && error.message.includes(lock));
+  assert.equal(await fs.readFile(lock, "utf8"), "999999999 synthetic-token\n", "left as it is");
+  await fs.unlink(lock);
   assert.deepEqual(await setJournalConsent({ home, number: 1, action: "confirm" }), { changed: true, state: "confirmed" });
-  await assert.rejects(fs.stat(path.join(home, ".trial-folder.lock")), { code: "ENOENT" }, "and released after use");
+  await assert.rejects(fs.stat(lock), { code: "ENOENT" }, "and released after use");
+  // A command removes only its own lock: one that someone else holds by then stays.
+  await withTrialFolderLock(home, async () => { await fs.writeFile(lock, "1 another-command\n", { mode: 0o600 }); });
+  assert.equal(await fs.readFile(lock, "utf8"), "1 another-command\n");
+  await fs.unlink(lock);
 });
 
 test("no subprocess the server starts inherits a case token: the tokens leave its environment once read, a model CLI's capability check included", async () => {

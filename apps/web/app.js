@@ -244,7 +244,7 @@ function runnerCaseChoices(view) {
     if (!entry || typeof entry.caseId !== "string" || !RUNNER_CASE_ID.test(entry.caseId) || choices.some((choice) => choice.caseId === entry.caseId)) continue;
     if (entry.kind === "own") choices.push(Object.freeze({ caseId: entry.caseId, kind: "own", number: null, label: null }));
     else if (entry.kind === "client" && Number.isSafeInteger(entry.number) && entry.number > 0 && typeof entry.label === "string" && entry.label.trim()) {
-      choices.push(Object.freeze({ caseId: entry.caseId, kind: "client", number: entry.number, label: entry.label.trim() }));
+      choices.push(Object.freeze({ caseId: entry.caseId, kind: "client", number: entry.number, label: entry.label.trim(), journalConsent: ["none", "confirmed", "withdrawn"].includes(entry.journal?.consent) ? entry.journal.consent : "none" }));
     }
   }
   return choices;
@@ -268,6 +268,14 @@ function runnerConfirmWords(choice) {
   return choice?.kind === "client"
     ? `This message goes into the case of ${runnerCaseWords(choice)}. Messages can't be moved to another case afterwards. Send it?`
     : "This message goes into your own case. Messages can't be moved to a client's case afterwards. Send it?";
+}
+
+// What the page says under the case when the client's journal consent was withdrawn: a case that has used the journal gives no
+// replies until the consent is confirmed again or the case is deleted (the runtime closes its turns).
+function runnerJournalNote(choice) {
+  return choice?.kind === "client" && choice.journalConsent === "withdrawn"
+    ? "Journal consent withdrawn: if this case has used the journal, it gives no replies until the consent is confirmed again or the case is deleted."
+    : "";
 }
 
 // Whether to ask before the first message after a pick: whenever the page has more than one case to choose from.
@@ -430,7 +438,9 @@ const RUNNER_RECONCILE_LABEL = "Looking for a reply that finished while this pag
 // the one picked, how many clients were added since the server started, and one bucket per case this page has shown: its transcript
 // as shown, its cursor and the trial's own page state (the new-conversation flag, the resume question, its turns in flight), so that
 // nothing that comes back for one case shows under another, also after switching away and back.
-const runnerCases = { choices: [], current: null, waiting: 0, buckets: new Map() };
+const runnerCases = { choices: [], current: null, waiting: 0, buckets: new Map(), epochs: new Map() };
+// A case's deletion count: what was asked of a case before it was deleted never reaches the page afterwards (Codex's review 2).
+const runnerEpoch = (caseId) => runnerCases.epochs.get(caseId) ?? 0;
 function runnerBucket(caseId) {
   if (!runnerCases.buckets.has(caseId)) {
     runnerCases.buckets.set(caseId, { therapy: [], runnerShownThrough: null, newConversation: false, resumeShown: false, resumeAnswer: null, hasConversation: false, inFlight: new Set(), confirmed: false, draft: "" });
@@ -556,7 +566,8 @@ async function reconcileRunnerCase() {
   const caseId = state.caseId;
   const transcript = state.therapy;
   const bucket = runnerBucket(caseId);
-  const current = () => caseId === state.caseId && transcript === state.therapy;
+  const epoch = runnerEpoch(caseId);
+  const current = () => caseId === state.caseId && transcript === state.therapy && runnerEpoch(caseId) === epoch;
   const progress = $("#runner-progress");
   progress.hidden = false;
   progress.textContent = RUNNER_RECONCILE_LABEL;
@@ -567,7 +578,7 @@ async function reconcileRunnerCase() {
       body: JSON.stringify(runnerReconcileRequest(caseId, transcript, state.runnerShownThrough))
     });
     const payload = await response.json().catch(() => null);
-    if (!response.ok || !Array.isArray(payload?.turns) || payload.caseId !== caseId) return;
+    if (!response.ok || !Array.isArray(payload?.turns) || payload.caseId !== caseId || runnerEpoch(caseId) !== epoch) return;
     if (!current()) {
       bucket.runnerShownThrough = showRunnerTurns(transcript, payload.turns, bucket.runnerShownThrough, bucket.inFlight);
       return;
@@ -1360,16 +1371,17 @@ function showRunnerCaseChoice() {
   line.textContent = !runnerTrial.on ? "" : choice ? runnerConversationWords(choice)
     : runnerCases.choices.length ? "Choose who this conversation is with before writing." : "The trial's cases are unavailable right now.";
   const waiting = $("#runner-client-waiting");
-  waiting.textContent = runnerTrial.on && runnerCases.waiting > 0 ? `${runnerCases.waiting} client(s) added since the trial started: start it again to see them here.` : "";
+  waiting.textContent = [runnerTrial.on && runnerCases.waiting > 0 ? `${runnerCases.waiting} client(s) added since the trial started: start it again to see them here.` : "", runnerTrial.on ? runnerJournalNote(choice) : ""].filter(Boolean).join(" ");
   waiting.hidden = !waiting.textContent;
   $("#therapy-send").disabled = runnerTrial.on && !choice;
 }
 
 async function loadRunnerCaseState(caseId) {
+  const epoch = runnerEpoch(caseId);
   if (state.privateStorageMode === "encrypted") {
     try {
       const saved = await getJson(`/v1/case/state?caseId=${encodeURIComponent(caseId)}`);
-      if (caseId !== state.caseId) return;
+      if (caseId !== state.caseId || runnerEpoch(caseId) !== epoch) return;
       state.durableCaseState = saved.durableCaseState || null;
       state.caseStateView = saved.caseState || null;
       state.lastStateDiff = saved.caseStateDiff || null;
@@ -1729,6 +1741,7 @@ $("#runner-delete-case").addEventListener("click", async () => {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
+    runnerCases.epochs.set(deleting, runnerEpoch(deleting) + 1);
     if (deleting === state.caseId) clearDeletedCase();
     else runnerCases.buckets.delete(deleting);
     if (payload.handoffsKept) alert(`${payload.handoffsKept} handoff file(s) couldn't be confirmed as this case's and were kept.`);
@@ -1871,14 +1884,15 @@ $("#create-handoff")?.addEventListener("click", async (event) => {
   setBusy(button, true, "Creating…");
   // A handoff belongs to the case it was made for: shown only while that case is on the page.
   const handoffCase = state.caseId;
+  const handoffEpoch = runnerEpoch(handoffCase);
   try {
     const result = await postJson("/v1/case/handoff", { caseId: handoffCase });
-    if (handoffCase !== state.caseId) return;
+    if (handoffCase !== state.caseId || runnerEpoch(handoffCase) !== handoffEpoch) return;
     state.lastHandoffId = result.handoff_id;
     state.handoffStatus = result;
     renderHandoffStatus();
   } catch (error) {
-    if (handoffCase !== state.caseId) return;
+    if (handoffCase !== state.caseId || runnerEpoch(handoffCase) !== handoffEpoch) return;
     state.lastHandoffId = null;
     state.handoffStatus = null;
     renderHandoffStatus();

@@ -175,6 +175,17 @@ with each rename synced to its folder; and the server takes the case tokens out 
 (a model CLI's capability check included) inherits them. What a withdrawal doesn't undo is in `docs/RUNNER-TRIAL.md`: replies
 already delivered stay in the conversation, which later turns' workers read.
 
+Codex's second review (24 Nov) found that guarding one path at a time kept leaving another (an earlier turn's unsent draft in a later
+turn's evidence, the worker's own preparation before its packet leaves, a changed publication). That class recurred, so the
+mechanism changed instead of growing more exceptions: **a case that has read its client's journal is used only while that client's
+journal gate is open now** (consent, the same copy, the grant with session_use, a receipt for exactly the current publication),
+asked when a turn starts, before every worker call, by the worker at its last moment, and before delivery. While it is closed the
+case makes no model call and delivers nothing; confirming the consent again or deleting the case are the ways on. The cost, a
+tradeoff for the owner: after a withdrawal, a case that has used its journal gives no replies until one of the two. The same
+review's other findings are fixed too: the store's journal hold needs a case that has read its journal (the gate itself stays the
+trial's record, outside the case, so the store can't evaluate it; the hold only ever stops a reply); the folder lock is never
+taken over by a command; a failed folder sync stops a command; and a deletion invalidates what the page had asked of the case.
+
 Not built, each needed before any client's journal reaches a reply: **point 4, the copy step** (the export on the server, only on
 the owner's go each time; the import into the client's runner case checked against the export; the adapter for the trial's
 development credentials), and **the journal's cold test**. Running the cold test on a client's journal comes back to the owner

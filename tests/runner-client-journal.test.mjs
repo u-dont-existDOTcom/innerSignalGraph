@@ -179,21 +179,74 @@ test("the journal gate: no quotation without the owner's confirmation of consent
   assert.deepEqual(reason(await ask(j.clientB)), ["not_configured", "no_journal_copy", 0], "another client has no journal of their own");
   assert.deepEqual(reason(await ask(j.ownCase, j.ownAuth)), ["not_configured", "no_journal_copy", 0], "the owner's own case is no client");
   assert.equal((await ask(j.clientA, j.caseAuthContexts.get(j.clientB))).availability, "not_authorized", "another client's token reads nothing of client one's journal");
-  // The whole gate, asked again before each later call and before delivery, for the snapshots the turn read.
-  const bindings = open.receipts.map((receipt) => ({ corpus_id: receipt.corpus_id, generation: receipt.generation, manifest_object_id: receipt.manifest_object_id, visibility_epoch: receipt.visibility_epoch }));
-  const stillOpen = (extra = {}) => gate.stillOpen({ caseId: j.clientA, bindings, authContext: j.caseAuthContexts.get(j.clientA), ...extra });
-  assert.equal(await stillOpen(), true);
-  assert.equal(await stillOpen({ bindings: [] }), false, "nothing to hold open");
-  assert.equal(await stillOpen({ bindings: [{ ...bindings[0], generation: "generation-0" }] }), false, "another generation");
-  assert.equal(await stillOpen({ authContext: j.caseAuthContexts.get(j.clientB) }), false, "another client's grant");
-  await fs.rm(path.join(clientJournalFolder(j.home, j.clientA), COLD_TEST_RECEIPT_FILE));
-  assert.equal(await stillOpen(), false, "a lost receipt counts like a withdrawal");
+  // The gate open now, asked when a turn starts, before every call and before delivery in a case that has read its journal.
+  const openNow = (auth = j.caseAuthContexts.get(j.clientA)) => gate.openNow({ caseId: j.clientA, authContext: auth });
+  assert.equal(await openNow(), true);
+  assert.equal(await openNow(j.caseAuthContexts.get(j.clientB)), false, "another client's grant");
+  await fs.unlink(path.join(clientJournalFolder(j.home, j.clientA), COLD_TEST_RECEIPT_FILE));
+  assert.equal(await openNow(), false, "a lost receipt counts like a withdrawal");
+  await j.plantReceipt({ generation: "generation-0" });
+  assert.equal(await openNow(), false, "a receipt for another publication");
   await j.plantReceipt();
-  assert.equal(await stillOpen(), true);
+  assert.equal(await openNow(), true);
   await setJournalConsent({ home: j.home, number: 1, action: "withdraw" });
   assert.deepEqual(reason(await ask(j.clientA)), ["not_authorized", "journal_consent_missing", 0], "a withdrawal holds at once, before the next start");
-  assert.equal(await stillOpen(), false);
+  assert.equal(await openNow(), false);
+  assert.equal(await gate.openNow({ caseId: j.clientB, authContext: j.caseAuthContexts.get(j.clientB) }), false, "a client without a copy");
 });
+
+test("a changed publication of the copy (its visibility revoked, a new epoch) closes the gate: a receipt for the earlier one doesn't carry over", async (t) => {
+  const j = await journalTrial(t);
+  const gate = createRunnerJournalGate({ trialDir: j.home, caseAccessService: j.service });
+  const auth = j.caseAuthContexts.get(j.clientA);
+  assert.equal(await gate.openNow({ caseId: j.clientA, authContext: auth }), true);
+  await j.copier.incrementJournalVisibilityEpoch(j.clientA, { corpusId: CORPUS, expectedEpoch: j.reference.visibility_epoch }, j.copyAuth);
+  assert.equal(await gate.openNow({ caseId: j.clientA, authContext: auth }), false);
+  const part = await gate.freezeResponseEvidenceJournal({ caseId: j.clientA, query: "help", authContext: auth });
+  assert.notEqual(part.availability, "available");
+  assert.equal(part.source_items.length, 0, "no quotation of the changed publication");
+});
+
+test("once a case has read its journal, a closed gate stops the whole case: the next turn makes no model call at all, so nothing of the journal in an earlier draft goes out; confirming the consent again lets it reply", async (t) => {
+  let home = null;
+  // The first turn's checker withdraws the consent: that reply is held back, and its draft, which quotes the journal, stays in
+  // the case as an unsent draft.
+  const j = await journalTrial(t, { workers: script({ CW: async (count, request) => { if (count === 1) await setJournalConsent({ home, number: 1, action: "withdraw" }); return wholeChecker(count, request); } }) });
+  home = j.home;
+  const { base } = await j.serve();
+  assert.equal((await respond(base, j.clientA, "exchange-case-1")).json.closing.reason_code, "checks_failed");
+  const before = j.calls.length;
+  const next = await respond(base, j.clientA, "exchange-case-2", "A synthetic second message.");
+  assert.deepEqual([next.status, next.json.answer, next.json.closing], [200, RUNNER_UNAVAILABLE_NOTICE, { kind: "runner_unavailable", reason_code: "checks_failed" }]);
+  assert.equal(j.calls.length, before, "no reader, writer or checker was called");
+  // Another client's case and the owner's own are untouched by it.
+  assert.equal((await respond(base, j.clientB, "exchange-other-1", "A synthetic message for client two.")).json.answer, "What makes asking hard for you?");
+  assert.equal((await respond(base, j.ownCase, "exchange-own-1", "A synthetic message of the owner's own.")).json.answer, "What makes asking hard for you?");
+  await setJournalConsent({ home: j.home, number: 1, action: "confirm" });
+  const again = await respond(base, j.clientA, "exchange-case-3");
+  assert.equal(again.status, 200);
+  assert.equal(again.json.closing ?? null, null, "with the consent confirmed again, the case replies");
+});
+
+test("the worker asks the gate itself at its last moment, after its own preparation: a withdrawal meanwhile stops the packet from leaving", async (t) => {
+  let home = null;
+  const sent = [];
+  // A stand-in worker as the sealed ones work: its preparation (where a withdrawal lands here), then the gate, then the send.
+  const preparing = (role, answer) => async (count, request) => {
+    if (role === "W" && count === 1) await setJournalConsent({ home, number: 1, action: "withdraw" });
+    if (request.beforeSend) await request.beforeSend();
+    sent.push(role);
+    return answer(count, request);
+  };
+  const j = await journalTrial(t, { workers: script({ W: preparing("W", writer), CW: preparing("CW", wholeChecker) }) });
+  home = j.home;
+  const { base } = await j.serve();
+  const closed = await respond(base, j.clientA, "exchange-last-1");
+  assert.deepEqual([closed.status, closed.json.closing], [200, { kind: "runner_unavailable", reason_code: "checks_failed" }]);
+  assert.deepEqual(sent, [], "neither the writer's packet nor the checker's left");
+  assert.equal(j.calls.filter((call) => call.role === "W").length, 1, "the writer was asked once, and stopped at its last moment");
+});
+
 
 test("without the owner's confirmation the grant has no session_use, so even a passing receipt opens nothing", async (t) => {
   const j = await journalTrial(t, { consent: false });
@@ -255,9 +308,11 @@ test("a reply written with the journal in view isn't delivered once the consent 
   const record = await j.record(j.clientA);
   assert.equal(record.runtime_turns.at(-1).state, "UNANSWERED");
   assert.equal(record.raw_transcript.some((entry) => entry.role === "assistant" && entry.text.includes("You wrote")), false, "the reply never reached the transcript");
-  assert.equal((await respond(base, j.clientA, "exchange-held-2")).status, 200);
-  const next = packetOf(lastRequest(j.calls, "W"));
-  assert.deepEqual([next.response_evidence.journal.availability, journalItems(next).length], ["not_authorized", 0]);
+  // The case has read its journal and the gate is closed: the next turn closes before any model call.
+  const calls = j.calls.length;
+  const next = await respond(base, j.clientA, "exchange-held-2");
+  assert.deepEqual([next.status, next.json.closing], [200, { kind: "runner_unavailable", reason_code: "checks_failed" }]);
+  assert.equal(j.calls.length, calls);
 });
 
 test("a withdrawal during the writer's call keeps the journal from every later call: the checker never gets it, and the turn closes", async (t) => {

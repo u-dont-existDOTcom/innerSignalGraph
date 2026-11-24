@@ -718,8 +718,9 @@ test("rules extraction uses one quiet fetch, a local stable snapshot after fetch
   assert.equal(calls.filter((args) => args[0] === "fetch").length, 1);
   const config = configFor(dir, { runnerRulesRoot: released.rulesRoot });
   const rules = loadRunnerRules(config).runnerRules;
-  assert.equal(rules.version, "0.2.6");
-  assert.equal(rules.sha256, "2126edaf1c4045939dd5b3fefa397dc81871debea2d7d6f30601f58e8053fd07");
+  // The release origin/stable holds: 0.2.7 since 24 Nov 2026 (#242).
+  assert.equal(rules.version, "0.2.7");
+  assert.equal(rules.sha256, "9b4c9c99cc9838e859a4713c3598b17e78cf5ed52989fa7a31c1880f9e83b985");
   assert.match(rules.source, /^stable [a-f0-9]{9}$/u);
   assert.equal((await fs.stat(path.dirname(path.dirname(path.dirname(released.rulesRoot))))).mode & 0o777, 0o700);
   const offlineGit = async (args, options) => { if (args[0] === "fetch") throw new Error("offline"); return exec("git", args, options); };

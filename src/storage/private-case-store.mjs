@@ -827,17 +827,15 @@ export function createEncryptedPrivateCaseStore({
   };
   // An approved runner trial turn is closed without a reply only as a failed check, and only when its reply may no longer be sent
   // (the design for clients, point 6): response evidence no longer admits it at delivery, checked here again; or the trial holds it
-  // back because the journal gate closed (`journalHold`), which is allowed only for a turn that read a client's journal (one of its
-  // evidence snapshots holds journal quotations). The gate itself (consent, receipt, grant) is the trial's own record outside the
-  // case, so the store can't check it; journal quotations alone, without the hold, never let an approved reply be closed (Codex's
-  // review 1, finding 4). Otherwise the reply stays to be delivered.
+  // back because the case's journal gate is closed (`journalHold`), allowed only in a case that has read its client's journal (one of
+  // its evidence snapshots holds journal quotations). The gate itself (the owner's confirmation of consent, the cold-test receipt,
+  // the grant) is the trial's own record outside the case, so the store can't evaluate it: the hold is the trial runtime's word,
+  // given only right after its own check of the gate, and its effect is the safe one (a reply not sent, never one sent). Journal
+  // quotations alone, without the hold, never close an approved reply. Otherwise the reply stays to be delivered.
   const approvedReplyMayNotBeSent = (record, runtimeTurn, reasonCode, journalHold) => {
     const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
     if (!candidate || reasonCode !== "checks_failed") return false;
-    if (journalHold === true) {
-      return (record.response_evidence_snapshots ?? []).some((entry) => entry.owner?.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurn.id
-        && entry.source_items.some((item) => item.kind === "journal_quotation"));
-    }
+    if (journalHold === true) return (record.response_evidence_snapshots ?? []).some((entry) => entry.source_items.some((item) => item.kind === "journal_quotation"));
     return !assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point: "deliverPrivateRuntimeCandidate" }).admissible;
   };
   const requireResponseEvidence = (record, candidate, point) => {
