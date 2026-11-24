@@ -64,10 +64,16 @@ can't exceed the cap. The loading note says:
   refresh, give no therapy from this part alone or from memory, and if the person may want to die follow the crisis
   section first and leave the refresh for later.
 
-**Before the first reply** (five groups, each answer 21,730 to 27,701 bytes, all fitting whole), most urgent first:
-`group/1` = the rest of the rules, the box list (with its rule to keep the safer reading where a box and the rules seem
-to differ) and the four inner-child safety boxes; `group/2` = the protective-compatibility file and the four safety
-routes, with one more reference; then the other always-read files.
+**Before the first reply** (five groups, all fitting whole), most urgent first: the urgent parts fill the groups in this
+order: the rest of the rules, the box list (with its rule to keep the safer reading where a box and the rules seem to
+differ), the four inner-child safety boxes, the four safety routes, then the protective-compatibility file; the other
+always-read files go wherever they fit, largest first. On 21 Nov (each answer 21,730 to 27,701 bytes) `group/1` held the
+rest of the rules, the box list and all four inner-child safety boxes, and `group/2` the protective-compatibility file and
+the four safety routes, with one more reference. With 0.2.6's longer rules (24 Nov: each answer 23,826 to 27,956 bytes)
+`group/1` holds the rest of the rules, the box list and the first three inner-child safety boxes, and `group/2` the fourth
+(`IC.PRECIOUS_HUMAN_OPPORTUNITY`), the four safety routes, the protective-compatibility file and one more reference.
+Every group loads before the first reply (and, after an immediate crisis reply, before the next one), so this changes
+only the order of loading.
 
 **The safety boxes** are tier 1 of the compiled inner-child map and of the cross-guide routes: `IC.SAFETY_ORIENTATION`,
 `IC.SUICIDAL_ADULT_SEAT`, `IC.SUICIDAL_SELF_DEATH_INQUIRY`, `IC.PRECIOUS_HUMAN_OPPORTUNITY`, `ROUTE.MEDICAL_RED_FLAG`,

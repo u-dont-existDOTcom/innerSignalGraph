@@ -138,10 +138,20 @@ test("before the first reply: the rules, every file the rules say to read before
   assert.ok(!before.some((name) => delivery.byName.get(name).source === ON_REQUEST), "the guide referrals wait until the rules call for them");
   const others = delivery.boxes.filter((part) => !SAFETY_BOX_IDS.some((id) => part.name === `${BOX_PART_PREFIX}${id}`));
   assert.ok(others.length > 0 && others.every((part) => !before.includes(part.name)), "every other box waits until it's used");
-  // Most urgent first: the rest of the rules, the box list with its rule to keep the safer reading, and the inner-child
-  // safety boxes in the first group; the safety routes and the protective-compatibility file in the second.
+  // Most urgent first: the urgent parts fill the groups in this order: the rest of the rules, the box list with its rule to
+  // keep the safer reading, the eight safety boxes (the inner-child ones first), then the protective-compatibility file. No
+  // urgent part comes in an earlier group than one before it in that order, and the rest of the rules and the box list are
+  // in the first group. When the rules grow, the last urgent parts move on to the next group (with 0.2.6's longer rules the
+  // fourth inner-child safety box is in the second group); every group still loads before the first reply.
+  const urgentOrder = [...delivery.rules.slice(delivery.firstNames.length), ...delivery.boxList].map((part) => part.name)
+    .concat(SAFETY_BOX_IDS.map((id) => `${BOX_PART_PREFIX}${id}`), ["references/PROTECTIVE-COMPATIBILITY.md"]);
+  const groupOf = (name) => delivery.groups.findIndex((group) => group.includes(name));
+  urgentOrder.forEach((name, index) => {
+    assert.ok(groupOf(name) >= 0, name);
+    if (index > 0) assert.ok(groupOf(name) >= groupOf(urgentOrder[index - 1]), `${name} comes no earlier than ${urgentOrder[index - 1]}`);
+  });
   for (const part of [...delivery.rules.slice(delivery.firstNames.length), ...delivery.boxList]) assert.ok(delivery.groups[0].includes(part.name), part.name);
-  for (const id of SAFETY_BOX_IDS.filter((entry) => entry.startsWith("IC."))) assert.ok(delivery.groups[0].includes(`${BOX_PART_PREFIX}${id}`), id);
+  assert.ok(delivery.groups[0].includes(`${BOX_PART_PREFIX}${SAFETY_BOX_IDS[0]}`), "the first group holds at least the first safety box");
   const early = delivery.groups.slice(0, 2).flat();
   for (const id of SAFETY_BOX_IDS) assert.ok(early.includes(`${BOX_PART_PREFIX}${id}`), id);
   assert.ok(early.includes("references/PROTECTIVE-COMPATIBILITY.md"));
