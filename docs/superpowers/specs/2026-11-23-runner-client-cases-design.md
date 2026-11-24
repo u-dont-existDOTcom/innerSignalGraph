@@ -182,7 +182,8 @@ mechanism changed instead of growing more exceptions: **a case that has read its
 journal gate is open now** (consent, the same copy, the grant with session_use, a receipt for exactly the current publication),
 asked when a turn starts, before every worker call, by the worker at its last moment, and before delivery. While it is closed the
 case makes no model call and delivers nothing; confirming the consent again or deleting the case are the ways on. The cost, a
-tradeoff, the owner's choice (i75 2a, 24 Nov 2026): after a withdrawal, a case that has used its journal gives no replies until one of the two. The same
+tradeoff for the owner: after a withdrawal, a case that has used its journal gives no replies until one of the two (the owner's i75 2a, 24 Nov 2026, was worded for
+the conversation that used it; this stops the client's whole case, and that scope goes back to the owner). The same
 review's other findings are fixed too: the store's journal hold needs a case that has read its journal (the gate itself stays the
 trial's record, outside the case, so the store can't evaluate it; the hold only ever stops a reply); the folder lock is never
 taken over by a command; a failed folder sync stops a command; and a deletion invalidates what the page had asked of the case.
