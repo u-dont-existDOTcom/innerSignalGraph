@@ -477,12 +477,14 @@ function loadingNote(delivery) {
   const exampleBox = delivery.boxes[0]?.name;
   return [
     "This is the first part of InnerSignal's therapy rules. The rest comes in parts, so that every app shows each answer whole: apps cut long tool results.",
-    "Before your first reply, load every group listed below: one call to load_therapy_protocol per group (the calls may run at the same time), with `parts` set to a list holding the group's name, such as `[\"group/1\"]`, and `protocol_sha256` set to the sha256 above. Then follow the rules and their files.",
+    // ChatGPT runs several calls in one step and shows itself the first and last 10,000 tokens of their combined output (24 Nov 2026): the groups
+    // came through whole once it loaded them one by one. A group by itself is well under that; Claude shows each call's result by itself.
+    "Before your first reply, load every group listed below, each in a step of its own: one call to load_therapy_protocol per step, with `parts` set to a list holding the group's name, such as `[\"group/1\"]`, and `protocol_sha256` set to the sha256 above. Never print several calls' results in one output: an app can cut a combined output at about 10,000 tokens, and most of the rules with it (in Claude, which shows each call's result by itself, the calls may run at the same time). If a result says it was truncated or shortened, load what is missing again, alone, before you reply. Then follow the rules and their files.",
     "One exception: if the person says they want to die, may act on it or has already taken something, reply at once from the section on someone who may want to die, which this answer holds in full, and load the groups before your next reply.",
     "Paths such as `references/FOCUS-DISCIPLINE.md` in the rules are part names.",
     ...(delivery.boxList.length > 0 ? [`The map's boxes: before you use a box, load its advice by its name from the box list (\`box/\` and the box's ID, for example \`${exampleBox}\`); several in one call is fine.`] : []),
     "Load `references/GUIDE-REFERRALS.md` when the rules say to.",
-    "Send `protocol_sha256` with every call; if an answer says the protocol has changed, start again from that answer. In a long chat, if you can no longer see a part you need, load it again. If an answer looks cut off or says it was shortened, ask again for fewer parts at a time.",
+    "Send `protocol_sha256` with every call; if an answer says the protocol has changed, start again from that answer. In a long chat, if you can no longer see a part you need, load it again. If an answer loaded alone looks cut off, ask again for fewer parts at a time.",
     "If load_therapy_protocol has no `parts` input among your tools, the app holds an older tool list for this connector and can't load the rest: tell the user that InnerSignal needs its connector's tools refreshed in the app's settings before it can help with this, and don't give the therapy from this part alone or from memory. If the person may want to die, follow the section on that in this answer first, and leave the refresh for later.",
     "Record `version` and `protocol_sha256` with any continuity handoff. Never mention the parts, the map or the boxes to the person."
   ].join(" ");

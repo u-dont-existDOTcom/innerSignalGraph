@@ -50,16 +50,17 @@ the groups. Every part that could outgrow an answer (the rules, a reference, the
 pieces, its plain name standing for all of them.
 
 **The first answer** (no inputs): the version and hash, a loading note, the groups by name with what each holds, then
-`rules/1`: the rules from their first byte through the whole section on someone who may want to die (26,555 bytes in
-all, 26,754 with a changed-protocol note). Its size is measured with the group list and that note at their longest, so it
+`rules/1`: the rules from their first byte through the whole section on someone who may want to die (26,861 bytes in
+all, 27,060 with a changed-protocol note). Its size is measured with the group list and that note at their longest, so it
 can't exceed the cap. The loading note says:
-- load every group before the first reply (one call per group, possibly at the same time), with `protocol_sha256`;
+- load every group before the first reply, one call per step, with `protocol_sha256`, never several calls' results in one
+  output (in Claude the calls may run at the same time), and again, alone, what a result says was truncated or shortened;
 - one exception: if the person says they want to die, may act on it or has already taken something, reply at once from
   the crisis section (whole in this answer) and load the groups before the next reply;
 - part names are the rules' own paths; load a box's advice by name before using the box; load the guide referrals when
   the rules say to;
 - send `protocol_sha256` with every call, start again if an answer says the protocol changed, reload a part a long chat
-  has dropped, and ask for fewer parts if an answer looks cut;
+  has dropped, and ask for fewer parts if an answer loaded alone looks cut;
 - if `parts` isn't among the tool's inputs, the app holds an older tool list: tell the user the connector's tools need a
   refresh, give no therapy from this part alone or from memory, and if the person may want to die follow the crisis
   section first and leave the refresh for later.
@@ -141,6 +142,15 @@ once; ChatGPT makes them one after another. Each later box costs one call of 1,0
   change is what works inside today's apps.
 
 ## Reviews
+
+**After the release (24 Nov 2026, therapy skill 0.2.7):** in the owner's ChatGPT the first answer arrived whole, and the five
+groups did not in two chats of three: ChatGPT made the five calls in one step and showed itself the first and last 10,000
+tokens of their combined output, then went on without loading them again. The note had said that the calls may run at the
+same time. With the sentence above in the question, in the third chat, everything arrived whole, in seven steps. The test
+chats of 21 and 24 Nov through Codex showed the same in their call logs, read again after that: in every ordinary one GPT
+loaded the five groups at once and then loaded them again by themselves (all five, or four); their reports had counted the
+groups as loaded. With this note the same four chats (Codex, 24 Nov, 17:02 to 17:04 UTC, on `089bb81d4`) loaded each group
+once, one by one, and then the boxes; both crisis messages were answered at once from the first answer alone.
 
 **Fable's red team of `7c46bf780`** (nine findings; it also fuzzed 4,000 requests and found none over the cap):
 1. A crisis reply waited behind five calls: the loading note now has the crisis exception.
