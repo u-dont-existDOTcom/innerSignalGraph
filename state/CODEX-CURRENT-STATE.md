@@ -1,5 +1,9 @@
 # Inner Signal Codex current state
 
+## Therapy skill 0.2.7, the rules in parts and the chat feedback tool live — 24 November 2026
+
+Therapy skill 0.2.7 was released on `stable` at `71e3528f2` (pull request 242; backend `main` `1d8f58b5b`, pull request 232 with #238, #240 and #241) and verified on the hosted connector at 03:01 UTC (kit: `InnerSignal_0.2.7_activate.sh`; owner answer i72 1a, with i60a and i63b). `load_therapy_protocol` answers in 82 parts of at most 28,000 bytes (a first answer of 26,555 bytes with the whole crisis section, then five groups before the first reply), the chat tool `send_feedback` is on (20 tools; the page as 0.2.6 left it) and response evidence stays off; the apps need one refresh for the new tool list (i72 1a). See the [release evidence record](../docs/releases/2026-11-24-therapy-skill-0.2.7.md).
+
 ## Therapy skill 0.2.6 and the feedback page live — 22 November 2026
 
 Therapy skill 0.2.6 was released on `stable` at `45759cb26` (pull request 239; backend `main` `45c0f906e`, pull requests 236 and 237 with IS7) and verified on the hosted connector at 16:41 UTC (kit: `InnerSignal_0.2.6_activate.sh`; owner answers i69 1a 2a and his `go 0.2.6` at 16:30 UTC). The feedback page answers at `https://innerself.love/feedback` (page on, chat tool off; tools/list unchanged); see the [release evidence record](../docs/releases/2026-11-22-therapy-skill-0.2.6.md). The chat tool's switch goes with pull request 232's release.
@@ -8,10 +12,11 @@ Therapy skill 0.2.6 was released on `stable` at `45759cb26` (pull request 239; b
 
 Therapy skill 0.2.5 was released on `stable` at `a7550955` (kit: `InnerSignal_0.2.5_activate.sh`) and has been live since 21 Nov 2026 04:05 UTC (lane handoff, 21 Nov 2026); see the [release evidence record](../docs/releases/2026-11-21-therapy-skill-0.2.5.md). Post-release checks found that ChatGPT keeps only the head and tail of the one large protocol result. The split-delivery fix, pull request 232, is built and parked by the owner's answer i61b on 21 Nov 2026 17:32 UTC, which puts an InnerSignal runner first (lane handoff, 21 Nov 2026).
 
-Updated: 2026-11-22
+Updated: 2026-11-24
 
 ## Feedback place (IS8, owner answer i63b) — 22 November 2026 (pull request 236, draft; branch `claude/feedback-place-20261122`; held sentence on `claude/feedback-place-sentence-20261122`; not merged, not released, not installed)
 
+- **Status (24 Nov 2026):** the chat tool `send_feedback` was switched on with therapy skill 0.2.7 (section above).
 - **Status (22 Nov 2026):** merged as `146ac4df3` (#236) and `45c0f906e` (#237, the served sentence); released in therapy skill 0.2.6 (section above). The entries below are the history.
 
 - **Owner outcome and authority:** his request of 20 Nov 2026 (23:45 UTC) for "a place where people can send InnerSignal suggestions, bugs, praise and reviews", and his answer i63b (chat, 22 Nov 2026, 00:37 UTC): a private feedback page, and sending from inside a chat with the person's yes to the exact text.
@@ -207,6 +212,8 @@ Implementation checkpoint on branch feat/response-evidence-slice5b-connector-ada
 Claim: with the setting on, a draft can be submitted through the connector and only its exact approved bytes come back; the connector cannot approve, send or change anything else in the case. NOT done: a rule telling ChatGPT to use this path (a separate owner-approved change); the Codex host-worker route (the owner's open question 49 — the review model runtime is a replaceable seam); the shared source-support validator and coverage (slice 3), evidence snapshot and retrieval (slice 2), fallback changes (slice 4) and behavioral evaluation (slice 6). The tools cannot make a host show the text unchanged; an edited or paraphrased text simply has no approval. Deploying it needs the setting, the permission in the case's access list and at the authorization server, model access, and one reconnect of the InnerSignal app per ChatGPT account. Synthetic tests only; no private data and no server access. Independent review, hosted CI, merge and release remain separate gates. See docs/PRIVATE-CASE-CONTINUITY.md, "Connector tools for reply drafts".
 
 ## Response-evidence enforcement, slices 2, 3, 4 and 6 — 23 November 2026 (branch claude/response-evidence-enforcement-20261123)
+
+**Status (24 Nov 2026):** merged as `343bec014` (#241, owner answer i74 1a), off by default, and shipped switched off in therapy skill 0.2.7 (section at the top). The paragraphs below are the history.
 
 The owner's request of 26 October (issue #195; InnerSignal promise IS10) is being built on this branch against the merged design and the build contract `tasks/response-evidence-enforcement-20261026/BUILD-20261123.md`: part A1 (the snapshot, the source-support review's mechanical checks and the shared admission check in the store), part A2 (governed runtime turns, the evidence-aware audit and repair, the reviewed fallback question) and part B (the supervisor path under enforcement, the opt-in session-use journal adapter, documentation). Everything sits behind `INNER_SIGNAL_RESPONSE_EVIDENCE`, off by default, so behaviour and bytes are unchanged until the owner turns it on; the journal adapter is not wired anywhere (`journalProvider: unconfigured`). Record version 7; no new runtime state.
 
