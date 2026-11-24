@@ -7,7 +7,7 @@ import { runnerTurnDetailsFromRecord } from "./turn-details.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts } from "./rule-parts.mjs";
 import { DEFAULT_RUNNER_SETTINGS, createRunnerTrialRuntime } from "./runtime.mjs";
-import { createRunnerJournalGate } from "./journal-gate.mjs";
+import { JOURNAL_SEARCH_TIMEOUT_MS, createRunnerJournalGate } from "./journal-gate.mjs";
 import { RUNNER_TRIAL_SETTING, createRunnerWorkerFactory, loadRunnerTrialSettings, runnerArrangement } from "./settings.mjs";
 
 // What the server builds when INNER_SIGNAL_RUNNER_TRIAL is on (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections
@@ -171,7 +171,7 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
   } } });
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
   const controller = createPrivateTherapyTurnController({ privateCaseSource: deletingSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1,
-    ...(evidenceOn ? { responseEvidence: { enforced: true, journalTimeoutMs: 4000 } } : {}), ...(evidenceOn && journalGate ? { journalEvidenceProvider: journalGate } : {}) });
+    ...(evidenceOn ? { responseEvidence: { enforced: true, journalTimeoutMs: JOURNAL_SEARCH_TIMEOUT_MS } } : {}), ...(evidenceOn && journalGate ? { journalEvidenceProvider: journalGate } : {}) });
   const logWriters = new Map();
   const logWriterFor = (caseId) => {
     const fileName = clientCases.has(caseId) ? runnerClientLogFile(caseId) : RUNNER_LOG_FILE;

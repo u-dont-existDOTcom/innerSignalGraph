@@ -17,9 +17,10 @@ import { pathToFileURL } from "node:url";
 import { withOpenedRegularFile } from "../src/core/opened-regular-file.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { createJournalCopyKeyPair, importJournalCopy, journalCopyCorpusId, journalCopyRecipientDigest, journalCopySourceDigest, openJournalCopy, readSealedJournalCopy } from "../src/journal-import/journal-copy.mjs";
-import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, clientJournalFolder, journalConsentState, readColdTestAttempt, readRunnerClients, syncFolder, writeRunnerClients } from "../src/runner-trial/clients.mjs";
+import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, clientJournalFolder, journalConsentState, readColdTestAttempt, readColdTestMarker, readRunnerClients, syncFolder, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { folderLockLeftNotice } from "../src/runner-trial/folder-lock.mjs";
-import { COLD_TEST_RULE, createSealedColdTestPort, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
+import { COLD_TEST_RULE } from "../src/runner-trial/cold-test-rule.mjs";
+import { createSealedColdTestPort, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
 import { createRunnerWorkerFactory } from "../src/runner-trial/settings.mjs";
 import { RUNNER_CLAUDE_CONFIG_DIR } from "../src/runner-trial/switch.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
@@ -51,10 +52,13 @@ number (the one --journal-consent shows) and prints no label, no question id and
   --cold-test FILE   the copy's cold test, with the questions and their key from FILE (mode 0600, outside the checkout). For each
                      question, what a reply to it as the message would get from the copy goes to a fresh call of the trial's
                      writer's worker, which answers from that alone; and the answer, with the same passages and the key quotes, to a
-                     fresh call of the checker's worker, which judges it (and is asked again when it finds something wrong): two
-                     calls a question, three at most, one at a time. The copy passes when the file has at least ${COLD_TEST_RULE.answerable} questions
-                     the journal answers and ${COLD_TEST_RULE.unanswerable} it doesn't, no answer is wrong, at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} questions that share a
-                     search word with their key quotes are right, and the copy's publication didn't change meanwhile.
+                     fresh call of the checker's worker, which judges it (and is asked again, up to twice, when it finds something
+                     wrong), and the file's planted wrong answers too: about three calls a question, one at a time. The copy passes
+                     when the file has at least ${COLD_TEST_RULE.answerable} questions the journal answers (in words of its passages), ${COLD_TEST_RULE.unanswerable} it doesn't (and the
+                     search returns something for) and ${COLD_TEST_RULE.planted} planted wrong answers; the judge catches at least ${COLD_TEST_RULE.caught.at_least} of every ${COLD_TEST_RULE.caught.of} of those; at
+                     most ${COLD_TEST_RULE.wrong.at_most} answer in ${COLD_TEST_RULE.wrong.of} is wrong; at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} of each kind are right; at most ${COLD_TEST_RULE.left_out.at_most} question in ${COLD_TEST_RULE.left_out.of} is
+                     left out (a search slower than a reply waits, a model that refuses); and the copy's publication didn't change.
+                     The file says who wrote it (anthropic, openai or person): not the company whose model judges.
                      A test that starts removes the copy's receipt; only a pass gives a new one, which the journal gate asks for.
                      Of two tests that overlap, the one started last decides, also when it never ends.
                      It sends excerpts of the client's journal to the companies running those workers (with --provider mixed,
@@ -319,6 +323,11 @@ const providersOf = (settings) => new Set([CONSUMER_ROLE, JUDGE_ROLE].map((role)
 // The companies that get excerpts of the journal in that test.
 const COMPANY = Object.freeze({ claude: "Anthropic", codex: "OpenAI" });
 const companiesOf = (settings) => [...providersOf(settings)].map((provider) => COMPANY[provider]).sort().join(" and ");
+// Questions by the company whose model judges can't pass, so they cost no call.
+function requireAnotherAuthor(questions, settings) {
+  const judges = COMPANY[settings.workers[JUDGE_ROLE].provider];
+  if (questions.author === judges.toLowerCase()) throw new StartError(`The questions file says that a model of ${judges}'s wrote it, and one of ${judges}'s judges the answers with this --provider: choose another, or use questions another company's model or a person wrote. Nothing was changed.`);
+}
 
 function coldTestWorkers(settings, environment) {
   const claudeConfigDir = providersOf(settings).has("claude") ? (environment[RUNNER_CLAUDE_CONFIG_DIR]?.trim() || defaultClaudeConfigDir()) : null;
@@ -346,11 +355,12 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
   await requireReady(resolved);
   const settings = coldTestSettings(provider);
   const questions = await readQuestionsFile(questionsPath);
+  requireAnotherAuthor(questions, settings);
   const workers = workerFor ?? coldTestWorkers(settings, environment);
   const consumer = workers(CONSUMER_ROLE), judge = workers(JUDGE_ROLE);
   const attempt = randomUUID();
   const underLock = (operation) => withTrialFolderLock(resolved, operation, { waitMs: lockWaitMs });
-  const { caseId, corpusId } = await underLock(async () => {
+  const { caseId, corpusId, run } = await underLock(async () => {
     const { client } = await clientByNumber(resolved, number);
     if (journalConsentState(client) !== "confirmed") {
       throw new StartError(`Client ${number} has no confirmed journal consent. The cold test sends excerpts of their journal to ${companiesOf(settings)}, so it runs only with their consent (runner-trial-start.mjs --journal-consent confirm).`);
@@ -358,10 +368,13 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
     if (!client.journal.corpus_id) throw new StartError(`Client ${number} has no journal copy here yet: import it with --import.`);
     const folder = clientJournalFolder(resolved, client.case_id);
     await privateFolder(folder, "The client's journal folder");
+    // Which of the tests started on this copy it is: an import begins a new count (it removes the marker).
+    const marked = await readColdTestMarker(resolved, client.case_id);
+    const started = marked?.corpus_id === client.journal.corpus_id ? marked.run + 1 : 1;
     // The receipt goes first: whatever stops the start between the two, a receipt that's there is the one the marked test gave.
     await removeJournalFile(resolved, client.case_id, COLD_TEST_RECEIPT_FILE);
-    await writePrivateFile(path.join(folder, COLD_TEST_ATTEMPT_FILE), `${JSON.stringify({ schema_version: 1, attempt, started_at: now().toISOString() }, null, 2)}\n`);
-    return { caseId: client.case_id, corpusId: client.journal.corpus_id };
+    await writePrivateFile(path.join(folder, COLD_TEST_ATTEMPT_FILE), `${JSON.stringify({ schema_version: 1, attempt, started_at: now().toISOString(), corpus_id: client.journal.corpus_id, run: started }, null, 2)}\n`);
+    return { caseId: client.case_id, corpusId: client.journal.corpus_id, run: started };
   });
   const stillSo = async () => {
     const current = (await clientList(resolved)).clients.find((entry) => entry.case_id === caseId);
@@ -382,7 +395,7 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
     try {
       const grant = oneTimeGrant(caseId, { scopes: [PRIVATE_CASE_SCOPES.READ], purposes: [PRIVATE_JOURNAL_PURPOSES.SESSION_USE] });
       const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: grant.authorizationProvider, keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
-      result = await runJournalColdTest({ service, auth: grant.authContext, caseId, corpusId, questions, port, now });
+      result = await runJournalColdTest({ service, auth: grant.authContext, caseId, corpusId, questions, port, run, now });
     } finally {
       providers.close();
     }
@@ -441,6 +454,8 @@ async function main(argv, { log, askQuestion, workerFor }) {
     : result.newerStarted
       ? `Not passed. A newer cold test of client ${number}'s copy has started, and that one decides whether the copy has a receipt.`
       : `Not passed: client ${number}'s copy has no cold-test receipt, so their journal stays out of their sessions.`);
+  // A copy that passes only after several tests may have passed by chance.
+  log(`Tests started on this copy so far: ${result.report.run}.`);
   return result.passed ? 0 : 1;
 }
 

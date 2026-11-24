@@ -1,4 +1,4 @@
-import { coldTestReceiptMatches, journalConsentCurrent, readColdTestReceipt, readRunnerClients } from "./clients.mjs";
+import { coldTestReceiptMatches, coldTestReceiptNames, journalConsentCurrent, readColdTestReceipt, readRunnerClients } from "./clients.mjs";
 
 // The runner trial's journal gate (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, point 5; the owner's answer 1a
 // to question i73): a client's journal reaches a turn only through pull request 241's session-use reader, and only when all three
@@ -8,8 +8,8 @@ import { coldTestReceiptMatches, journalConsentCurrent, readColdTestReceipt, rea
 //   (b) the client's journal copy in their runner case has an active generation published for session_use (the reader's own check,
 //       under the client's own grant, which holds the session_use purpose only after a consent);
 //   (c) a passing cold-test receipt names exactly the snapshot the reader read (the case, corpus, generation, manifest and visibility
-//       epoch: a pass on another generation, the server's included, doesn't carry over) and the version of the reader that reads it (a
-//       pass of another reader's search doesn't either).
+//       epoch: a pass on another generation, the server's included, doesn't carry over), the version of the reader that reads it (a pass
+//       of another reader's search doesn't either) and the pass rule as it is (nor does a pass by an earlier rule).
 // Short of any of them, the turn's snapshot records a journal part with no quotations and the reason, and the reply is made from
 // the conversation alone, as without a journal. Only quotations the reader verified against the stored bytes are ever returned.
 // Nothing here copies or tests a journal: the copy step (an export where the journal lives, on the owner's go, and an import into the
@@ -32,6 +32,9 @@ const closed = (availability, reason) => ({
 // (tests/runtime-service-liveness.test.mjs): so it is loaded when a client's journal is first read or its receipt first checked, never at
 // the start. One that can't be loaded is a failed retrieval like any other (the turn controller's journalPart): the reply is made from the
 // conversation alone.
+// How long a reply waits for a journal search (the turn controller's limit, and the cold test's).
+export const JOURNAL_SEARCH_TIMEOUT_MS = 4000;
+
 export async function openSessionUseReader({ caseAccessService, corpusId }) {
   const { SESSION_USE_READER_VERSION, createSessionUseJournalEvidenceProvider } = await import("../journal-import/response-evidence-journal.mjs");
   // It gives each quotation its note (when it was written, its wording cues, its lifecycle): no other build opens the trial's vault.
@@ -62,8 +65,8 @@ export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor
       const receipt = await readColdTestReceipt(trialDir, caseId);
       if (!receipt || receipt.corpus_id !== client.journal.corpus_id) return closed("unavailable", "cold_test_receipt_missing");
       const reader = await readerOf(client.journal.corpus_id);
-      // Before anything of the journal is read: a receipt that names no reader (an earlier test's), or another than this one.
-      if (receipt.reader_version !== reader.version) return closed("unavailable", "cold_test_receipt_mismatch");
+      // Before anything of the journal is read: a receipt that names no reader (an earlier test's), another than this one, or another rule.
+      if (!coldTestReceiptNames(receipt, reader.version)) return closed("unavailable", "cold_test_receipt_mismatch");
       const result = await reader.read({ caseId, query, questions, addsTo, maximumTokens, maximumBytes, authContext });
       if (result?.availability !== "available") return result;
       const read = result.receipts?.[0];
@@ -78,10 +81,10 @@ export function createRunnerJournalGate({ trialDir, caseAccessService, readerFor
     },
     // Whether the client's journal gate is open now (design, point 5): the owner's confirmation of the consent stands, the client
     // list names the copy, the client's current grant opens it for session_use, and a passing cold-test receipt names exactly its
-    // current publication (generation, manifest, epoch) and the reader it would be read with. A case that has read its journal makes no
-    // model call and delivers nothing while this is false (the trial's runtime), so a withdrawal, a lost or replaced receipt, a new
-    // publication without its own receipt, a reader other than the one tested (or one that can't be loaded) or a grant without the
-    // purpose stops everything of that case at once.
+    // current publication (generation, manifest, epoch), the reader it would be read with and the pass rule as it is. A case that has read
+    // its journal makes no model call and delivers nothing while this is false (the trial's runtime), so a withdrawal, a lost or replaced
+    // receipt, a new publication without its own receipt, a reader other than the one tested (or one that can't be loaded), a changed rule
+    // or a grant without the purpose stops everything of that case at once.
     // The consent is read again last, after the copy's publication and the receipt, so that a withdrawal that completes while those
     // are read is seen (Codex's review 3): what the caller then does (a worker's send, a delivery) follows with no further wait.
     async openNow({ caseId, authContext } = {}) {

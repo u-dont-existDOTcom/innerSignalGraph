@@ -4,6 +4,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
+import { COLD_QUESTION_AUTHORS, COLD_TEST_RULE } from "./cold-test-rule.mjs";
 import { RUNNER_TRIAL_CASE_ID_PATTERN } from "./switch.mjs";
 
 // The runner trial's clients (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, the owner's answer 1a to question
@@ -194,11 +195,11 @@ export async function removeClientJournalFolder(trialDir, caseId) {
 // The cold test's receipt for a client's journal (design, point 5c), written by the cold test (scripts/runner-trial-journal.mjs,
 // --cold-test): a passing test of exactly this case's corpus, at exactly one published generation, manifest and visibility epoch, of what
 // one version of the replies' reader gives (`reader_version`), by one version of the pass rule (`rule`); and, for the record, how many
-// questions of each kind, and the provider and model of the consumer and of the judge. A receipt that is missing, malformed or not a pass
-// counts as none, like a withdrawal: no journal is used. One of the first form (schema version 1, of a test that searched another way than
-// a reply does) names no reader, so it matches none.
+// questions the rule counted and who wrote them, the provider and model of the consumer and of the judge, and which of the tests started on
+// this copy it was (`run`). A receipt that is missing, malformed or not a pass counts as none, like a withdrawal: no journal is used. One of
+// the first form (schema version 1, of a test that searched another way than a reply does) names no reader, so it matches none.
 const RECEIPT_FIELDS = Object.freeze(["schema_version", "kind", "result", "case_id", "corpus_id", "generation", "manifest_object_id", "visibility_epoch", "tested_at"]);
-const RECEIPT_TEST_FIELDS = Object.freeze(["reader_version", "rule", "questions", "consumer", "judge"]);
+const RECEIPT_TEST_FIELDS = Object.freeze(["reader_version", "rule", "questions", "author", "consumer", "judge", "run"]);
 const PROVIDER = /^[a-z][a-z0-9-]{0,39}$/u;
 // A model's name, or the words a worker gives where the provider's CLI chooses it ("codex default").
 const MODEL = /^[A-Za-z0-9][A-Za-z0-9 ._:-]{0,79}$/u;
@@ -213,8 +214,10 @@ export function validateColdTestReceipt(value) {
   timestamp(value.tested_at, "The cold-test receipt's tested_at");
   if (value.schema_version === 1) return value;
   for (const field of ["reader_version", "rule"]) if (typeof value[field] !== "string" || !ID.test(value[field])) invalid(`The cold-test receipt's ${field} is invalid.`);
-  exactKeys(value.questions, ["answerable", "unanswerable"], "The cold-test receipt's questions");
-  for (const kind of ["answerable", "unanswerable"]) if (!Number.isSafeInteger(value.questions[kind]) || value.questions[kind] < 1) invalid("The cold-test receipt's question counts are invalid.");
+  exactKeys(value.questions, ["answerable", "unanswerable", "planted"], "The cold-test receipt's questions");
+  for (const kind of ["answerable", "unanswerable", "planted"]) if (!Number.isSafeInteger(value.questions[kind]) || value.questions[kind] < 1) invalid("The cold-test receipt's question counts are invalid.");
+  if (!COLD_QUESTION_AUTHORS.includes(value.author)) invalid("The cold-test receipt's author is invalid.");
+  if (!Number.isSafeInteger(value.run) || value.run < 1) invalid("The cold-test receipt's run is invalid.");
   for (const role of ["consumer", "judge"]) {
     exactKeys(value[role], ["provider", "model"], `The cold-test receipt's ${role}`);
     if (typeof value[role].provider !== "string" || !PROVIDER.test(value[role].provider) || typeof value[role].model !== "string" || !MODEL.test(value[role].model)) invalid(`The cold-test receipt's ${role} is invalid.`);
@@ -233,27 +236,37 @@ export async function readColdTestReceipt(trialDir, caseId) {
   }
 }
 
-// The attempt of the cold test started last for a client, from the marker every test writes when it starts: only the test it names may give
-// a receipt or take one away (scripts/runner-trial-journal.mjs). Null when it's missing or malformed, so that no test may.
-export async function readColdTestAttempt(trialDir, caseId) {
+// The marker every cold test writes when it starts: its attempt, the copy it tests and how many tests were started on that copy, itself
+// included. Only the test it names may give a receipt or take one away (scripts/runner-trial-journal.mjs). Null when it's missing or
+// malformed, so that no test may.
+export async function readColdTestMarker(trialDir, caseId) {
   try {
     const text = await readPrivateFile(path.join(clientJournalFolder(trialDir, caseId), COLD_TEST_ATTEMPT_FILE), COLD_TEST_ATTEMPT_FILE);
     if (text === null) return null;
     const marker = JSON.parse(text);
-    exactKeys(marker, ["schema_version", "attempt", "started_at"], "The cold test's marker");
+    exactKeys(marker, ["schema_version", "attempt", "started_at", "corpus_id", "run"], "The cold test's marker");
     timestamp(marker.started_at, "The cold test's started_at");
-    return marker.schema_version === 1 && typeof marker.attempt === "string" && ATTEMPT.test(marker.attempt) ? marker.attempt : null;
+    return marker.schema_version === 1 && typeof marker.attempt === "string" && ATTEMPT.test(marker.attempt) && typeof marker.corpus_id === "string" && CORPUS_ID.test(marker.corpus_id)
+      && Number.isSafeInteger(marker.run) && marker.run >= 1 ? marker : null;
   } catch {
     return null;
   }
 }
 
-// Whether a receipt names exactly the snapshot a retrieval read (the same case, corpus, generation, manifest and epoch) and the version of
-// the reader that read it. One that names no reader matches none.
+export async function readColdTestAttempt(trialDir, caseId) {
+  return (await readColdTestMarker(trialDir, caseId))?.attempt ?? null;
+}
+
+// Whether a receipt names the version of the reader given and the pass rule as it is. One of the first form names neither.
+export function coldTestReceiptNames(receipt, readerVersion) {
+  return Boolean(receipt) && typeof readerVersion === "string" && receipt.reader_version === readerVersion && receipt.rule === COLD_TEST_RULE.version;
+}
+
+// Whether a receipt names exactly the snapshot a retrieval read (the same case, corpus, generation, manifest and epoch), the version of the
+// reader that read it and the pass rule as it is.
 export function coldTestReceiptMatches(receipt, { caseId, corpusId, generation, manifestObjectId, visibilityEpoch, readerVersion }) {
-  return Boolean(receipt) && receipt.case_id === caseId && receipt.corpus_id === corpusId && receipt.generation === generation
-    && receipt.manifest_object_id === manifestObjectId && receipt.visibility_epoch === visibilityEpoch
-    && typeof readerVersion === "string" && receipt.reader_version === readerVersion;
+  return coldTestReceiptNames(receipt, readerVersion) && receipt.case_id === caseId && receipt.corpus_id === corpusId && receipt.generation === generation
+    && receipt.manifest_object_id === manifestObjectId && receipt.visibility_epoch === visibilityEpoch;
 }
 
 // What the trial's page may show of the cases it can use: the owner's own case first, then each client the server has a grant

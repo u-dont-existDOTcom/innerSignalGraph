@@ -45,6 +45,7 @@ import { runnerTurnDetailsFromRecord } from "../runner-trial/turn-details.mjs";
 import { runnerArrangement } from "../runner-trial/settings.mjs";
 import { RUNNER_TRIAL_CASE_ID_PATTERN, RUNNER_TRIAL_CASE_ID_SETTING } from "../runner-trial/switch.mjs";
 import { readColdTestReceipt, readRunnerClients, runnerCasesView } from "../runner-trial/clients.mjs";
+import { COLD_TEST_RULE } from "../runner-trial/cold-test-rule.mjs";
 import { runnerTrialDirectory } from "../runner-trial/released-rules.mjs";
 import { FEEDBACK_PAGE_URL } from "../feedback/address.mjs";
 
@@ -644,8 +645,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           for (const client of clients) {
             if (!granted.includes(client.case_id) || client.journal.corpus_id === null) continue;
             const receipt = await readColdTestReceipt(trialDir, client.case_id);
-            // One that names no reader is an earlier test's, and opens nothing (clients.mjs).
-            if (receipt?.reader_version && receipt.corpus_id === client.journal.corpus_id) passed.add(client.case_id);
+            // One of another rule, or an earlier test's that names none, opens nothing (clients.mjs).
+            if (receipt?.rule === COLD_TEST_RULE.version && receipt.corpus_id === client.journal.corpus_id) passed.add(client.case_id);
           }
           return send(res, 200, runnerCasesView({ ownCaseId: runnerCaseId, clients, grantedCaseIds: granted, receiptsFor: (caseId) => passed.has(caseId) }));
         }
