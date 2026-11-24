@@ -267,6 +267,32 @@ const makeItem = (id, kind, actor, audience, exactText, locator, at = null, supp
   excerpt_sha256: sha256Text(exactText), excerpt_bytes: Buffer.byteLength(exactText), exact_excerpt: locator.kind === "transcript_turn" ? null : exactText, locator,
   ...(suppliedBy ? { supplied_by: structuredClone(suppliedBy) } : {})
 });
+// The drafts that may hold the journal's words: every version of a draft any version of which was written with a journal quotation in view.
+function journalDraftIds(record) {
+  const withQuotation = new Set((record.response_evidence_snapshots ?? []).filter((entry) => entry.source_items.some((item) => item.kind === "journal_quotation")).map((entry) => entry.id));
+  const roots = new Set((record.candidate_responses ?? []).filter((entry) => withQuotation.has(entry.metadata?.response_evidence?.snapshot_id)).map((entry) => entry.root_candidate_id));
+  return new Set((record.candidate_responses ?? []).filter((entry) => roots.has(entry.root_candidate_id)).map((entry) => entry.id));
+}
+// Whether a snapshot may hold the journal's words: a quotation of its retrieval, or, in one frozen by a build that left none out, such a
+// draft, unsent or only said to be sent by a report no one vouches for.
+export function snapshotHoldsJournal(record, snapshot) {
+  const items = snapshot?.source_items ?? [];
+  if (items.some((item) => item.kind === "journal_quotation")) return true;
+  const drafts = items.filter((item) => ["unsent_draft", "agent_relayed_report"].includes(item.kind));
+  if (!drafts.length) return false;
+  const journalDrafts = journalDraftIds(record);
+  return drafts.some((item) => journalDrafts.has(item.locator.candidate_id));
+}
+// Whether a draft of a turn may hold the journal's words: the snapshot it was written with may, or it was written from a draft that may (a
+// repair is given the one it corrects, unless the stored result of the call that wrote it, its producer's, says that one was hidden).
+export function draftMayHoldJournal(record, runtimeTurn, candidate) {
+  for (let draft = candidate; draft; draft = record.candidate_responses.find((entry) => entry.id === draft.parent_candidate_id)) {
+    if (snapshotHoldsJournal(record, (record.response_evidence_snapshots ?? []).find((entry) => entry.id === draft.metadata?.response_evidence?.snapshot_id))) return true;
+    const call = runtimeTurn.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.details?.actual_context_id === draft.producer_context_id);
+    if (call?.details.output?.result?.draftHidden === true) return false;
+  }
+  return false;
+}
 export function buildResponseEvidenceSourceItems(record, { journalItems = [], inbound = null, lineageRootId = null } = {}) {
   const projection = projectCommunicationState(record);
   // The normal context projection lists 25 entries. Source classification must also resolve older referenced turns.
@@ -292,16 +318,17 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
     return makeItem(`src:turn:${turn.id}`, kind, client ? "client" : "assistant", client || appCommitted ? "client" : "unknown",
       turn.text, { kind: "transcript_turn", turn_id: turn.id }, turn.at);
   });
-  // A draft written with a journal quotation in view may hold its words, and so may every version of it, so it is never a source, unsent or
-  // only said to be sent by a report no one vouches for: the journal's words are in a snapshot through its own retrieval, each with its place
-  // and receipt, or not at all. What the client was sent is a source, as before.
-  const withQuotation = new Set((record.response_evidence_snapshots ?? []).filter((entry) => entry.source_items.some((item) => item.kind === "journal_quotation")).map((entry) => entry.id));
-  const journalRoots = new Set((record.candidate_responses ?? []).filter((entry) => withQuotation.has(entry.metadata?.response_evidence?.snapshot_id)).map((entry) => entry.root_candidate_id));
+  // A draft that may hold the journal's words is never a source, unsent or only said to be sent by a report no one vouches for, and what the
+  // projection lists of it names nothing its reporter wrote: the journal's words are in a snapshot through its own retrieval, each with its
+  // place and receipt, or not at all. What the client was sent is a source, as before.
+  const journalDrafts = journalDraftIds(record);
   const leavesOut = (candidate) => {
-    if (!journalRoots.has(candidate?.root_candidate_id)) return false;
+    if (!journalDrafts.has(candidate?.id)) return false;
     recordOmission(sourceOmissions, "draft_written_with_the_journal");
     return true;
   };
+  const listed = (entries) => entries.map((entry) => (journalDrafts.has(entry.subject?.candidate_id) && entry.source?.origin !== "owner_action" && (entry.source?.source_ref ?? null) !== null
+    ? { ...entry, source: { ...entry.source, source_ref: null } } : entry));
   const retracted = new Set((record.communication_events ?? []).filter((event) => event.kind === "retraction").map((event) => event.retracts_event_id));
   // The v1 locator union has no unresolved communication-event locator. Keep those reports in the projection, with an explicit
   // source omission, rather than mislabel a report as a supervisor input or as exact candidate bytes.
@@ -354,8 +381,8 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
   const omitted = Math.max(0, items.length - RESPONSE_EVIDENCE_BUDGETS.source_items);
   // Retain whole items, newest first when capacity is exhausted; record the omission rather than trimming a quotation.
   return { source_items: items.slice(-200), communication_projection: {
-    confirmed_or_reported_client_outbound: projection.confirmed_or_reported_client_outbound,
-    supervisor_only_artifacts: projection.supervisor_only_artifacts, unresolved_delivery: projection.unresolved_delivery,
+    confirmed_or_reported_client_outbound: listed(projection.confirmed_or_reported_client_outbound),
+    supervisor_only_artifacts: listed(projection.supervisor_only_artifacts), unresolved_delivery: listed(projection.unresolved_delivery),
     omitted: { ...projection.omitted, source_items: [...sourceOmissions, ...(omitted ? [{ reason: "source_item_limit", count: omitted }] : [])] }
   } };
 }

@@ -758,6 +758,40 @@ test("a snapshot frozen before anyone had read the message isn't written from on
   }
 });
 
+test("a snapshot an earlier build froze with an earlier turn's draft that quotes the journal isn't written from in a turn that gets no journal", async (t) => {
+  // The first turn's draft, written with the quotation, is stopped; its repair is sent. The second turn's evidence, frozen by a build that left
+  // such a draft in, holds it, and no quotation.
+  let withhold = null;
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => withhold });
+  const { item, found } = await publishedCorpus(env);
+  await h.controller({ journalEvidenceProvider: h.journal(({ addsTo }) => found(addsTo ? addsTo.source_items : [item(1)])) }).run(request());
+  const [stopped] = (await assertDelivered(env.store)).candidate_responses;
+  assert.equal(stopped.status, "superseded");
+  const second = { ...request(), runtimeTurnId: "runtime:two", exchangeId: "exchange:two", userTurnId: "turn:user-two", assistantTurnId: "turn:assistant-two", userMessage: "I can't do this any more." };
+  const none = h.journal();
+  await assert.rejects(h.controller({ privateCaseSource: { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } }, journalEvidenceProvider: none }).run(second), /stop before the writer/u);
+  // As the earlier build would have stored it: the same snapshot, the draft among its sources.
+  const left = { id: `src:draft:${stopped.id}:v${stopped.version}`, kind: "unsent_draft", actor: "assistant", audience: "supervisor", time: { at: stopped.created_at, status: "known" }, epistemic_status: "unsent_draft", excerpt_sha256: sha256Text(stopped.exact_text),
+    excerpt_bytes: Buffer.byteLength(stopped.exact_text), exact_excerpt: stopped.exact_text, locator: { kind: "candidate", candidate_id: stopped.id, candidate_version: stopped.version } };
+  const asStored = (record) => {
+    const snapshot = record.response_evidence_snapshots.find((entry) => entry.owner.runtime_turn_id === "runtime:two" && entry.revision === 1);
+    if (!snapshot) return record;
+    snapshot.source_items.unshift(left);
+    const { snapshot_sha256: _digest, ...payload } = snapshot;
+    snapshot.snapshot_sha256 = sha256Json(payload);
+    validateResponseEvidenceSnapshot(snapshot);
+    return record;
+  };
+  withhold = "journal_withheld";
+  h.happened.splice(0);
+  const before = env.calls.length;
+  await h.controller({ privateCaseSource: { ...h.source, async loadOrCreate(...args) { return asStored(await env.store.loadOrCreate(...args)); } }, journalEvidenceProvider: none }).run(second);
+  const record = await env.store.load(CASE);
+  assert.deepEqual(record.response_evidence_snapshots.filter((snapshot) => snapshot.owner.runtime_turn_id === "runtime:two").map((snapshot) => [snapshot.revision_reason, snapshot.source_items.some((entry) => entry.kind === "unsent_draft")]), [["initial", false], ["dependency_refresh", false]]);
+  assert.equal(record.runtime_turns.at(-1).state, "DELIVERED");
+  for (const call of env.calls.slice(before)) assert.equal(call.responseEvidence.view.source_items.some((entry) => entry.kind === "unsent_draft"), false, call.stage);
+});
+
 test("a check isn't made again with quotations in view once its conversation was read as one that gets no journal: the turn ends", async (t) => {
   // The first check stores its reading and stops; a second attempt would get its draft's snapshot, which holds the quotation. A decision
   // that can't be made stops no check.

@@ -16,7 +16,7 @@ import { focusedRules, rulesFrom, wholeRules } from "./rule-parts.mjs";
 import { LEVELS, emergencyNumbersIn, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
 import { FIXED_MESSAGE_ANY_FAILURE_REASONS, FIXED_MESSAGE_FAILURE_REASONS, KEPT_PLAN_RULE } from "./notices.mjs";
 import { fixedFindingCode } from "./run-log.mjs";
-import { normalizeEvidenceReview, sha256Json } from "../supervisor/response-evidence-contract.mjs";
+import { draftMayHoldJournal, normalizeEvidenceReview, sha256Json } from "../supervisor/response-evidence-contract.mjs";
 import { acquireTrialFolderLock } from "./folder-lock.mjs";
 import {
   KEPT_PLAN_LIMITS,
@@ -732,24 +732,13 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   const writerOutputOf = (runtimeTurn, exactText) => [...runtimeTurn.events].reverse()
     .find((event) => event.event_type === "INVOCATION_COMPLETED" && ["candidate", "repair"].includes(event.stage) && event.details?.output?.exactText === exactText)
     ?.details?.output?.result ?? {};
-  // Whether a draft may hold the journal's words: the evidence it was written with holds a quotation, or it was written from a draft that may
-  // (a repair is given the one it corrects, unless the stored result of the call that wrote it, its producer's, says that one was hidden).
-  const mayHoldJournal = (record, runtimeTurn, candidate) => {
-    for (let draft = candidate; draft; draft = record.candidate_responses.find((entry) => entry.id === draft.parent_candidate_id)) {
-      const evidence = (record.response_evidence_snapshots ?? []).find((entry) => entry.id === draft.metadata?.response_evidence?.snapshot_id);
-      if (holdsQuotation(evidence?.source_items)) return true;
-      const call = runtimeTurn.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.details?.actual_context_id === draft.producer_context_id);
-      if (call?.details.output?.result?.draftHidden === true) return false;
-    }
-    return false;
-  };
   // What goes on of a draft, to its repair and to the check of that, in this one place: its text, what its check found and its evidence
   // review's failures. Once its turn gets no journal, a draft that may hold the journal's words isn't shown (`notShown` stands for it), and
   // of what was said of it only what can't hold them.
   const ofDraft = (record, runtimeTurn, draft, notShown) => {
     const audit = draft.audit_history.at(-1);
     const findings = (audit?.findings ?? []).filter((finding) => finding.record_only !== true && isSubstantiveAuditFinding(finding));
-    return mayHoldJournal(record, runtimeTurn, draft) && withheldFrom(record, runtimeTurn.id) !== null
+    return draftMayHoldJournal(record, runtimeTurn, draft) && withheldFrom(record, runtimeTurn.id) !== null
       ? { hidden: true, text: notShown, findings: findingsWithoutWords(findings), failures: [] }
       : { hidden: false, text: draft.exact_text, findings, failures: evidenceFailures(audit) };
   };
@@ -949,7 +938,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
           firstActedTurn: checkerLevel === "acted_or_about_to" && !numberAlreadyShown,
           firstCrisisTurn: (isCrisisLevel(checkerLevel) || Boolean(provisional)) && !earlierCrisisTurn,
           crisisConversation: crisisSoFar || isCrisisLevel(checkerLevel),
-          journalInView: mayHoldJournal(record, runtimeTurn, candidate),
+          journalInView: draftMayHoldJournal(record, runtimeTurn, candidate),
           provisional,
           quotes: written.quotes ?? [],
           quoteSources,

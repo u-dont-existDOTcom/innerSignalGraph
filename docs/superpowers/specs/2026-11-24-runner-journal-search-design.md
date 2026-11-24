@@ -97,13 +97,14 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   by any reader or checker. **Every snapshot of a turn asks it as it is frozen** (`freezeSnapshot`), the message's own, the repair's expansion
   and a refresh alike: the part is then closed, `unavailable` and `not_attempted` with the reason `journal_withheld`, no search is made and
   nothing is carried over. The models read that reason, so it says nothing of the level: it also stands for a message read as thoughts of
-  death, as unclear or not at all. **Every model call asks it of the snapshot it would go out with** (`prepareCall`), when that holds a
-  quotation, whatever froze it and whatever was read since: a call that writes gets one frozen again without its quotations (three snapshots a
-  turn; with none left, the turn ends), and a check, which is bound to its draft's snapshot, isn't made and the turn ends. A decision that
-  can't be made is a failed retrieval, and stops no check. A journal read earlier in the case still needs the open gate.
+  death, as unclear or not at all. **Every model call asks it of the snapshot it would go out with** (`prepareCall`), when that may hold the
+  journal's words (`snapshotHoldsJournal`), whatever froze it and whatever was read since: a call that writes gets one frozen again without
+  them (three snapshots a turn; with none left, the turn ends), and a check, which is bound to its draft's snapshot, isn't made and the turn
+  ends. A decision that can't be made is a failed retrieval, and stops no check. A journal read earlier in the case still needs the open gate.
 - **Earlier drafts.** A draft of an earlier turn that was written with a quotation in view, or any version of it, may hold the journal's
   words, so no snapshot has it as a source (`draft_written_with_the_journal`), unsent or only said to be sent by a report no one vouches for,
-  whether its turn gets the journal or not: the journal's words are in a snapshot through its own retrieval, or not at all.
+  whether its turn gets the journal or not, and the list of what was sent names no reference such a report gives: the journal's words are in a
+  snapshot through its own retrieval, or not at all. A snapshot an earlier build froze with such a draft counts as one that holds a quotation.
 - **When only the checker reads it.** A draft written with quotations in view, before anyone had read the conversation as one about wanting to
   die, isn't sent once this turn's checker does: the program adds `PROGRAM_JOURNAL_IN_CRISIS` (high), and the repair goes on with a snapshot
   frozen again without its quotations; where the turn ends instead, its fixed message or notice shows. The repair isn't shown the draft
@@ -115,8 +116,8 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   is closed in its place, not by one more check): a search, for the message or a check's questions (`freezeSnapshot`); a snapshot frozen
   earlier that a call would go out with (`prepareCall`); earlier turns' drafts as sources (`buildResponseEvidenceSourceItems`); this turn's
   draft, what its check found and its evidence review (`ofDraft`, for the repair and its check alike); a declared quote's source
-  (`evidenceQuoteSources`, the call's own evidence); the reply (`PROGRAM_JOURNAL_IN_CRISIS`, by `mayHoldJournal`); the conversation and the
-  earlier ones (`conversationView`, what the person was sent or shown and nothing else); the readers and so the provisional reply
+  (`evidenceQuoteSources`, the call's own evidence); the reply (`PROGRAM_JOURNAL_IN_CRISIS`, by `draftMayHoldJournal`); the conversation and
+  the earlier ones (`conversationView`, what the person was sent or shown and nothing else); the readers and so the provisional reply
   (`readersPacket`, the conversation alone); the case's state (`stateAfterReadings`, the readings alone); the run log (`runnerLogFromRecord`,
   fixed codes and numbers).
 - With response evidence off, or with no journal reader (a trial without clients), nothing is read first and every packet, prompt, order

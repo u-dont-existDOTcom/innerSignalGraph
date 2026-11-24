@@ -6,9 +6,9 @@ import { createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { createTranscriptCompletionAmendment } from "../src/storage/transcript-amendments.mjs";
 import { chunkExactSourceText, createExactSourceArtifact } from "../src/storage/exact-source-artifact.mjs";
 import {
-  JOURNAL_NOTE_CUE_KINDS, RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildEvidenceModelView,
+  JOURNAL_NOTE_CUE_KINDS, RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildEvidenceModelView, draftMayHoldJournal,
   computeEvidenceDependencyBinding, normalizeEvidenceReview, deriveEvidenceFindings,
-  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, responseEvidenceRefreshJournal, inspectGovernedModelCall, prepareGovernedModelCall, sha256Json, sha256Text, validateResponseEvidenceSnapshot
+  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, responseEvidenceRefreshJournal, inspectGovernedModelCall, prepareGovernedModelCall, sha256Json, sha256Text, snapshotHoldsJournal, validateResponseEvidenceSnapshot
 } from "../src/supervisor/response-evidence-contract.mjs";
 import { QUOTE_CUE_KINDS, quoteCues } from "../src/journal-import/quote-index.mjs";
 
@@ -481,16 +481,50 @@ test("an unsent draft written with a journal quotation in view, and every versio
     assert.deepEqual(drafts(journal), [["apart", "older"], [{ reason: "draft_written_with_the_journal", count: 2 }]], JSON.stringify(journal));
   }
   // Nor is one that only an agent's report says was sent; one the owner reports was sent is, as what the client was sent.
-  const reports = (origin) => {
+  const reports = (origin, sourceRef = null) => {
     const reported = structuredClone(r);
     reported.communication_events = ["with", "apart"].map((id) => ({ schema_version: 1, id: `event:${id}`, kind: "reported_sent", audience: "client", reply_turn_relation: null, retracts_event_id: null, sent_at: null, recorded_at: NOW,
       subject: { kind: "candidate", candidate_id: id, candidate_version: r.candidate_responses.find((entry) => entry.id === id).version, text_sha256: sha256Text(`The draft ${id}.`) },
-      provenance: { origin, actor_resolution: origin === "owner_action" ? "owner_verified" : "unresolved", source_ref: null, quote: null } }));
+      provenance: { origin, actor_resolution: origin === "owner_action" ? "owner_verified" : "unresolved", source_ref: sourceRef, quote: null } }));
     const frozen = buildResponseEvidenceSnapshot(reported, { ...input(), snapshotId: "snapshot:later", journal: null }, { createdAt: NOW });
-    return frozen.source_items.filter((item) => item.id.startsWith("src:report:")).map((item) => [item.kind, item.locator.candidate_id]);
+    return [frozen.source_items.filter((item) => item.id.startsWith("src:report:")).map((item) => [item.kind, item.locator.candidate_id]), frozen.communication_projection.confirmed_or_reported_client_outbound.map((entry) => [entry.subject.candidate_id, entry.source.source_ref])];
   };
-  assert.deepEqual(reports("agent_relayed"), [["agent_relayed_report", "apart"]]);
-  assert.deepEqual(reports("owner_action"), [["owner_reported_client_outbound", "with"], ["owner_reported_client_outbound", "apart"]]);
+  assert.deepEqual(reports("agent_relayed"), [[["agent_relayed_report", "apart"]], [["with", null], ["apart", null]]]);
+  assert.deepEqual(reports("owner_action"), [[["owner_reported_client_outbound", "with"], ["owner_reported_client_outbound", "apart"]], [["with", null], ["apart", null]]]);
+  // Nor is a reference such a report gives passed on; the owner's is, and another draft's.
+  assert.deepEqual(reports("agent_relayed", "the-lantern-entry")[1], [["with", null], ["apart", "the-lantern-entry"]]);
+  assert.deepEqual(reports("owner_action", "the-lantern-entry")[1], [["with", "the-lantern-entry"], ["apart", "the-lantern-entry"]]);
+});
+
+test("a snapshot may hold the journal's words in a quotation, and in a draft of its lineage that a build left in: unsent, or only said to be sent", () => {
+  const { r, snapshot } = freezeJournal(journalNote());
+  r.response_evidence_snapshots = [snapshot];
+  for (const [id, root, evidence] of [["with", "with", snapshot.id], ["repaired", "with", "snapshot:without"], ["apart", "apart", "snapshot:without"]]) {
+    r.candidate_responses.push({ id, version: r.candidate_responses.length + 1, root_candidate_id: root, parent_candidate_id: id === root ? null : root, exact_text: `The draft ${id}.`, status: "superseded", created_at: NOW, audit_history: [], metadata: { response_evidence: { snapshot_id: evidence } } });
+  }
+  const holding = (...items) => ({ ...snapshot, id: "snapshot:later", source_items: items });
+  const item = (kind, id) => ({ kind, locator: { kind: "candidate", candidate_id: id, candidate_version: 1 } });
+  assert.equal(snapshotHoldsJournal(r, snapshot), true, "its own quotation");
+  for (const kind of ["unsent_draft", "agent_relayed_report"]) for (const id of ["with", "repaired"]) assert.equal(snapshotHoldsJournal(r, holding(item(kind, id))), true, `${kind} ${id}`);
+  for (const other of [undefined, holding(), holding(item("unsent_draft", "apart")), holding(item("owner_reported_client_outbound", "with")), holding({ kind: "exact_client_turn", locator: { kind: "transcript_turn", turn_id: "older" } })]) assert.equal(snapshotHoldsJournal(r, other), false, JSON.stringify(other?.source_items));
+});
+
+test("a draft may hold the journal's words by the snapshot it was written with or the draft it was written from, unless that one was hidden", () => {
+  const { r, snapshot } = freezeJournal(journalNote());
+  const without = { ...snapshot, id: "snapshot:without", source_items: [] };
+  const held = { ...without, id: "snapshot:held", source_items: [{ kind: "unsent_draft", locator: { kind: "candidate", candidate_id: "quoting", candidate_version: 1 } }] };
+  r.response_evidence_snapshots = [snapshot, without, held];
+  const runtimeTurn = { id: "runtime:one", events: [] };
+  const draft = (id, parent, evidence, hidden = false) => {
+    r.candidate_responses.push({ id, version: r.candidate_responses.length + 1, root_candidate_id: parent ? "quoting" : id, parent_candidate_id: parent, producer_context_id: `context:${id}`, metadata: { response_evidence: { snapshot_id: evidence } } });
+    runtimeTurn.events.push({ event_type: "INVOCATION_COMPLETED", details: { actual_context_id: `context:${id}`, output: { result: hidden ? { draftHidden: true } : {} } } });
+    return r.candidate_responses.at(-1);
+  };
+  for (const [id, parent, evidence, hidden, expected] of [["quoting", null, snapshot.id, false, true], ["from-it", "quoting", without.id, false, true], ["anew", "quoting", without.id, true, false], ["from-anew", "anew", without.id, false, false],
+    ["anew-with-one", "quoting", snapshot.id, true, true], ["plain", null, without.id, false, false], ["from-an-old-snapshot", null, held.id, false, true]]) {
+    assert.equal(draftMayHoldJournal(r, runtimeTurn, draft(id, parent, evidence, hidden)), expected, id);
+  }
+  assert.equal(draftMayHoldJournal(r, runtimeTurn, null), false);
 });
 
 test("the public schema takes a snapshot with a journal note, and refuses one the contract refuses", async () => {

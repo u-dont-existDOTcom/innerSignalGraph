@@ -8,7 +8,7 @@ import { PRIVATE_CASE_SCOPES } from "../storage/private-case-access.mjs";
 import { CONTEXT_WINDOW_LIMITS } from "../case-state/context-window.mjs";
 import { deriveEvidenceFindings, normalizeEvidenceReview, normalizeRecordOnlyFinding, runtimeAuditInputIdentity,
   runtimeCandidateInputIdentity as candidateInputIdentity, runtimeRepairInputIdentity as repairInputIdentity,
-  prepareGovernedModelCall, responseEvidenceRefreshJournal, responseEvidenceDependenciesCurrent, RESPONSE_EVIDENCE_BUDGETS } from "./response-evidence-contract.mjs";
+  prepareGovernedModelCall, responseEvidenceRefreshJournal, responseEvidenceDependenciesCurrent, RESPONSE_EVIDENCE_BUDGETS, snapshotHoldsJournal } from "./response-evidence-contract.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const jsonHash = (value) => sha256(JSON.stringify(value));
@@ -197,11 +197,10 @@ export function createPrivateTherapyTurnController({
 
   const snapshotsFor = (record, runtimeTurn) => (record.response_evidence_snapshots ?? []).filter((entry) => entry.owner.kind === "runtime_turn" && entry.owner.runtime_turn_id === runtimeTurn.id);
   const searchesJournal = typeof journalEvidenceProvider?.freezeResponseEvidenceJournal === "function";
-  const holdsQuotation = (snapshot) => (snapshot?.source_items ?? []).some((entry) => entry.kind === "journal_quotation");
   // Why this turn gets no journal now, or null (journalWithheld). Every snapshot of a turn asks it as it is frozen, whatever made the
-  // freeze, and every model call asks it of the snapshot it would go out with (prepareCall), so none goes out with a quotation its turn may
-  // not have. With no reader attached (any more), it is asked only where the snapshot before holds a quotation.
-  const withheldNow = async ({ caseId, runtimeTurn, previous, authContext }) => ((searchesJournal || holdsQuotation(previous)) && typeof modelRuntime.journalWithheld === "function"
+  // freeze, and every model call asks it of the snapshot it would go out with (prepareCall), so none goes out with words of the journal its
+  // turn may not have. With no reader attached (any more), it is asked only where the snapshot before holds some (`held`).
+  const withheldNow = async ({ caseId, runtimeTurn, held, authContext }) => ((searchesJournal || held) && typeof modelRuntime.journalWithheld === "function"
     ? await modelRuntime.journalWithheld({ caseId, runtimeTurn, authContext }) : null);
   // Every journal search of a turn is made here, the message's own and the repair's expansion. `expansion`, for the repair's: each
   // missing-history question, and the journal part of the snapshot it adds to.
@@ -228,7 +227,7 @@ export function createPrivateTherapyTurnController({
     const revision = (previous?.revision ?? 0) + 1;
     let journal;
     try {
-      const withheld = await withheldNow({ caseId, runtimeTurn, previous, authContext });
+      const withheld = await withheldNow({ caseId, runtimeTurn, held: snapshotHoldsJournal(record, previous), authContext });
       if (withheld) journal = { availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: withheld, count: 1 }] };
     } catch {
       // A decision that can't be made is a failed retrieval: no search, and nothing carried over.
@@ -248,16 +247,16 @@ export function createPrivateTherapyTurnController({
   const evidenceExhausted = () => new RuntimeError("InnerSignal could not safely complete this response. Nothing unaudited was delivered.", {
     code: "THERAPY_RUNTIME_UNAVAILABLE", details: { response_evidence_revisions_exhausted: true }
   });
-  // Every model call of a turn is prepared here, and none goes out with a quotation its turn may not have, whatever froze the snapshot (an
-  // earlier build that asked nothing included) and whatever was read since. For a call that writes it is frozen again, like one whose sources
+  // Every model call of a turn is prepared here, and none goes out with words of the journal its turn may not have, whatever froze the snapshot
+  // (an earlier build that asked nothing included) and whatever was read since. For a call that writes it is frozen again, like one whose sources
   // changed; where no further snapshot may be frozen, the turn ends. A check is bound to its draft's snapshot, so it isn't made (`closes`).
   // A decision that can't be made counts as one for a call that writes: freezing again asks once more.
   const prepareCall = async ({ caseId, runtimeTurn, operationKey, record, snapshot, rootCandidate = null, completed = null, authContext }) => {
     const freeze = (reason, current) => freezeSnapshot({ caseId, runtimeTurn, operationKey, record: current.record, reason, authContext });
     const checking = runtimeTurn.state === "AUDITING";
     let closes = false;
-    if (!completed && holdsQuotation(snapshot)) {
-      try { closes = Boolean(await withheldNow({ caseId, runtimeTurn, previous: snapshot, authContext })); } catch { closes = !checking; }
+    if (!completed && snapshotHoldsJournal(record, snapshot)) {
+      try { closes = Boolean(await withheldNow({ caseId, runtimeTurn, held: true, authContext })); } catch { closes = !checking; }
     }
     if (closes && !checking) {
       if (snapshot.revision >= RESPONSE_EVIDENCE_BUDGETS.revisions) throw evidenceExhausted();
