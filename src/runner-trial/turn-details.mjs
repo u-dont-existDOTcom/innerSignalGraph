@@ -99,13 +99,14 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   };
   const writerOf = (event) => {
     const contextId = event.details?.actual_context_id;
+    const stageFits = (candidate) => (event.stage === "repair") === (candidate.parent_candidate_id != null);
     if (contextId != null) {
-      const bound = candidates.find((candidate) => candidate.producer_context_id === contextId);
-      if (bound) return bound;
+      const bound = candidates.filter((candidate) => candidate.producer_context_id === contextId && stageFits(candidate));
+      if (bound.length === 1) return bound[0];
     }
     const text = event.details?.output?.exactText;
     const sameText = candidates.filter((candidate) => typeof text === "string" && candidate.exact_text === text
-      && (event.stage === "repair") === (candidate.parent_candidate_id != null) && (contextId == null || candidate.producer_context_id == null));
+      && stageFits(candidate) && (contextId == null || candidate.producer_context_id == null));
     return sameText.length === 1 ? sameText[0] : null;
   };
   // A committed audit as stored, without the identifiers of the calls behind it, every finding included.
@@ -122,14 +123,14 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
     add("stored_draft", `Stored ${draftName(number)}, with no stored record of its writer's call`, stored(candidate.created_at), { exact_text: stored(candidate.exact_text) }, [], draftExtra(number));
   };
 
-  // A plan saved in this turn (the turn's timestamps can be all that is left of it, and a turn the process stopped in may hold it
-  // with no call that names it): its lines as stored, with its deletion's record.
+  // What this turn did with a kept plan, as stored, and the plan it saved, its lines and its own deletion record. One turn can delete
+  // an older plan and save a new one, so the turn's deletion says nothing of the plan it saved. A plan saved in an interrupted turn
+  // is shown without the writer's call that names it.
+  if (turn.kept_plan_deleted_at != null) add("kept_plan", "Kept plan deleted in this turn", turn.kept_plan_deleted_at, { deleted_at: turn.kept_plan_deleted_at });
   const plan = list(record.runner_kept_plans).find((entry) => entry.runtime_turn_id === turn.id);
-  if (plan || turn.kept_plan_kept_at != null || turn.kept_plan_deleted_at != null) {
-    add("kept_plan", "Kept plan", plan?.kept_at ?? turn.kept_plan_kept_at ?? turn.kept_plan_deleted_at, {
-      saved_at: stored(turn.kept_plan_kept_at ?? plan?.kept_at), deleted_at: stored(turn.kept_plan_deleted_at ?? plan?.deleted_at),
-      ...(plan ? { deletion_reason: stored(plan.deletion_reason), lines: list(plan.lines) } : {})
-    });
+  if (plan || turn.kept_plan_kept_at != null) {
+    add("kept_plan", "Kept plan saved in this turn", plan?.kept_at ?? turn.kept_plan_kept_at, { saved_at: stored(plan?.kept_at ?? turn.kept_plan_kept_at),
+      ...(plan ? { lines: list(plan.lines), deleted_at: stored(plan.deleted_at), deletion_reason: stored(plan.deletion_reason) } : {}) });
   }
   if (turn.discriminator) add("discriminator", "Question asked instead of a reply", turn.discriminator.created_at, { exact_text: stored(turn.discriminator.exact_text), kind: stored(turn.discriminator.kind) });
   let previousAudit = null;
@@ -178,7 +179,7 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
           ...without(result, ["receipts", "rules", "compatibilityBinding", "mode", "processingTier", "routingReason"])
         }, workers, draftExtra(number));
       } else if (event.stage === "audit") {
-        const value = output?.value;
+        const value = output?.value ?? output?.result;
         previousAudit = value;
         const boundHere = committedAudits.filter((entry) => !shown.has(entry.audit) && checks.get(entry) === eventIndex);
         const candidate = boundHere[0]?.candidate ?? current;

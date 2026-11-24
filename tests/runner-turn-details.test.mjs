@@ -528,7 +528,9 @@ test("a kept-plan action, a question asked instead of a reply and a call of anot
   record.runtime_turns[0].kept_plan_deleted_at = at(20);
   record.runtime_turns[0].discriminator = { exact_text: "Questiondetailsmarker", kind: "clarifying", sha256: "0".repeat(64), producer_context_id: "ctx-d0", created_at: at(4) };
   const details = runnerTurnDetailsFromRecord(record, 1);
-  assert.deepEqual(details.steps.find((entry) => entry.kind === "kept_plan").content, { saved_at: at(10), deleted_at: at(20) });
+  assert.deepEqual(details.steps.filter((entry) => entry.kind === "kept_plan").map((entry) => [entry.label, entry.content]), [
+    ["Kept plan deleted in this turn", { deleted_at: at(20) }], ["Kept plan saved in this turn", { saved_at: at(10) }]
+  ]);
   assert.deepEqual(details.steps.find((entry) => entry.kind === "discriminator").content, { exact_text: "Questiondetailsmarker", kind: "clarifying" });
   assert.deepEqual(details.steps.find((entry) => entry.kind === "call").content, { exact_text: "Callexactdetailsmarker", result: { synthetic: "reviewed" } });
   assert.equal(JSON.stringify(details).includes("ctx-d0") || JSON.stringify(details).includes("ctx-d1"), false);
@@ -540,7 +542,7 @@ test("a plan saved in an interrupted turn, audits with the same id in two drafts
   interrupted.runtime_turns[0].kept_plan_kept_at = at(2);
   interrupted.runner_kept_plans = [{ id: "kept-plan:1", conversation_id: "conv", runtime_turn_id: "t1", kept_at: at(2), lines: ["Planlinedetailsmarker"], deleted_at: null, deletion_reason: null }];
   const kept = runnerTurnDetailsFromRecord(interrupted, 1).steps.find((entry) => entry.kind === "kept_plan");
-  assert.deepEqual(kept.content, { saved_at: at(2), deleted_at: null, deletion_reason: null, lines: ["Planlinedetailsmarker"] });
+  assert.deepEqual(kept.content, { saved_at: at(2), lines: ["Planlinedetailsmarker"], deleted_at: null, deletion_reason: null });
 
   // Two drafts' audits with the same id, each committed by a transition naming its own draft.
   const audit1 = committedAudit(TWO_DRAFTS[0], "audit-same", "ctx-a1", [], 3);
@@ -559,4 +561,37 @@ test("a plan saved in an interrupted turn, audits with the same id in two drafts
   const repeatedDetails = runnerTurnDetailsFromRecord(repeated, 1);
   assert.equal(repeatedDetails.steps.filter((entry) => entry.kind === "draft").length, 1);
   assert.deepEqual(repeatedDetails.steps.filter((entry) => entry.kind === "call").map((entry) => [entry.draft, entry.content.exact_text]), [[1, M.draft1]]);
+});
+
+test("a turn that deleted an older plan and saved a new one, a reused producer context and an audit stored as a result keep to their facts (GPT's fifth review)", () => {
+  // Both plan flags in one turn: the older plan deleted, the new one saved, and later deleted itself.
+  const plans = [
+    { id: "kept-plan:0", conversation_id: "conv", runtime_turn_id: "t0", kept_at: at(0), lines: ["Oldplandetailsmarker"], deleted_at: at(1), deletion_reason: "asked_in_conversation" },
+    { id: "kept-plan:1", conversation_id: "conv", runtime_turn_id: "t1", kept_at: at(2), lines: ["Newplandetailsmarker"], deleted_at: null, deletion_reason: null }
+  ];
+  const both = readingsTurn("DELIVERED", [], [writerDone("candidate", 3)], deliveredEnd);
+  Object.assign(both.runtime_turns[0], { kept_plan_deleted_at: at(1), kept_plan_kept_at: at(2) });
+  both.runner_kept_plans = plans;
+  const planSteps = (record) => runnerTurnDetailsFromRecord(record, 1).steps.filter((entry) => entry.kind === "kept_plan").map((entry) => [entry.label, entry.content]);
+  assert.deepEqual(planSteps(both), [
+    ["Kept plan deleted in this turn", { deleted_at: at(1) }],
+    ["Kept plan saved in this turn", { saved_at: at(2), lines: ["Newplandetailsmarker"], deleted_at: null, deletion_reason: null }]
+  ]);
+  both.runner_kept_plans = [plans[0], { ...plans[1], deleted_at: at(30), deletion_reason: "expired", lines: [] }];
+  assert.deepEqual(planSteps(both)[1][1], { saved_at: at(2), lines: [], deleted_at: at(30), deletion_reason: "expired" });
+
+  // A third draft that reuses the first draft's producer context is still bound to its own repair.
+  const threeDrafts = [
+    { ...TWO_DRAFTS[0] }, { ...TWO_DRAFTS[1] },
+    { ...TWO_DRAFTS[1], id: "cand-3", repair_cycle: 2, parent_candidate_id: "cand-2", producer_context_id: "ctx-w1", exact_text: "Draftthreedetailsmarker", audit_history: [] }
+  ];
+  const reused = readingsTurn("DELIVERED", [], [writerDone("candidate", 1), writerDone("repair", 6), writerDone("repair", 12, "ctx-w1")], deliveredEnd, threeDrafts);
+  const reusedDetails = runnerTurnDetailsFromRecord(reused, 1);
+  assert.deepEqual(reusedDetails.steps.filter((entry) => ["draft", "stored_draft"].includes(entry.kind)).map((entry) => [entry.kind, entry.draft]), [["draft", 1], ["draft", 2], ["draft", 3]]);
+
+  // An audit whose result the store kept as `result`.
+  const audit = auditDone(4, ["CW"], [], "ctx-a1");
+  audit.details.output = { result: { findings: [{ id: "CW:1", checker: "CW", code: "SYNTHETIC", severity: "high", summary: M.finding }], checker_level: "none" }, providerReceipt: { receipts: [{ role: "CW", provider: "anthropic" }] } };
+  const interruptedAudit = readingsTurn("UNANSWERED", [], [writerDone("candidate", 1), audit], interruptedEnd);
+  assert.equal(JSON.stringify(step(runnerTurnDetailsFromRecord(interruptedAudit, 1), "checker").content).includes(M.finding), true);
 });
