@@ -523,13 +523,40 @@ test("a draft's stored words stay the draft's, beside its call's differing words
 });
 
 test("a kept-plan action, a question asked instead of a reply and a call of another stage are shown as stored", () => {
-  const record = readingsTurn("UNANSWERED", [], [writerDone("candidate", 1), { event_type: "INVOCATION_COMPLETED", stage: "discriminator_review", context_id: "attempt-d1", at: at(5), details: { actual_context_id: "ctx-d1", output: { value: { synthetic: "reviewed" }, providerReceipt: { receipts: [] } } } }], interruptedEnd);
+  const record = readingsTurn("UNANSWERED", [], [writerDone("candidate", 1), { event_type: "INVOCATION_COMPLETED", stage: "discriminator_review", context_id: "attempt-d1", at: at(5), details: { actual_context_id: "ctx-d1", output: { exactText: "Callexactdetailsmarker", value: { synthetic: "reviewed" }, providerReceipt: { receipts: [] } } } }], interruptedEnd);
   record.runtime_turns[0].kept_plan_kept_at = at(10);
   record.runtime_turns[0].kept_plan_deleted_at = at(20);
   record.runtime_turns[0].discriminator = { exact_text: "Questiondetailsmarker", kind: "clarifying", sha256: "0".repeat(64), producer_context_id: "ctx-d0", created_at: at(4) };
   const details = runnerTurnDetailsFromRecord(record, 1);
   assert.deepEqual(details.steps.find((entry) => entry.kind === "kept_plan").content, { saved_at: at(10), deleted_at: at(20) });
   assert.deepEqual(details.steps.find((entry) => entry.kind === "discriminator").content, { exact_text: "Questiondetailsmarker", kind: "clarifying" });
-  assert.deepEqual(details.steps.find((entry) => entry.kind === "call").content, { result: { synthetic: "reviewed" } });
+  assert.deepEqual(details.steps.find((entry) => entry.kind === "call").content, { exact_text: "Callexactdetailsmarker", result: { synthetic: "reviewed" } });
   assert.equal(JSON.stringify(details).includes("ctx-d0") || JSON.stringify(details).includes("ctx-d1"), false);
+});
+
+test("a plan saved in an interrupted turn, audits with the same id in two drafts and a repeated writer completion keep their places (GPT's fourth review)", () => {
+  // The runtime saves a kept plan before the writer's result is stored, and the process stops: the plan is all that is left of it.
+  const interrupted = readingsTurn("UNANSWERED", [], [{ event_type: "INVOCATION_STARTED", stage: "candidate", context_id: "attempt-w1", attempt: 1, at: at(1), details: {} }], interruptedEnd, []);
+  interrupted.runtime_turns[0].kept_plan_kept_at = at(2);
+  interrupted.runner_kept_plans = [{ id: "kept-plan:1", conversation_id: "conv", runtime_turn_id: "t1", kept_at: at(2), lines: ["Planlinedetailsmarker"], deleted_at: null, deletion_reason: null }];
+  const kept = runnerTurnDetailsFromRecord(interrupted, 1).steps.find((entry) => entry.kind === "kept_plan");
+  assert.deepEqual(kept.content, { saved_at: at(2), deleted_at: null, deletion_reason: null, lines: ["Planlinedetailsmarker"] });
+
+  // Two drafts' audits with the same id, each committed by a transition naming its own draft.
+  const audit1 = committedAudit(TWO_DRAFTS[0], "audit-same", "ctx-a1", [], 3);
+  const audit2 = committedAudit(TWO_DRAFTS[1], "audit-same", "ctx-a2", [], 8);
+  const commit = (candidateId, to, second) => moved("AUDITING", to, second, { audit_id: "audit-same", candidate_id: candidateId, verdict: "pass" });
+  const record = readingsTurn("DELIVERED", [], [
+    writerDone("candidate", 1), auditDone(3, ["CW"], [], "ctx-a1"), commit("cand-1", "REPAIR_REQUIRED", 3), moved("REPAIR_REQUIRED", "RECONSTRUCTING", 4, { parent_candidate_id: "cand-1" }),
+    writerDone("repair", 6), auditDone(8, ["CW"], [], "ctx-a2"), commit("cand-2", "APPROVED", 8)
+  ], deliveredEnd, withAudits({ "cand-1": [audit1], "cand-2": [audit2] }));
+  const details = runnerTurnDetailsFromRecord(record, 1);
+  assert.deepEqual(draftSteps(details), [["draft", 1], ["committed_check", 1], ["repair_request", 2], ["draft", 2], ["committed_check", 2]]);
+  assert.equal(details.steps.filter((entry) => /no stored record of its call/u.test(entry.label)).length, 0);
+
+  // A repeated completion of the same writer's call: the draft once, the second completion as a call.
+  const repeated = readingsTurn("DELIVERED", [], [writerDone("candidate", 1), writerDone("candidate", 2)], deliveredEnd);
+  const repeatedDetails = runnerTurnDetailsFromRecord(repeated, 1);
+  assert.equal(repeatedDetails.steps.filter((entry) => entry.kind === "draft").length, 1);
+  assert.deepEqual(repeatedDetails.steps.filter((entry) => entry.kind === "call").map((entry) => [entry.draft, entry.content.exact_text]), [[1, M.draft1]]);
 });

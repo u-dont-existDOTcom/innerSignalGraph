@@ -75,19 +75,23 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   const storedBy = (entry, at) => !at || !entry.recorded_at || entry.recorded_at <= at;
   const events = list(turn.events);
   const ended = new Set(events.filter((event) => ["INVOCATION_COMPLETED", "INVOCATION_FAILED", "INVOCATION_ABANDONED"].includes(event.event_type)).map((event) => event.context_id).filter(Boolean));
-  // The index of the transition that committed each audit, by the audit's id.
+  // The index of the transition that committed each audit, by its draft and the audit's id (an id is unique within a draft only).
+  const commitKey = (candidateId, auditId) => `${candidateId ?? ""}\0${auditId}`;
   const commits = new Map();
-  events.forEach((event, index) => { if (event.event_type === "STATE_TRANSITION" && event.details?.audit_id != null) commits.set(event.details.audit_id, index); });
+  events.forEach((event, index) => { if (event.event_type === "STATE_TRANSITION" && event.details?.audit_id != null) commits.set(commitKey(event.details.candidate_id, event.details.audit_id), index); });
+  const committedAt = (entry) => commits.get(commitKey(entry.candidate.id, entry.audit.id));
   const committedAudits = candidates.flatMap((candidate) => list(candidate.audit_history).map((audit) => ({ candidate, audit })));
   // Which check call a committed audit came from (its event's index), or -1 when that can't be known.
-  const checkOf = (audit) => {
+  const checkOf = (entry) => {
+    const { audit } = entry;
     if (audit.auditor_context_id == null) return -1;
     const matching = [];
     events.forEach((event, index) => { if (event.event_type === "INVOCATION_COMPLETED" && event.stage === "audit" && event.details?.actual_context_id === audit.auditor_context_id) matching.push(index); });
-    if (commits.has(audit.id)) { const before = matching.filter((index) => index < commits.get(audit.id)); return before.at(-1) ?? -1; }
+    const commit = committedAt(entry);
+    if (commit !== undefined) { const before = matching.filter((index) => index < commit); return before.at(-1) ?? -1; }
     return matching.length === 1 ? matching[0] : -1;
   };
-  const checks = new Map(committedAudits.map((entry) => [entry, checkOf(entry.audit)]));
+  const checks = new Map(committedAudits.map((entry) => [entry, checkOf(entry)]));
   const commitStep = ({ candidate, audit }) => {
     shown.add(audit);
     const number = draftOf(candidate);
@@ -118,15 +122,21 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
     add("stored_draft", `Stored ${draftName(number)}, with no stored record of its writer's call`, stored(candidate.created_at), { exact_text: stored(candidate.exact_text) }, [], draftExtra(number));
   };
 
-  if (turn.kept_plan_kept_at != null || turn.kept_plan_deleted_at != null) {
-    add("kept_plan", "Kept plan", turn.kept_plan_kept_at ?? turn.kept_plan_deleted_at, { saved_at: stored(turn.kept_plan_kept_at), deleted_at: stored(turn.kept_plan_deleted_at) });
+  // A plan saved in this turn (the turn's timestamps can be all that is left of it, and a turn the process stopped in may hold it
+  // with no call that names it): its lines as stored, with its deletion's record.
+  const plan = list(record.runner_kept_plans).find((entry) => entry.runtime_turn_id === turn.id);
+  if (plan || turn.kept_plan_kept_at != null || turn.kept_plan_deleted_at != null) {
+    add("kept_plan", "Kept plan", plan?.kept_at ?? turn.kept_plan_kept_at ?? turn.kept_plan_deleted_at, {
+      saved_at: stored(turn.kept_plan_kept_at ?? plan?.kept_at), deleted_at: stored(turn.kept_plan_deleted_at ?? plan?.deleted_at),
+      ...(plan ? { deletion_reason: stored(plan.deletion_reason), lines: list(plan.lines) } : {})
+    });
   }
   if (turn.discriminator) add("discriminator", "Question asked instead of a reply", turn.discriminator.created_at, { exact_text: stored(turn.discriminator.exact_text), kind: stored(turn.discriminator.kind) });
   let previousAudit = null;
   let current = null;
   for (const [eventIndex, event] of events.entries()) {
     if (event.event_type === "STATE_TRANSITION" && event.details?.audit_id != null) {
-      const entry = committedAudits.find(({ audit }) => audit.id === event.details.audit_id);
+      const entry = committedAudits.find(({ candidate, audit }) => audit.id === event.details.audit_id && candidate.id === event.details.candidate_id);
       const candidate = entry?.candidate ?? candidateById(event.details.candidate_id);
       if (candidate) { storedDraft(candidate); current = candidate; }
       if (entry && !shown.has(entry.audit)) commitStep(entry);
@@ -153,10 +163,15 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
         const result = output?.result;
         const workers = callsFrom(list(result?.receipts).filter((receipt) => !String(receipt.role).startsWith("R")), event.stage === "candidate" ? result?.rules?.parts : []);
         const candidate = writerOf(event);
+        const again = candidate != null && shown.has(candidate);
         if (candidate) { shown.add(candidate); current = candidate; }
         const number = draftOf(candidate);
         const callWords = output?.exactText;
         const draftWords = candidate?.exact_text ?? null;
+        if (again) {
+          add("call", `Another stored call of ${workerName(workers, "Writer")} for ${draftName(number)}`, event.at, { exact_text: stored(callWords), ...without(result, ["receipts", "rules", "compatibilityBinding", "mode", "processingTier", "routingReason"]) }, workers, draftExtra(number));
+          continue;
+        }
         add("draft", candidate ? `${workerName(workers, "Writer")}'s draft ${number}` : `${workerName(workers, "Writer")}'s words, bound to no stored draft`, event.at, {
           exact_text: stored(draftWords ?? callWords),
           ...(draftWords != null && callWords != null && draftWords !== callWords ? { call_exact_text: callWords } : {}),
@@ -190,10 +205,10 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
           findings: unbound.filter(isProgram)
         }, [], { ...draftExtra(number), timing: "Checker completion order not stored; these results belong to the same draft." });
         // A commit with no stored transition follows its check here; one with a transition is shown at that transition.
-        for (const entry of boundHere) if (!commits.has(entry.audit.id)) commitStep(entry);
+        for (const entry of boundHere) if (committedAt(entry) === undefined) commitStep(entry);
       } else {
         // Any other stored call: its result as stored, words and all (this view is the owner's).
-        add("call", `${event.stage} completed`, event.at, { result: without(output?.value ?? output?.result ?? null, ["receipts", "rules", "compatibilityBinding"]) },
+        add("call", `${event.stage} completed`, event.at, { ...(output?.exactText == null ? {} : { exact_text: output.exactText }), result: without(output?.value ?? output?.result ?? null, ["receipts", "rules", "compatibilityBinding"]) },
           callsFrom(output?.providerReceipt?.receipts ?? output?.result?.receipts));
       }
     } else if (["INVOCATION_FAILED", "INVOCATION_ABANDONED"].includes(event.event_type)) {
