@@ -155,27 +155,27 @@ function scoreAnswer({ entry, wordList, given, output, verdict }) {
 // (`right`), each with the questions that share a search word with one of their key quotes apart from the others.
 function tally(byQuestion, sameSnapshot) {
   const answerable = byQuestion.filter((entry) => entry.answerable), unanswerable = byQuestion.filter((entry) => !entry.answerable);
-  const count = (entries, name, holds) => ({ [name]: entries.filter(holds).length, of: entries.length });
   const sameWords = answerable.filter((entry) => entry.same_words), otherWords = answerable.filter((entry) => !entry.same_words);
-  const found = (entries) => count(entries, "found", (entry) => entry.found);
-  const right = (entries) => count(entries, "right", (entry) => entry.result === "right");
-  const wrong = byQuestion.filter((entry) => entry.result === "wrong").length;
-  const { at_least: share, of: whole } = COLD_TEST_RULE.right;
-  const notMet = [
-    ...(answerable.length < COLD_TEST_RULE.answerable || unanswerable.length < COLD_TEST_RULE.unanswerable ? ["too_few_questions"] : []),
-    ...(wrong > COLD_TEST_RULE.wrong ? ["wrong_answer"] : []),
-    ...(sameWords.length === 0 || right(sameWords).right * whole < sameWords.length * share ? ["too_few_right"] : []),
-    ...(sameSnapshot ? [] : ["snapshot_changed"])
-  ];
-  return {
+  const found = (entries) => ({ found: entries.filter((entry) => entry.found).length, of: entries.length });
+  const right = (entries) => ({ right: entries.filter((entry) => entry.result === "right").length, of: entries.length });
+  const scores = {
     questions: { answerable: answerable.length, unanswerable: unanswerable.length },
     found: { same_words: found(sameWords), other_words: found(otherWords) },
     right: { same_words: right(sameWords), other_words: right(otherWords), unanswerable: right(unanswerable) },
-    wrong,
+    wrong: byQuestion.filter((entry) => entry.result === "wrong").length,
     disputed: byQuestion.filter((entry) => entry.verdict === "disputed").length,
     incomplete: byQuestion.filter((entry) => entry.verdict === "incomplete").length,
-    same_snapshot: sameSnapshot, by_question: byQuestion, not_met: notMet, passed: notMet.length === 0
+    same_snapshot: sameSnapshot
   };
+  const { right: share, ...rule } = COLD_TEST_RULE;
+  const worded = scores.right.same_words;
+  const notMet = [
+    ...(answerable.length < rule.answerable || unanswerable.length < rule.unanswerable ? ["too_few_questions"] : []),
+    ...(scores.wrong > rule.wrong ? ["wrong_answer"] : []),
+    ...(worded.of === 0 || worded.right * share.of < worded.of * share.at_least ? ["too_few_right"] : []),
+    ...(sameSnapshot ? [] : ["snapshot_changed"])
+  ];
+  return { ...scores, by_question: byQuestion, not_met: notMet, passed: notMet.length === 0 };
 }
 
 // What the report calls the snapshot tested: an opaque name for this generation, manifest and epoch.

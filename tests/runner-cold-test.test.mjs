@@ -7,7 +7,7 @@ import { createPrivateCaseAccessService, PRIVATE_JOURNAL_PURPOSES } from "../src
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { SESSION_USE_READER_VERSION, createSessionUseJournalEvidenceProvider } from "../src/journal-import/response-evidence-journal.mjs";
-import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, readColdTestReceipt, validateColdTestReceipt } from "../src/runner-trial/clients.mjs";
+import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, coldTestReceiptMatches, readColdTestReceipt, validateColdTestReceipt } from "../src/runner-trial/clients.mjs";
 import { createRunnerJournalGate, openSessionUseReader } from "../src/runner-trial/journal-gate.mjs";
 import { COLD_CONSUMER_INSTRUCTION, COLD_CONSUMER_SCHEMA, COLD_JUDGE_INSTRUCTION, COLD_JUDGE_SCHEMA, COLD_TEST_RULE, MAX_COLD_QUESTIONS, createSealedColdTestPort, resolveColdKey, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
 import { ANSWER, JUDGE_REASON, RECEIPTS, coldWorkers, questionsFile } from "./helpers/cold-test.mjs";
@@ -29,6 +29,8 @@ const keyQuote = (place) => `I gave the ${THINGS[place]} to a ${["neighbour", "c
 // The first thing was given on a dated day, the second in a dream, what the third one says was corrected later, and two are told of once more.
 const DREAM = "I dreamed that I gave the anvil to a cousin and asked for nothing in return.";
 const PARAGRAPHS = Object.freeze([...THINGS.map((_, place) => (place === 1 ? DREAM : told(place))), "The cello leaned against the easel all summer.", ...inventedParagraphs({ size: 90 })]);
+// One thing told of so often that a message about it gets no more than the six quotations a message gets at most.
+const EVENINGS = Object.freeze(Array.from({ length: 8 }, (_, place) => `Evening ${place} and the jigsaw was still on the table in the hall, where nobody had touched it for weeks while the lamp burned over it and the dust came down.`));
 const DATED = new Map([[0, "March 3, 2019"]]);
 const correct = (node) => { if (node.data.quote === told(2)) node.lifecycle = "superseded"; };
 
@@ -153,7 +155,7 @@ test("the fault the first design let pass: a reader that finds nothing for whole
 // ---- What the consumer and the judge are given -----------------------------------------------------------------------------------
 
 test("for each question the consumer gets exactly what a reply to it as the message gets through the gate, from the writer's worker; the judge all of that and the key quotes, from the checker's", async (t) => {
-  const { run, service, passageOf } = await copyOf(t);
+  const { run, service, passageOf } = await copyOf(t, { paragraphs: [...PARAGRAPHS, ...EVENINGS] });
   const workers = standIns();
   const { passed, receipt } = await run(workers);
   assert.equal(passed, true);
@@ -161,7 +163,7 @@ test("for each question the consumer gets exactly what a reply to it as the mess
   const consumer = workers.packets("W"), judge = workers.packets("CW");
   assert.deepEqual(consumer.map(numberOf), QUESTIONS.map((_, index) => index + 1), "one call a question");
   assert.deepEqual(judge.map(numberOf), QUESTIONS.map((_, index) => index + 1), "and one for its answer, of either kind");
-  const seen = { written: 0, dream: 0, superseded: 0, none: 0, several: 0 };
+  const seen = { written: 0, dream: 0, superseded: 0, none: 0, several: 0, "the most": 0 };
   for (const [index, entry] of QUESTIONS.entries()) {
     const part = await ask(entry.question);
     assert.equal(part.availability, "available", entry.question);
@@ -172,9 +174,10 @@ test("for each question the consumer gets exactly what a reply to it as the mess
     assert.match(part.coverage, /^One ranked search for the message's less common words; /u);
     seen.none += passages.length === 0;
     seen.several += passages.length > 1;
+    seen["the most"] += passages.length === 6 && part.more_available;
     for (const passage of passages) { seen.written += passage.written?.from === "2019-03-03"; seen.dream += passage.cues.some(({ kind }) => kind === "dream"); seen.superseded += passage.lifecycle === "superseded"; }
   }
-  for (const [what, count] of Object.entries(seen)) assert.ok(count > 0, `a question with ${what} among its passages`);
+  for (const [what, count] of Object.entries(seen)) assert.ok(count > 0, `a question with ${what} (its passages or their notes)`);
   // Every call is its own, with its instruction, its schema and the time it may take; nothing else is sent.
   for (const { role, request, packet } of workers.sent) {
     assert.deepEqual(Object.keys(request).sort(), ["beforeSend", "schema", "stage", "system", "timeoutMs", "user"]);
@@ -535,6 +538,10 @@ test("the receipt opens the gate for the reader that was tested alone: one that 
   await put(first);
   assert.deepEqual(await readColdTestReceipt(trialDir, CASE), first, "read as what it is");
   assert.deepEqual([await asked(), await openNow()], [refused, false]);
+  // It matches nothing, also where no reader is named to match it with.
+  const named = { caseId: CASE, corpusId: CORPUS, generation: receipt.generation, manifestObjectId: receipt.manifest_object_id, visibilityEpoch: receipt.visibility_epoch };
+  for (const readerVersion of [SESSION_USE_READER_VERSION, undefined, null]) assert.equal(coldTestReceiptMatches(first, { ...named, readerVersion }), false);
+  assert.deepEqual([coldTestReceiptMatches(receipt, { ...named, readerVersion: SESSION_USE_READER_VERSION }), coldTestReceiptMatches(receipt, named)], [true, false]);
   await put({ ...receipt, reader_version: "session-use-reader-v1:every-word" });
   assert.deepEqual([await asked(), await openNow()], [refused, false]);
   await put(receipt);
