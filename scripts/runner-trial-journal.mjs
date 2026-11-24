@@ -4,7 +4,7 @@
 //
 //   node scripts/runner-trial-journal.mjs --copy-key [--dir PATH]
 //   node scripts/runner-trial-journal.mjs --import FILE [--dir PATH]
-//   node scripts/runner-trial-journal.mjs --cold-test FILE --provider claude|codex [--dir PATH]
+//   node scripts/runner-trial-journal.mjs --cold-test FILE --provider mixed|claude|codex [--dir PATH]
 //
 // The export is the journal import's `export` command, run where the client's journal lives, only on the owner's go for each copy.
 // Each command here asks for the client's number in the terminal (the numbers --journal-consent shows) and prints no label, no question
@@ -19,7 +19,7 @@ import { isOutside } from "../src/core/private-path.mjs";
 import { createJournalCopyKeyPair, importJournalCopy, journalCopyCorpusId, journalCopyRecipientDigest, journalCopySourceDigest, openJournalCopy, readSealedJournalCopy } from "../src/journal-import/journal-copy.mjs";
 import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, clientJournalFolder, journalConsentState, readColdTestAttempt, readRunnerClients, syncFolder, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { folderLockLeftNotice } from "../src/runner-trial/folder-lock.mjs";
-import { createSealedColdConsumerPort, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
+import { COLD_TEST_RULE, createSealedColdTestPort, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
 import { createRunnerWorkerFactory } from "../src/runner-trial/settings.mjs";
 import { RUNNER_CLAUDE_CONFIG_DIR } from "../src/runner-trial/switch.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
@@ -34,7 +34,7 @@ const MAX_SEALED_BYTES = 1024 * 1024 * 1024;
 
 export const USAGE = `Usage: node scripts/runner-trial-journal.mjs --copy-key [--dir PATH]
        node scripts/runner-trial-journal.mjs --import FILE [--dir PATH]
-       node scripts/runner-trial-journal.mjs --cold-test FILE --provider claude|codex [--dir PATH]
+       node scripts/runner-trial-journal.mjs --cold-test FILE --provider mixed|claude|codex [--dir PATH]
 
 A client's journal, copied into their runner case and tested there before any reply uses it. Each command asks for the client's
 number (the one --journal-consent shows) and prints no label, no question id and no journal text.
@@ -48,20 +48,24 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      to that server case until their Delete, also when it fails: a copy from another one is refused. An import that
                      starts first removes the client's cold-test receipt, whatever copy it names and also when the import then
                      fails: the copy is tested again before any reply uses it.
-  --cold-test FILE   the copy's cold test, with the questions and their key from FILE (mode 0600, outside the checkout): a fresh
-                     consumer on the trial's signed-in worker answers from the copy alone (two calls a question), and a judge on
-                     that worker (one more call a question) checks what the answer says: what the key quotes say, or, to a question
-                     the journal doesn't answer, that it doesn't, with nothing told as the journal's.
+  --cold-test FILE   the copy's cold test, with the questions and their key from FILE (mode 0600, outside the checkout). For each
+                     question, what a reply to it as the message would get from the copy goes to a fresh call of the trial's
+                     writer's worker, which answers from that alone, and the answer, with the same passages and the key quotes, to a
+                     fresh call of the checker's worker, which judges it (and is asked again when it finds something wrong): two
+                     calls a question, three at most, one at a time. The copy passes when the file has at least ${COLD_TEST_RULE.answerable} questions the
+                     journal answers and ${COLD_TEST_RULE.unanswerable} it doesn't, no answer is wrong, at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} questions that share a search word
+                     with their key quotes are right, and the copy's publication didn't change meanwhile.
                      A test that starts removes the copy's receipt; only a pass gives a new one, which the journal gate asks for.
                      Of two tests that overlap, the one started last decides, also when it never ends.
-                     It sends excerpts of the client's journal to the company running that worker, so it needs the client's
-                     confirmed journal consent.
-  --provider claude|codex  the cold test's worker: claude (\`claude -p\`, signed in at ${RUNNER_CLAUDE_CONFIG_DIR}) or codex
-                     (\`codex exec\`, signed in)
+                     It sends excerpts of the client's journal to the companies running those workers (with --provider mixed,
+                     Anthropic and OpenAI; claude, Anthropic; codex, OpenAI), so it needs the client's confirmed journal consent.
+  --provider mixed|claude|codex  the cold test's workers: mixed (the answers from GPT, judged by Claude), claude (both through
+                     \`claude -p\`, signed in at ${RUNNER_CLAUDE_CONFIG_DIR}) or codex (both through \`codex exec\`, signed in)
   --dir PATH         the trial folder (default ${defaultTrialHome()})`;
 
 const usageError = (message) => new StartError(`${message}\n\n${USAGE}`, 2);
 const COMMANDS = Object.freeze(["--copy-key", "--import", "--cold-test"]);
+const COLD_TEST_PROVIDERS = Object.freeze(["mixed", "claude", "codex"]);
 
 export function parseJournalArguments(argv) {
   const options = { command: null, file: null, provider: null, dir: null };
@@ -87,7 +91,7 @@ export function parseJournalArguments(argv) {
   if (options.file !== null && !path.isAbsolute(options.file)) throw usageError("Give the file's absolute path.");
   if (options.command !== "copy-key" && options.file === null) throw usageError(`--${options.command} needs its file.`);
   if (options.command === "cold-test") {
-    if (!["claude", "codex"].includes(options.provider)) throw usageError("--cold-test needs --provider claude or codex.");
+    if (!COLD_TEST_PROVIDERS.includes(options.provider)) throw usageError("--cold-test needs --provider mixed, claude or codex.");
   } else if (options.provider !== null) {
     throw usageError("--provider goes with --cold-test only.");
   }
@@ -304,18 +308,29 @@ async function readQuestionsFile(file) {
   catch (error) { throw new StartError(`The questions file isn't valid (${codeOf(error) ?? "not JSON"}).`); }
 }
 
-// The cold test's consumer and judge: the trial's whole-reply checker worker for that provider, as the trial makes it (sealed, signed in).
-function coldWorker(provider, environment) {
-  if (!["claude", "codex"].includes(provider)) throw new StartError("Choose the cold test's worker: --provider claude or codex.");
-  const claudeConfigDir = provider === "claude" ? (environment[RUNNER_CLAUDE_CONFIG_DIR]?.trim() || defaultClaudeConfigDir()) : null;
+// The cold test's workers for a provider choice, as the trial makes them (sealed, signed in): the writer's for the consumer, the whole-reply
+// checker's for the judge.
+const CONSUMER_ROLE = "W", JUDGE_ROLE = "CW";
+function coldTestSettings(provider) {
+  if (!COLD_TEST_PROVIDERS.includes(provider)) throw new StartError("Choose the cold test's workers: --provider mixed, claude or codex.");
+  return trialSettings(provider);
+}
+const providersOf = (settings) => new Set([CONSUMER_ROLE, JUDGE_ROLE].map((role) => settings.workers[role].provider));
+// The companies that get excerpts of the journal in that test.
+const COMPANY = Object.freeze({ claude: "Anthropic", codex: "OpenAI" });
+const companiesOf = (settings) => [...providersOf(settings)].map((provider) => COMPANY[provider]).sort().join(" and ");
+
+function coldTestWorkers(settings, environment) {
+  const claudeConfigDir = providersOf(settings).has("claude") ? (environment[RUNNER_CLAUDE_CONFIG_DIR]?.trim() || defaultClaudeConfigDir()) : null;
   if (claudeConfigDir !== null && !path.isAbsolute(claudeConfigDir)) throw new StartError(`${RUNNER_CLAUDE_CONFIG_DIR} must be an absolute path.`);
-  return createRunnerWorkerFactory({ ...trialSettings(provider), claudeConfigDir },
-    { environment, claudeCommand: environment.CLAUDE_COMMAND || "claude", codexCommand: environment.CODEX_COMMAND || "codex" })("CW");
+  return createRunnerWorkerFactory({ ...settings, claudeConfigDir },
+    { environment, claudeCommand: environment.CLAUDE_COMMAND || "claude", codexCommand: environment.CODEX_COMMAND || "codex" });
 }
 
 // --cold-test: the copy's cold test (src/runner-trial/journal-cold-test.mjs). A test that starts removes the copy's receipt; only a pass
-// gives a new one: an error, a withdrawal, a wrong or malformed answer leaves none. The client's consent and copy are read again before
-// every packet leaves (the judge's too) and before the receipt is written, so a withdrawal, a new copy or a deleted case stops it.
+// gives a new one: an error, a withdrawal, a wrong or malformed answer, a file too small to pass leaves none. The client's consent and copy
+// are read again before every packet leaves (the judge's too) and before the receipt is written, so a withdrawal, a new copy or a deleted
+// case stops it.
 //
 // Of tests that overlap, the one started last decides. Each marks its start, where it removes the receipt, with an attempt of its own. A
 // pass is recorded, and a receipt taken away by a test that doesn't pass, only while the marker still names that test's attempt. So once a
@@ -325,18 +340,20 @@ function coldWorker(provider, environment) {
 // The boundary: the consent is read under the trial folder's lock, the one --journal-consent takes, right before each packet is handed to
 // the worker's process, and the lock is released before that hand-over (a call can take minutes). So a withdrawal lands wholly before
 // that reading, and the packet doesn't leave, or after it; one that lands after the hand-over is honoured at the next packet and before
-// the receipt is written, again under the lock. `worker` replaces the signed-in worker in tests, `port` the consumer and judge whole.
-export async function runClientColdTest({ home, number, questionsPath, provider = null, port = null, worker = null, environment = process.env, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS }) {
+// the receipt is written, again under the lock. `workerFor` (a worker for a role of the trial's) replaces the signed-in workers in tests.
+export async function runClientColdTest({ home, number, questionsPath, provider = null, workerFor = null, environment = process.env, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS }) {
   const resolved = checkTrialHome(home);
   await requireReady(resolved);
+  const settings = coldTestSettings(provider);
   const questions = await readQuestionsFile(questionsPath);
-  const sender = port ? null : worker ?? coldWorker(provider, environment);
+  const workers = workerFor ?? coldTestWorkers(settings, environment);
+  const consumer = workers(CONSUMER_ROLE), judge = workers(JUDGE_ROLE);
   const attempt = randomUUID();
   const underLock = (operation) => withTrialFolderLock(resolved, operation, { waitMs: lockWaitMs });
   const { caseId, corpusId } = await underLock(async () => {
     const { client } = await clientByNumber(resolved, number);
     if (journalConsentState(client) !== "confirmed") {
-      throw new StartError(`Client ${number} has no confirmed journal consent. The cold test sends excerpts of their journal to the company running its worker, so it runs only with their consent (runner-trial-start.mjs --journal-consent confirm).`);
+      throw new StartError(`Client ${number} has no confirmed journal consent. The cold test sends excerpts of their journal to ${companiesOf(settings)}, so it runs only with their consent (runner-trial-start.mjs --journal-consent confirm).`);
     }
     if (!client.journal.corpus_id) throw new StartError(`Client ${number} has no journal copy here yet: import it with --import.`);
     const folder = clientJournalFolder(resolved, client.case_id);
@@ -352,7 +369,7 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
       throw new StartError("The client's consent or copy changed during the cold test: it stopped, and gave no receipt.");
     }
   };
-  const consumer = port ?? createSealedColdConsumerPort({ worker: sender, beforeSend: () => underLock(stillSo) });
+  const port = createSealedColdTestPort({ consumer, judge, beforeSend: () => underLock(stillSo) });
   // A test that doesn't pass leaves no receipt, unless a newer one has started: that one decides. Returns whether one has.
   const leaveNone = () => underLock(async () => {
     const marked = await readColdTestAttempt(resolved, caseId);
@@ -365,7 +382,7 @@ export async function runClientColdTest({ home, number, questionsPath, provider 
     try {
       const grant = oneTimeGrant(caseId, { scopes: [PRIVATE_CASE_SCOPES.READ], purposes: [PRIVATE_JOURNAL_PURPOSES.SESSION_USE] });
       const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: grant.authorizationProvider, keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
-      result = await runJournalColdTest({ service, auth: grant.authContext, caseId, corpusId, questions, port: consumer, now });
+      result = await runJournalColdTest({ service, auth: grant.authContext, caseId, corpusId, questions, port, now });
     } finally {
       providers.close();
     }
@@ -401,7 +418,7 @@ async function askClientNumber(resolved, command, { log, askQuestion }) {
   return Number(answer);
 }
 
-async function main(argv, { log, askQuestion, worker }) {
+async function main(argv, { log, askQuestion, workerFor }) {
   const options = parseJournalArguments(argv);
   const home = checkTrialHome(options.dir ?? defaultTrialHome());
   const number = await askClientNumber(home, options.command, { log, askQuestion });
@@ -417,7 +434,7 @@ async function main(argv, { log, askQuestion, worker }) {
     log("The sealed file is no longer needed, and was left where it is: you may delete it.");
     return 0;
   }
-  const result = await runClientColdTest({ home, number, questionsPath: options.file, provider: options.provider, worker });
+  const result = await runClientColdTest({ home, number, questionsPath: options.file, provider: options.provider, workerFor });
   log(JSON.stringify(result.report, null, 2));
   log(result.passed
     ? `Passed: client ${number}'s copy has its cold-test receipt, so their sessions can use their journal while their consent holds (a consent confirmed after the trial started holds from its next start).`
@@ -429,9 +446,9 @@ async function main(argv, { log, askQuestion, worker }) {
 
 // A command as the terminal runs it: what it prints, and its exit code. A refusal prints its own fixed message; any other error a fixed
 // line with its code, never its own text; then, when the trial folder's lock was left too, the fixed line that says so. `log`, `logError`,
-// `askQuestion` and `worker` are for tests.
-export async function runMain(argv, { log = console.log, logError = console.error, askQuestion = ask, worker = null } = {}) {
-  try { return await main(argv, { log, askQuestion, worker }); } catch (error) {
+// `askQuestion` and `workerFor` are for tests.
+export async function runMain(argv, { log = console.log, logError = console.error, askQuestion = ask, workerFor = null } = {}) {
+  try { return await main(argv, { log, askQuestion, workerFor }); } catch (error) {
     const refusal = error instanceof StartError;
     const code = codeOf(error);
     logError(refusal ? error.message : `The journal command failed${code ? `: ${code}` : ""}.`);

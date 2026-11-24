@@ -644,7 +644,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           for (const client of clients) {
             if (!granted.includes(client.case_id) || client.journal.corpus_id === null) continue;
             const receipt = await readColdTestReceipt(trialDir, client.case_id);
-            if (receipt?.corpus_id === client.journal.corpus_id) passed.add(client.case_id);
+            // One that names no reader is an earlier test's, and opens nothing (clients.mjs).
+            if (receipt?.reader_version && receipt.corpus_id === client.journal.corpus_id) passed.add(client.case_id);
           }
           return send(res, 200, runnerCasesView({ ownCaseId: runnerCaseId, clients, grantedCaseIds: granted, receiptsFor: (caseId) => passed.has(caseId) }));
         }
