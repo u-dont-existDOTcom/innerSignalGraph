@@ -81,6 +81,7 @@ appears here, in a test or in a log.
    published for `session_use` (the reader's own check). (c) A passing
    cold-test receipt names exactly that generation, its manifest and its visibility epoch, so a pass on the server's generation
    doesn't carry over to the copy by itself: the test runs on the copy, or the build binds the receipt to the quotes both share.
+   (As built, part 2 below: the test runs on the copy, and the receipt also names the reader that was tested.)
    A lost receipt counts like a withdrawal. Short of any of the three, no reader is attached for that client: their turns get no
    journal, and replies are made from the conversation alone, as today.
 6. **Wiring.** Once pull request 241 is merged into `main`, and `main` into this branch (a trial merge of the two branches on
@@ -158,8 +159,8 @@ commit message. Option a, the separate vault kept:
   owner's token, never into the config. `/health` still names the owner's own case, but the page takes its cases from
   `GET /v1/runner/clients`.
 - **Point 5** as proposed, with the cold-test receipt's shape fixed here (`validateColdTestReceipt` in
-  `src/runner-trial/clients.mjs`), since the cold test that will write it isn't built. The gate re-reads the consent after each
-  read, and the delivery of an approved reply written with a journal in view reads it again.
+  `src/runner-trial/clients.mjs`), since the cold test that will write it isn't built (part 2 has both now). The gate re-reads the
+  consent after each read, and the delivery of an approved reply written with a journal in view reads it again.
 - **Point 6** as proposed, with one change: an approved reply that may no longer be sent (response evidence no longer admits it, or
   the journal consent it was written with is withdrawn) closes as a failed check (`checks_failed`, "No reply passed its checks."),
   not under a new closing reason, so the trial's closing reasons, the owner's fixed message and its switches stay exactly as he
@@ -268,39 +269,74 @@ more (one blocking); this is as built after all four, and what GPT's reviews cha
   failed, or was killed, half-way. With both gone first, the order of what follows doesn't matter. When the two can't be removed, the
   import doesn't start; an import the running trial refuses (no writer lock) leaves them. Under the folder's lock, held throughout, no
   test can give another receipt meanwhile.
-- **The cold test** is `--cold-test` (`src/runner-trial/journal-cold-test.mjs`), on the journal import's cold-consumer runner: a
-  fresh consumer gets the frozen questions and what the session-use reader retrieves, graph on and off, never the key; the
-  controller scores what the consumer declares (its answerability, the passages it cites) exactly; and a judge checks what an answer
-  says. The key names evidence by exact words of the journal, each found in one to three usable passages, so whoever writes the
-  questions needs no internal ids; a right answer has words and cites a passage for each. The file's own question ids go nowhere: the
-  consumer, the judge, the report and the errors name a question by its place in the file.
-- **The judge** is one more fresh call of the same worker for each question whose graph-on answer passed the exact checks, with the
-  question, whether the journal answers it, its key quotes (none when it doesn't) and that answer, and nothing else. For a question the
-  journal answers it says whether the answer says what the quotes say about it and contradicts nothing in them; for one it doesn't
-  (absent, false premise), whether the answer says so, or that the premise is wrong, and tells nothing as the journal's. A pass needs
-  its yes for every question, and an answer of its own outside its strict schema stops the test. Its reason isn't kept. Limits: it is
-  the consumer's own worker, not another company's model, and it knows only the key quotes, so it can't tell whether a detail they
-  don't mention is in the journal; and a true correction of a false premise, which the consumer's own instruction asks for with
-  evidence, is a no when it tells what the journal does say, so a faithful copy can fail on it.
-- **A test that starts removes the copy's receipt; only a pass gives a new one.** So a wrong or malformed answer, a judge's no, a
-  failed call, a key quote that doesn't fit, a withdrawal or a deleted case leaves none, and a wrong answer followed by an error can't
-  leave an earlier pass standing. **Of tests that overlap, the one started last decides:** each writes a marker when it starts, next to
-  removing the receipt (`cold-test-attempt.json` in the client's journal folder: a random id and the time), and a pass is recorded, or a
-  receipt taken away by a test that doesn't pass, only while the marker, read again under the folder's lock, still names that test. So
-  an earlier test gives no receipt once a newer one has started, also one that failed or was killed, and takes none of its away. The
-  gate reads the receipt alone, as before. The worker is the trial's whole-reply checker, signed in (`claude -p` or `codex exec`), no
-  API. It needs the client's confirmed consent, read again under the trial folder's lock (which `--journal-consent` takes) right before
-  each packet is handed to the worker's process, the lock being released before that hand-over, and again under it before the receipt
-  is written. **The boundary:** a withdrawal lands wholly before that reading, and the packet doesn't leave, or after it; one that lands
-  after the hand-over is honoured at the next packet and before the receipt is written.
+- **The cold test** is `--cold-test` (`src/runner-trial/journal-cold-test.mjs`): whether a reply that searches the copy finds what it
+  holds, and whether what is made of it is true. Its first design gave the consumer what the journal's map and raw search retrieve, not
+  what the replies' reader returns, so a search that found nothing for a reply (the fault found on 24 Nov) passed it; its judge was the
+  consumer's own worker and saw the key quotes alone, so a true detail from another passage read as an invention; and a dozen questions
+  can't tell a search that finds half from one that finds three quarters. This second design answers Fable's red team of 24 Nov (its B1
+  to B5):
+  - **What the consumer is given** for a question is exactly what a reply to it as the message would get: what the replies' reader returns
+    for the message's own search, at most six passages with their notes, and the search's coverage. One function builds and asks that
+    reader for the gate and for the test (`openSessionUseReader` in `src/runner-trial/journal-gate.mjs`). It's asked directly, not through
+    the gate, which wants the receipt this test gives. A part that isn't available stops the test; a search that finds nothing is a
+    result. Each read is of the publication found at the start, or the test stops.
+  - **The consumer** is a fresh call of the trial's writer's worker (role `W`: GPT with `--provider mixed`) for each question, with an
+    instruction and a strict schema of its own. Its packet is the question, by its place in the file, the passages (`id`, `words`,
+    `written`, `cues`, `lifecycle`) and the coverage, and nothing else: never the key, the file's own ids or another question. It answers
+    in words, says whether the passages answer the question (supported, not found, false premise, insufficient context) and cites every
+    passage it uses.
+  - **The judge** is a fresh call of the checker's worker (role `CW`: Claude with `mixed`, another company's model than the consumer's) for
+    every answer with words, to a question of either kind. It gets the question, whether the journal answers it, the key quotes (none
+    when it doesn't), every passage the consumer was given with its notes, and the answer, and says one of three: `right` (what the key
+    quotes say, or, to a question the journal doesn't answer, that it doesn't or that its premise is wrong, with nothing told as the
+    journal's that neither the quotes nor the passages say; a true correction from the passages is right), `incomplete` (nothing wrong,
+    but it doesn't answer, or leaves out what the key quotes say) or `wrong`. A `wrong` gets a second fresh call with the same packet:
+    both wrong is wrong, anything else is disputed. Its reason isn't kept.
+  - An answer of the consumer's or the judge's outside its schema, or for another question, stops the test with no verdict.
+  - **The program scores** by exact checks only: `found` (a passage of every key quote is among those returned, by record), `cited` (among
+    those it cites), what the consumer declares, the judge's verdict, and `same_words` (the question shares a word the search goes by
+    with one of its key quotes, by the search's own rule: `evidenceWordsShared` in `src/journal-import/retrieval.mjs`). An answerable
+    question is right when found, supported in words, cited and judged right; an unanswerable one when declared one of the three others
+    and judged right. Wrong is: judged wrong twice, a cited passage it wasn't given, or `supported` with none cited. Anything else is
+    neither (a miss, incomplete, disputed).
+  - **The pass rule** is one constant with a version (`COLD_TEST_RULE`; the owner decides it): at least 40 questions the journal answers and
+    20 it doesn't (a smaller file runs and reports, and can't pass); nothing wrong; at least two thirds of the answerable questions with
+    `same_words` right, with at least one such question (the others, which a word search can't find, are counted and shown); and the
+    same publication before and after. The report keeps retrieval (`found`) apart from answers (`right`), each with and without
+    `same_words`, and names the points of the rule that aren't met.
+  - **The questions file** has up to 100 questions. The key names evidence by exact words of the journal, each found in one to three usable
+    passages, so whoever writes the questions needs no internal ids. The file's own question ids go nowhere: the consumer, the judge, the
+    report and the errors name a question by its place in the file.
+  - **The receipt** (schema version 2) names the case, the copy's corpus, generation, manifest and epoch, the reader that was tested
+    (`SESSION_USE_READER_VERSION`) and the rule's version; and, for the record, how many questions of each kind and the consumer's and the
+    judge's provider and model. The gate refuses a receipt that names no reader (the first design's) or another than the one it would
+    read with (`cold_test_receipt_mismatch`), before anything of the journal is read, and so does its own check of an open case
+    (`openNow`). So a change of the reader closes every client's journal until its copy has passed again. The gate still loads the reader
+    late, when a journal is first read or its receipt first checked.
+  - **Limits.** The test makes no reading of the message and knows no time limit, where a reply gets no journal in a conversation about
+    wanting to die, or when the search takes over four seconds. The consumer has the cold test's instruction, not the writer's, so it
+    tests the search and what the model makes of its passages, not the whole reply. With `--provider claude` or `codex` the consumer and the
+    judge are one company's models. A judge can still err: its wrong counts only twice, its right is never asked again.
+- **A test that starts removes the copy's receipt; only a pass gives a new one.** So a wrong or malformed answer, a file too small, a
+  judge's no, a failed call, a key quote that doesn't fit, a withdrawal or a deleted case leaves none, and a wrong answer followed by an
+  error can't leave an earlier pass standing. **Of tests that overlap, the one started last decides:** each writes a marker when it
+  starts, next to removing the receipt (`cold-test-attempt.json` in the client's journal folder: a random id and the time), and a pass is
+  recorded, or a receipt taken away by a test that doesn't pass, only while the marker, read again under the folder's lock, still names
+  that test. So an earlier test gives no receipt once a newer one has started, also one that failed or was killed, and takes none of its
+  away. The gate reads the receipt alone, as before. The workers are the trial's own, signed in (`claude -p` or `codex exec`), no API. The
+  test sends excerpts of the journal to the companies that run them (with `mixed`, Anthropic and OpenAI: the usage and the refusal
+  without consent name them). It needs the client's confirmed consent, read again under the trial folder's lock (which
+  `--journal-consent` takes) right before each packet is handed to a worker's process (the judge's second call for a wrong too), the lock
+  being released before that hand-over, and again under it before the receipt is written. **The boundary:** a withdrawal lands wholly
+  before that reading, and the packet doesn't leave, or after it; one that lands after the hand-over is honoured at the next packet and
+  before the receipt is written.
 - **What the commands print:** numbers, scores, an opaque name for the snapshot tested (a digest's first 16 characters) and fixed
   texts. An unexpected error prints its code, never its own text, which can quote what a file holds.
 - The journal import's own question freeze (`src/journal-import/cold-question-freeze.mjs`) needs the import's audit report, which the
   copy doesn't carry, so the questions come from a file.
-- **Method choices left to the owner:** who writes each client's questions (the owner, or a separate question writer reading the
-  journal, never the consumer), how many and of which kinds, whether to keep the judge (and with which worker), and the strict pass
-  rule (every question right with the graph, evidence retrieved and cited for each key quote, the judge's yes, the graph at least as
-  good as without it).
+- **Method choices left to the owner:** the pass rule (`COLD_TEST_RULE`), and who writes each client's questions (an AI from the
+  journal's own quotes, as the journal import's question writer did, part of them worded without the quote's words, is the lane's
+  proposal; the tool for it isn't built).
 - **Tested** with made-up journals and stand-in workers only: the sealed export, refused without the export purpose or when the
   published reference isn't its manifest's, written whole or not at all (failures and kills part-way, no hard links, another file
   there); a copy refused for another key, after tampering or with a short tag; the import refused while the vault is held, for the
@@ -313,12 +349,13 @@ more (one blocking); this is as built after all four, and what GPT's reviews cha
   hold refused with nothing written to the vault, and an unpublished earlier import refused; a copy of 210 passages, one with a record
   larger than its usual shards, one with deleted and revoked passages, one with a source text stored in chunks, and a quote generation
   as the journal import builds it; the source order and the builder's indexes kept; the record-by-record and text-by-text check; the
-  same file again; a cold test that passes, one that misses, claims a false premise, cites part of the evidence, cites a passage it
-  wasn't given or has no words, one the judge refuses (an invented answer declared as none included), one with no judge, one stopped by
-  an error at each kind of call, through the real port and a stand-in worker; tests that overlap, the newer one passing, failing, still
-  running or killed; a consent withdrawn before each kind of packet, during a call and before the receipt; what each command prints,
-  with malformed files; the private files' reader with links, loose modes, folders, pipes and sockets; and the receipt opening the gate
-  under the client's own grant. Nothing here was run against a model or a real journal.
+  same file again; the cold test (`tests/runner-cold-test.test.mjs`): a reader that finds nothing for whole messages, which doesn't pass,
+  and the real one, which does; that the consumer gets exactly what the gate gives a reply, and the judge all of it; each verdict, the
+  second call and a dispute; each score and each point of the rule; a publication that changes; answers outside their schemas; the
+  receipt and the gate's refusals; its command, with each provider choice's workers, stopped by an error at each kind of call; tests that
+  overlap, the newer one passing, failing, still running or killed; a consent withdrawn before each kind of packet, during a call and
+  before the receipt; what each command prints, with malformed files; the private files' reader with links, loose modes, folders, pipes
+  and sockets; and the receipt opening the gate under the client's own grant. Nothing here was run against a model or a real journal.
 
 What GPT's review of 24 Nov changed (its findings, in its order): a client's server case is fixed on the list before the vault is
 touched (1, blocking); the judge, and an answer needs words (2, blocking); a test that starts removes the receipt (3); the consent read

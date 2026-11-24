@@ -63,7 +63,8 @@ with its reason, a receipt, no retry by another route.
   it when it is constructed with `journalNotes`, as the trial's gate does: a record that holds a note can't be read by a build without
   the field (`main`'s, or an earlier build of the trial), and the trial's vault is opened by no other build. Stored snapshots without
   notes stay valid.
-- `SESSION_USE_READER_VERSION` names what a message gets from a journal, so that a cold test's pass can be bound to it. It isn't yet.
+- `SESSION_USE_READER_VERSION` names what a message gets from a journal. A cold test's receipt names it, and the gate opens for the
+  reader that was tested alone (the design for clients, "As built, part 2").
 
 ## 3. The models' notes
 

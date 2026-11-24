@@ -135,51 +135,60 @@ A client's journal can inform their replies only through the session-use journal
      The sealed file stays where you put it: once imported it's no longer needed, and you may delete it. One that's left can't be
      opened any more once the client's Delete has removed their key.
 3. **A passing cold test of exactly that copy.** A receipt at `journal/<case id>/cold-test-receipt.json` (mode 0600) naming the
-   case, corpus, generation, manifest and visibility epoch the reader opens; a pass on another generation doesn't carry over.
+   case, corpus, generation, manifest and visibility epoch the reader opens, and the version of the reader that was tested; a pass on
+   another generation, or of another reader, doesn't carry over.
 
    ```bash
-   node scripts/runner-trial-journal.mjs --cold-test /absolute/path/questions.json --provider claude
+   node scripts/runner-trial-journal.mjs --cold-test /absolute/path/questions.json --provider mixed
    ```
 
    The questions file (mode 0600, outside the checkout) is `{"schema_version": 1, "kind": "journal_cold_questions",
-   "questions": [...]}`, each question `{"id", "question", "answerable", "evidence_quotes"}`: the id is your own name for it and
-   isn't used outside the file (everywhere else a question is named by its place in it); an answerable one names its evidence by
-   exact words of the journal, each found in one to three usable passages of the copy (exactly, after Unicode normalization and with
-   runs of white space as one); an unanswerable one (absent, a false premise) names none; the file has at least one of each.
+   "questions": [...]}`, with up to 100 questions, each `{"id", "question", "answerable", "evidence_quotes"}`: the id is your own name
+   for it and isn't used outside the file (everywhere else a question is named by its place in it); an answerable one names its
+   evidence by exact words of the journal, each found in one to three usable passages of the copy (exactly, after Unicode
+   normalization and with runs of white space as one); an unanswerable one (absent, a false premise) names none; the file has at least
+   one of each, and needs 40 answerable and 20 unanswerable ones for a pass.
 
-   A fresh consumer, the trial's whole-reply checker worker (`claude -p` or `codex exec`, signed in and sealed: no tools, nothing
-   kept), gets each question with what the session-use reader finds in the copy, graph on and off, and never the key. A judge, a
-   fresh call of the same worker for each question, then gets that question, whether the journal answers it, its key quotes (none
-   when it doesn't) and the answer. For a question the journal answers, it says whether the answer says what the quotes say about it
-   and contradicts nothing in them; for one it doesn't, whether the answer says so (or that the premise is wrong) and tells nothing
-   as the journal's. That is two calls a question, and one more for each question whose answer passed the exact checks. The copy
-   passes only if, with the graph, every answerable question retrieved a passage for each key quote and was answered "supported" in
-   words citing one for each; every unanswerable one was answered not found, false premise or too little context; the judge said yes
-   to every answer; and the graph did at least as well as without it.
+   For each question, the test gives a fresh call of the trial's writer's worker (with `--provider mixed`, GPT) exactly what a reply to
+   that question as the message would get from the copy: the replies' reader's own search, at most six passages, each with when it was
+   written, its wording cues and whether a later entry corrected it, and what was searched. It never gets the key. It answers from those
+   passages alone, says whether they answer the question, and cites every passage it uses. A judge, a fresh call of the trial's checker's
+   worker (with `mixed`, Claude), then gets the question, whether the journal answers it, its key quotes (none when it doesn't), the same
+   passages and the answer, and says whether it is right, incomplete or wrong. A wrong is asked once more: an answer counts as wrong only
+   when both say so, and as disputed otherwise. That is two calls a question, three when the judge finds something wrong, one at a time.
 
-   A test that starts removes the copy's receipt; only a pass gives a new one. A wrong or malformed answer, a judge's no, a failed
-   call, a key quote that doesn't fit, a withdrawn consent or a deleted case leaves none. Of tests of one copy that overlap, the one
-   started last decides. Each marks its start in the client's journal folder (`cold-test-attempt.json`, mode 0600: an id of its own
-   and the time). A pass gives a receipt, and a test that doesn't pass takes one away, only while the marker still names that test.
-   So once a newer test has started, an earlier one that passes gives no receipt, also when the newer one failed or was killed (it
-   says that the newer one decides), and an earlier one that doesn't pass leaves the receipt the newer one gave. An earlier test runs on to its end,
-   its packets included.
+   The copy passes when nothing is wrong (judged wrong twice, a passage cited that it wasn't given, or an answer said to be supported that
+   cites none), at least two thirds of the answerable questions that share a search word with their key quotes are right (their passages
+   found and cited, supported in words, judged right), the file is large enough, and the copy's publication is the same before and after.
+   A miss is safe in use: the reply is then made from the conversation alone. Questions worded without their passage's words, which a
+   word search can't find, are counted and shown, and not required. This rule is yours to decide (below).
 
-   The test sends excerpts of the client's journal to that worker's company, so it needs the client's confirmed consent, read again
-   under the trial folder's lock right before each packet is handed to the worker's process, and before the receipt is written. A
-   withdrawal recorded before that reading stops the packet; one after the hand-over is honoured at the next packet, or before the
-   receipt is written.
+   A test that starts removes the copy's receipt; only a pass gives a new one. A wrong or malformed answer, a file too small, a failed
+   call, a key quote that doesn't fit, a part of the journal the reader can't give, a withdrawn consent or a deleted case leaves none. Of
+   tests of one copy that overlap, the one started last decides. Each marks its start in the client's journal folder
+   (`cold-test-attempt.json`, mode 0600: an id of its own and the time). A pass gives a receipt, and a test that doesn't pass takes one
+   away, only while the marker still names that test. So once a newer test has started, an earlier one that passes gives no receipt, also
+   when the newer one failed or was killed (it says that the newer one decides), and an earlier one that doesn't pass leaves the receipt
+   the newer one gave. An earlier test runs on to its end, its packets included.
 
-   What it prints is numbers: each question's place in the file, its scores and the judge's yes or no, and an opaque name for the
-   snapshot tested. No command here prints a label, a question's id, an answer, journal text or the judge's reason (which isn't
-   kept), nor an unexpected error's own words, which can quote a file: its code only.
+   The test sends excerpts of the client's journal to the companies that run its two workers: with `mixed`, Anthropic and OpenAI; with
+   `claude`, Anthropic; with `codex`, OpenAI. So it needs the client's confirmed consent, read again under the trial folder's lock right
+   before each packet is handed to a worker's process, and before the receipt is written. A withdrawal recorded before that reading stops
+   the packet; one after the hand-over is honoured at the next packet, or before the receipt is written.
 
-   Limits: all but the judge's part are exact checks of what the consumer declares (its answerability and the passages it cites).
-   The judge is the same worker as the consumer, not another company's model, and sees the key quotes alone, so it can't tell
-   whether a detail they don't mention is in the journal. For a question the journal doesn't answer it sees no quote, so an answer
-   that tells anything as the journal's is a no, also a true correction of a false premise (which the consumer's own instruction
-   asks for, with evidence): a faithful copy can fail on it. Nothing here has been run against a model or a real journal. Who writes
-   the questions, this pass rule and whether to keep the judge are method choices for you.
+   What it prints is numbers: how many questions of each kind, how many had their passages found and how many were answered right (each
+   for the questions that share a search word with their key quotes and for the others), what was wrong, disputed or incomplete, the
+   points of the rule that aren't met, each question's place in the file with its scores, and an opaque name for the snapshot tested. No
+   command here prints a label, a question's id, an answer, journal text or the judge's reason (which isn't kept), nor an unexpected
+   error's own words, which can quote a file: its code only.
+
+   Limits: all but the judge's part are exact checks. With `claude` or `codex` the judge is the consumer's own company's model. The test
+   makes no reading of the message and has no time limit, where a conversation about wanting to die gets no journal and a search that
+   takes over four seconds gives a reply none; and it shows what a model makes of the passages with an instruction of its own, not the
+   writer's whole prompt. A change of the reader (an update of the trial that searches another way) closes every client's journal until
+   its copy has passed again, and a receipt of the test's first design, which names no reader, opens nothing. Nothing here has been run
+   against a model or a real journal. Method choices for you: the pass rule, and who writes the questions (proposed: an AI, from the
+   journal's own quotes, part of them worded without the quotes' words; that tool isn't built).
 
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
 `cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.
@@ -197,20 +206,21 @@ die by any reader or checker, no search is made, and the turn's evidence says `c
 
 **Once a client's case has read its journal, the case is used only while the gate is open.** The gate is open when the owner's
 confirmation of the consent stands, the client list names the copy, the client's current grant opens it for session use, and a
-passing cold-test receipt names exactly the copy's current publication. It is asked when a turn starts, before every call of a
-reader, the writer, a checker or the repair (each retry included), by the worker itself at the last moment before its packet
-leaves, before a provisional reply is shown (the fixed emergency line shows instead) and before a reply is delivered. The consent
+passing cold-test receipt names exactly the copy's current publication and the reader in use. It is asked when a turn starts, before
+every call of a reader, the writer, a checker or the repair (each retry included), by the worker itself at the last moment before its
+packet leaves, before a provisional reply is shown (the fixed emergency line shows instead) and before a reply is delivered. The consent
 is read last in each check, so a withdrawal holds for everything that starts after it; a packet already past its last check, in
 the instant before it leaves, still goes. Each output to the person (a provisional reply, a delivered reply) in such a case is
 checked and made under the trial folder's lock, which `--journal-consent` takes too, so a withdrawal lands wholly before it (and
 nothing is shown) or wholly after it; a command waits up to ten seconds for that lock. The output is made when it is recorded in
 the case as shown or delivered: a withdrawal after that moment doesn't recall it, so its answer to the page, and the page showing
-the conversation again later, still carry it. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication, a
-grant without the purpose), that case makes no model call at all and delivers nothing: every turn closes as a failed check, also
-an approved one a restart's reconcile finds, because the case's drafts, findings, evidence and delivered replies may hold the
-journal's words. Confirming the consent again (with the copy's receipt in place) opens it; deleting the case removes the case,
-its copies, their journal folder (the key and the receipt) and everything drawn from it, and the list then names no copy and no
-server case of theirs (the consent stays as recorded), so the client starts afresh. The page says so under a client whose consent
+the conversation again later, still carry it. While it is closed (a withdrawal, a lost or replaced receipt, a changed publication or
+reader, a grant without the purpose), that case makes no model call at all and delivers nothing: every turn closes as a failed check,
+also an approved one a restart's reconcile finds, because the case's drafts, findings, evidence and delivered replies may hold the
+journal's words. Confirming the consent again (with the copy's receipt in place) opens it, and so does a passing cold test where only
+the receipt was missing or of another reader; deleting the case removes the case, its copies, their journal folder (the key and the
+receipt) and everything drawn from it, and the list then names no copy and no server case of theirs (the consent stays as recorded),
+so the client starts afresh. The page says so under a client whose consent
 is withdrawn. A client's deletion is made under the trial folder's lock: while that can't be had, nothing is deleted and the page
 says why. Once the case is gone from the vault, it's deleted whatever becomes of the rest (the vault's own last steps, the client's
 place on the list, their journal folder, what the running trial remembers, the case's run log): each is tried, the page forgets the
