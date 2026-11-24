@@ -4,14 +4,16 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
-import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
+import { createEncryptedPrivateCaseStore, serializeVaultEnvelope } from "../src/storage/private-case-store.mjs";
+import { createVaultEnvelope } from "../src/storage/vault-crypto.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
-import { RESPONSE_EVIDENCE_DIMENSIONS, responseEvidenceDependenciesCurrent, responseEvidenceSnapshotCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, responseEvidenceDependenciesCurrent, responseEvidenceSnapshotCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
 import { responseEvidenceFailures } from "../src/supervisor/private-therapy-model-runtime.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { compatibilityStateBinding, protectiveCompatibilityDecision, updateProtectiveCompatibilityState } from "../src/case-formulation/protective-compatibility.mjs";
 import { validatePrivateRuntimeDiscriminatorReview } from "../src/supervisor/private-runtime-turn-lifecycle.mjs";
+import { asIfNoJournalWasRead } from "./helpers/evidence-case.mjs";
 
 const CASE = "synthetic-evidence-runtime", NOW = "2026-11-23T12:00:00.000Z";
 const request = () => ({ caseId: CASE, runtimeTurnId: "runtime:one", exchangeId: "exchange:one", userTurnId: "turn:user", assistantTurnId: "turn:assistant", userMessage: "What is happening for me now?" });
@@ -758,38 +760,130 @@ test("a snapshot frozen before anyone had read the message isn't written from on
   }
 });
 
-test("a snapshot an earlier build froze with an earlier turn's draft that quotes the journal isn't written from in a turn that gets no journal", async (t) => {
-  // The first turn's draft, written with the quotation, is stopped; its repair is sent. The second turn's evidence, frozen by a build that left
-  // such a draft in, holds it, and no quotation.
-  let withhold = null;
-  const env = await setup(t, { auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => withhold });
-  const { item, found } = await publishedCorpus(env);
-  await h.controller({ journalEvidenceProvider: h.journal(({ addsTo }) => found(addsTo ? addsTo.source_items : [item(1)])) }).run(request());
-  const [stopped] = (await assertDelivered(env.store)).candidate_responses;
-  assert.equal(stopped.status, "superseded");
-  const second = { ...request(), runtimeTurnId: "runtime:two", exchangeId: "exchange:two", userTurnId: "turn:user-two", assistantTurnId: "turn:assistant-two", userMessage: "I can't do this any more." };
-  const none = h.journal();
-  await assert.rejects(h.controller({ privateCaseSource: { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } }, journalEvidenceProvider: none }).run(second), /stop before the writer/u);
-  // As the earlier build would have stored it: the same snapshot, the draft among its sources.
-  const left = { id: `src:draft:${stopped.id}:v${stopped.version}`, kind: "unsent_draft", actor: "assistant", audience: "supervisor", time: { at: stopped.created_at, status: "known" }, epistemic_status: "unsent_draft", excerpt_sha256: sha256Text(stopped.exact_text),
-    excerpt_bytes: Buffer.byteLength(stopped.exact_text), exact_excerpt: stopped.exact_text, locator: { kind: "candidate", candidate_id: stopped.id, candidate_version: stopped.version } };
-  const asStored = (record) => {
-    const snapshot = record.response_evidence_snapshots.find((entry) => entry.owner.runtime_turn_id === "runtime:two" && entry.revision === 1);
-    if (!snapshot) return record;
-    snapshot.source_items.unshift(left);
-    const { snapshot_sha256: _digest, ...payload } = snapshot;
-    snapshot.snapshot_sha256 = sha256Json(payload);
-    validateResponseEvidenceSnapshot(snapshot);
-    return record;
-  };
-  withhold = "journal_withheld";
+// ---- A case that has read its journal (24 Nov 2026) --------------------------------------------------------------------------------
+
+const second = () => ({ ...request(), runtimeTurnId: "runtime:two", exchangeId: "exchange:two", userTurnId: "turn:user-two", assistantTurnId: "turn:assistant-two", userMessage: "I can't do this any more." });
+const ofSecond = (record) => record.response_evidence_snapshots.filter((snapshot) => snapshot.owner.runtime_turn_id === "runtime:two");
+const digest = (value) => sha256Text(JSON.stringify(value));
+// Every source's kind and every listed entry, of a snapshot or a view: what a snapshot of the conversation alone has none of.
+const besidesTheConversation = ({ source_items, communication_projection: { omitted: _omitted, ...lists } }) => [...source_items.map((item) => item.kind).filter((kind) => !["exact_client_turn", "app_committed_client_outbound", "journal_retrieval_record"].includes(kind)), ...Object.values(lists).flat().map((entry) => entry.state)].sort();
+// Words that only what is written in the case besides its conversation holds, as any of it may hold the journal's.
+const WRITTEN = ["silver lantern", "silver-lantern"];
+const holdsWritten = (value) => WRITTEN.filter((words) => JSON.stringify(value).includes(words));
+// The second turn's evidence is frozen, and the process stops before its writer.
+async function stoppedBeforeItsWriter(h, extra = {}) {
+  await assert.rejects(h.controller({ privateCaseSource: { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } }, ...extra }).run(second()), /stop before the writer/u);
   h.happened.splice(0);
+}
+// A case whose first turn had a draft stopped and its repair sent (with `read`, the draft was written with a quotation of its journal), and where
+// everything else a snapshot can be made from was then written: an export, an agent's report, one that can't be placed and the owner's, each with
+// a reference, and a supervisor's inputs.
+async function writtenIn(t, { read, attached = true, withheld }) {
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld });
+  const { item, found } = read ? await publishedCorpus(env) : {};
+  const produce = env.runtime.produceCandidate;
+  env.runtime.produceCandidate = async (input) => ({ ...await produce(input), ...(input.runtimeTurn.id === "runtime:one" ? { exactText: "You wrote of a silver lantern." } : { contextId: "context:writer-two" }) });
+  const reader = attached ? { journalEvidenceProvider: h.journal(({ addsTo }) => read ? found(addsTo ? addsTo.source_items : [item(1)]) : { availability: "available", retrieval_status: "no_match" }) } : {};
+  await h.controller(reader).run(request());
+  const [stopped, sent] = (await assertDelivered(env.store)).candidate_responses;
+  assert.deepEqual([stopped.status, sent.status], ["superseded", "sent"]);
+  const draft = { kind: "candidate", candidateId: stopped.id, candidateVersion: stopped.version };
+  for (const [eventId, kind, audience, subject, origin] of [
+    ["event:export", "exported", "client", draft, "owner_action"], ["event:agent", "reported_sent", "client", draft, "agent_relayed"],
+    ["event:ambiguous", "reported_sent", "client", { kind: "unresolved", candidateRefs: [{ candidateId: stopped.id, candidateVersion: stopped.version }] }, "agent_relayed"],
+    ["event:owner", "reported_sent", "client", { kind: "transcript_turn", assistantTurnId: "turn:assistant", inReplyToTurnId: "turn:user" }, "owner_action"]
+  ]) await env.store.recordCommunicationEvent(CASE, { eventId, kind, audience, subject, provenance: { origin, sourceRef: "silver-lantern-entry" } });
+  await env.store.recordSupervisorInputs(CASE, { channel: "owner_ui", inputs: [["input:message", "client_message"], ["input:revision", "supervisor_revision"]].map(([inputId, inputType]) => ({ inputId, inputType, text: `The ${inputType} of a silver lantern.` })) });
+  h.happened.splice(0);
+  return { env, h, reader };
+}
+const ALL_OF_IT = ["agent_relayed_report", "app_committed", "owner_reported_client_outbound", "relayed_client_message", "reported_sent", "reported_sent", "supervisor_instruction"];
+// The second turn's first snapshot as an earlier build froze it, with all of that: written into the vault as it would have stored it.
+async function frozenWithAllOfIt(env) {
+  const record = await env.store.load(CASE), [first] = ofSecond(record);
+  const { id, owner, revision, parent_snapshot_id, revision_reason, candidate_origin, inbound, journal } = first;
+  const older = buildResponseEvidenceSnapshot(asIfNoJournalWasRead(record), { snapshotId: id, owner, revision, parentSnapshotId: parent_snapshot_id, revisionReason: revision_reason, candidateOrigin: candidate_origin, inbound, journal }, { createdAt: first.created_at });
+  assert.deepEqual([besidesTheConversation(older), holdsWritten(older)], [ALL_OF_IT, WRITTEN]);
+  record.response_evidence_snapshots[record.response_evidence_snapshots.indexOf(first)] = older;
+  const { routineKek, recoverySecretBytes } = env.storeOptions;
+  const envelope = await createVaultEnvelope({ plaintextBytes: Buffer.from(JSON.stringify(record)), routineKek, recoverySecretBytes });
+  await fs.writeFile(path.join(env.rootDir, `${CASE}.vault.json`), JSON.stringify(serializeVaultEnvelope(envelope)), { mode: 0o600 });
+  return older;
+}
+
+test("in a case that has read its journal, nothing an earlier build froze besides the conversation reaches a call of a turn that gets no journal; a turn that may have it, and a case that has read none, write from it as it is", async (t) => {
+  for (const [read, withheld, attached] of [[true, "journal_withheld", true], [true, "journal_withheld", false], [true, null, true], [false, "journal_withheld", true], [false, "journal_withheld", false]]) {
+    const name = JSON.stringify({ read, withheld, attached });
+    let answer = null;
+    const { env, h, reader } = await writtenIn(t, { read, withheld: () => answer });
+    answer = withheld;
+    const extra = attached ? reader : {};
+    await stoppedBeforeItsWriter(h, extra);
+    const [first] = ofSecond(await env.store.load(CASE));
+    assert.deepEqual([besidesTheConversation(first), holdsWritten(first)], read ? [withheld ? [] : ["journal_quotation"], []] : [ALL_OF_IT, WRITTEN], `${name}: as this build freezes it`);
+    const older = await frozenWithAllOfIt(env);
+    if (!read) assert.equal(digest(first), digest(older), `${name}: no different from what it was`);
+    const before = env.calls.length;
+    await h.controller(extra).run(second());
+    const record = await env.store.load(CASE), again = read && withheld !== null;
+    assert.equal(record.runtime_turns.at(-1).state, "DELIVERED", name);
+    assert.deepEqual(ofSecond(record).map((snapshot) => snapshot.revision_reason), again ? ["initial", "dependency_refresh"] : ["initial"], name);
+    assert.equal(digest(ofSecond(record)[0]), digest(older), name);
+    const calls = env.calls.slice(before);
+    assert.deepEqual(calls.map((call) => call.stage), ["candidate", "audit"], name);
+    for (const { stage, responseEvidence: { view } } of calls) assert.deepEqual([besidesTheConversation(view), holdsWritten(view)], again ? [[], []] : [ALL_OF_IT, WRITTEN], `${name}: ${stage}`);
+    // Only a journal case is asked about where no reader is attached, and only where its snapshot isn't of the conversation alone.
+    assert.equal(h.happened.filter((step) => step === "withheld?").length, again ? 2 : read ? 4 : 0, `${name}: ${h.happened}`);
+  }
+});
+
+test("nor is a check made of a draft written from such a snapshot, once its turn gets no journal: the turn ends", async (t) => {
+  for (const withheld of ["journal_withheld", null]) {
+    let answer = null;
+    const { env, h, reader } = await writtenIn(t, { read: true, withheld: () => answer });
+    await stoppedBeforeItsWriter(h, reader);
+    await frozenWithAllOfIt(env);
+    const before = env.calls.length, produce = env.runtime.produceCandidate;
+    env.runtime.produceCandidate = async (input) => { const written = await produce(input); answer = withheld; return written; };
+    const run = h.controller(reader).run(second());
+    if (withheld) await assert.rejects(run, (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE" && error.details.response_evidence_revisions_exhausted === true);
+    else await run;
+    assert.deepEqual(env.calls.slice(before).map((call) => call.stage), withheld ? ["candidate"] : ["candidate", "audit"], String(withheld));
+  }
+});
+
+test("a writer's finished call keeps the evidence it was made with: its draft is stored, and its check isn't made once its turn gets no journal", async (t) => {
+  let answer = null;
+  const { env, h, reader } = await writtenIn(t, { read: true, withheld: () => answer });
+  await assert.rejects(h.controller({ privateCaseSource: { ...h.source, async commitPrivateRuntimeCandidate() { throw new Error("Synthetic stop after the writer."); } }, ...reader }).run(second()), /stop after the writer/u);
+  answer = "journal_withheld";
   const before = env.calls.length;
-  await h.controller({ privateCaseSource: { ...h.source, async loadOrCreate(...args) { return asStored(await env.store.loadOrCreate(...args)); } }, journalEvidenceProvider: none }).run(second);
+  await assert.rejects(h.controller(reader).run(second()), (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE" && error.details.response_evidence_revisions_exhausted === true);
   const record = await env.store.load(CASE);
-  assert.deepEqual(record.response_evidence_snapshots.filter((snapshot) => snapshot.owner.runtime_turn_id === "runtime:two").map((snapshot) => [snapshot.revision_reason, snapshot.source_items.some((entry) => entry.kind === "unsent_draft")]), [["initial", false], ["dependency_refresh", false]]);
-  assert.equal(record.runtime_turns.at(-1).state, "DELIVERED");
-  for (const call of env.calls.slice(before)) assert.equal(call.responseEvidence.view.source_items.some((entry) => entry.kind === "unsent_draft"), false, call.stage);
+  assert.deepEqual([ofSecond(record).map(quotationIds), env.calls.length - before, record.runtime_turns.at(-1).state], [[["src:journal:1"]], 0, "AUDITING"]);
+});
+
+test("a turn that has no evidence yet, in a case that has read its journal, has its first frozen of the conversation alone once it gets no journal", async (t) => {
+  // Its two repairs failed with response evidence off; it goes on, to its question, with it on.
+  const env = await setup(t, { policy: "advisory", alwaysFail: true }), h = hooked(env, { withheld: () => "journal_withheld" });
+  const unasked = { ...h.source, async recordPrivateRuntimeInvocationEvent(...args) { if (args[2].stage === "discriminator") throw new Error("Synthetic stop before the question."); return env.store.recordPrivateRuntimeInvocationEvent(...args); } };
+  await assert.rejects(h.controller({ privateCaseSource: unasked, responseEvidence: { enforced: false } }).run(request()), /stop before the question/u);
+  const { item, found } = await publishedCorpus(env);
+  await env.store.freezeResponseEvidence(CASE, { snapshotId: "snapshot:supervisor", owner: { kind: "supervisor_draft", operation_key: "a".repeat(24) }, candidateOrigin: "external_draft", historyRequirements: [], journal: found([item(1)]),
+    inbound: { turn_id: request().userTurnId, exact_text_sha256: sha256Text(request().userMessage), audience: "client", source_kind: "exact_client_turn" } });
+  await h.controller().run(request());
+  const { runtime_turns: [turn], response_evidence_snapshots: [, ...frozen] } = await env.store.load(CASE);
+  assert.deepEqual([turn.state, frozen.map(besidesTheConversation)], ["DELIVERED", [[]]]);
+});
+
+test("a turn that gets no journal, in a case that has read none, is what main 86c6d3971 makes of it, byte for byte: every snapshot, and every view a call gets", async (t) => {
+  const { env, h } = await writtenIn(t, { read: false, attached: false, withheld: () => "journal_withheld" });
+  await h.controller().run(second());
+  const record = await env.store.load(CASE);
+  assert.deepEqual([record.runtime_turns.at(-1).state, ofSecond(record).map(besidesTheConversation)], ["DELIVERED", [ALL_OF_IT]]);
+  // Taken from main 86c6d3971's own code (`git archive 86c6d3971`), where the same turns were run; it asks nothing of the hooks.
+  assert.deepEqual([digest(env.calls.map((call) => call.responseEvidence.view)), digest(record.response_evidence_snapshots)],
+    ["83f533cfe7cfa6675972d7a768767da4b53b8c43a5bef6337b682bd80f04ebab", "1b52f8d8e4ffd2fd04f90b59a38cd11670eeea69af584fb225015ef073a2670c"]);
 });
 
 test("a check isn't made again with quotations in view once its conversation was read as one that gets no journal: the turn ends", async (t) => {

@@ -16,7 +16,7 @@ import { focusedRules, rulesFrom, wholeRules } from "./rule-parts.mjs";
 import { LEVELS, emergencyNumbersIn, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
 import { FIXED_MESSAGE_ANY_FAILURE_REASONS, FIXED_MESSAGE_FAILURE_REASONS, KEPT_PLAN_RULE } from "./notices.mjs";
 import { fixedFindingCode } from "./run-log.mjs";
-import { draftMayHoldJournal, normalizeEvidenceReview, sha256Json } from "../supervisor/response-evidence-contract.mjs";
+import { caseHasReadJournal, normalizeEvidenceReview, sha256Json, writtenFromConversationAlone } from "../supervisor/response-evidence-contract.mjs";
 import { acquireTrialFolderLock } from "./folder-lock.mjs";
 import { RETRYABLE_WORKER_FAILURES } from "./worker-failures.mjs";
 import {
@@ -179,7 +179,7 @@ function evidenceQuoteSources(responseEvidence) {
 // whole case, not one turn or one artifact, is used only while the journal gate is open (Codex's reviews 1 and 2: guarding one path
 // at a time kept leaving another).
 function caseReadJournal(record, responseEvidence = null) {
-  return holdsQuotation(responseEvidence?.view?.source_items) || (record?.response_evidence_snapshots ?? []).some((entry) => holdsQuotation(entry.source_items));
+  return holdsQuotation(responseEvidence?.view?.source_items) || caseHasReadJournal(record);
 }
 // What is told of the findings of a draft that isn't shown: each one's code, when it is a fixed one, and severity, and the sentence of the
 // program's own (P:1 and on), which is the program's words. Anything else of a finding may hold the draft's: a checker's sentence, a name it
@@ -733,13 +733,16 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
   const writerOutputOf = (runtimeTurn, exactText) => [...runtimeTurn.events].reverse()
     .find((event) => event.event_type === "INVOCATION_COMPLETED" && ["candidate", "repair"].includes(event.stage) && event.details?.output?.exactText === exactText)
     ?.details?.output?.result ?? {};
+  // Whether a draft may hold the journal's words: its case has read the journal, and it wasn't written from the conversation alone. A turn
+  // with response evidence off gives its calls no source at all, so there is nothing of the journal in its drafts.
+  const mayHoldJournal = (record, runtimeTurn, draft, responseEvidence) => Boolean(responseEvidence) && caseReadJournal(record) && !writtenFromConversationAlone(record, runtimeTurn, draft);
   // What goes on of a draft, to its repair and to the check of that, in this one place: its text, what its check found and its evidence
   // review's failures. Once its turn gets no journal, a draft that may hold the journal's words isn't shown (`notShown` stands for it), and
   // of what was said of it only what can't hold them.
-  const ofDraft = (record, runtimeTurn, draft, notShown) => {
+  const ofDraft = (record, runtimeTurn, draft, responseEvidence, notShown) => {
     const audit = draft.audit_history.at(-1);
     const findings = (audit?.findings ?? []).filter((finding) => finding.record_only !== true && isSubstantiveAuditFinding(finding));
-    return draftMayHoldJournal(record, runtimeTurn, draft) && withheldFrom(record, runtimeTurn.id) !== null
+    return mayHoldJournal(record, runtimeTurn, draft, responseEvidence) && withheldFrom(record, runtimeTurn.id) !== null
       ? { hidden: true, text: notShown, findings: findingsWithoutWords(findings), failures: [] }
       : { hidden: false, text: draft.exact_text, findings, failures: evidenceFailures(audit) };
   };
@@ -838,7 +841,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       const provisional = runtimeTurn.provisional?.exact_text ?? null;
       const repaired = candidate.parent_candidate_id != null;
       const parent = repaired ? record.candidate_responses.find((entry) => entry.id === candidate.parent_candidate_id) : null;
-      const previous = parent ? ofDraft(record, runtimeTurn, parent, DRAFT_NOT_SHOWN_TO_CHECKER) : null;
+      const previous = parent ? ofDraft(record, runtimeTurn, parent, responseEvidence, DRAFT_NOT_SHOWN_TO_CHECKER) : null;
       const missedBoxes = missedBoxesOf(runtimeTurn);
       // The box advice the checkers read is the advice the writer had (design, section 3): in the focused arm with picks, the
       // picked boxes and any a checker said were missed (the repair writer gets those); every box when the writer had the whole
@@ -939,7 +942,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
           firstActedTurn: checkerLevel === "acted_or_about_to" && !numberAlreadyShown,
           firstCrisisTurn: (isCrisisLevel(checkerLevel) || Boolean(provisional)) && !earlierCrisisTurn,
           crisisConversation: crisisSoFar || isCrisisLevel(checkerLevel),
-          journalInView: draftMayHoldJournal(record, runtimeTurn, candidate),
+          journalInView: mayHoldJournal(record, runtimeTurn, candidate, responseEvidence),
           provisional,
           quotes: written.quotes ?? [],
           quoteSources,
@@ -991,7 +994,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
       emit(caseId, runtimeTurn.id, { type: "status", step: "repairing" });
       const readers = runtimeTurn.runner_reading?.readers ?? {};
       const view = conversationView(record, runtimeTurn.runner_reading.conversation_id, runtimeTurn);
-      const draft = ofDraft(record, runtimeTurn, candidate, DRAFT_NOT_SHOWN_TO_WRITER);
+      const draft = ofDraft(record, runtimeTurn, candidate, responseEvidence, DRAFT_NOT_SHOWN_TO_WRITER);
       const rules = writerRules(readers.boxes?.boxes ?? null, missedBoxesOf(runtimeTurn));
       const keptPlan = keptPlanEnabled ? keptPlanContextOf(record, runtimeTurn, runtimeTurn.runner_reading.conversation_id) : null;
       const repairRequest = () => {

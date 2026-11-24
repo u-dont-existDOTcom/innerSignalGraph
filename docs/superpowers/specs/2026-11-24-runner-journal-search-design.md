@@ -96,33 +96,45 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   read as anything but none (wanting to die, having acted or being about to, thoughts of death with no wish to act, or something that could
   mean either), or, with the number now on, as needing the emergency number now; or its conversation has been read as one about wanting to die
   by any reader or checker. **Every snapshot of a turn asks it as it is frozen** (`freezeSnapshot`), the message's own, the repair's expansion
-  and a refresh alike: the part is then closed, `unavailable` and `not_attempted` with the reason `journal_withheld`, no search is made and
-  nothing is carried over. The models read that reason, so it says nothing of the level: it also stands for a message read as thoughts of
-  death, as unclear or not at all. **Every model call asks it of the snapshot it would go out with** (`prepareCall`), when that may hold the
-  journal's words (`snapshotHoldsJournal`), whatever froze it and whatever was read since: a call that writes gets one frozen again without
-  them (three snapshots a turn; with none left, the turn ends), and a check, which is bound to its draft's snapshot, isn't made and the turn
-  ends. A decision that can't be made is a failed retrieval, and stops no check. A journal read earlier in the case still needs the open gate.
-- **Earlier drafts.** A draft of an earlier turn that was written with a quotation in view, or any version of it, may hold the journal's
-  words, so no snapshot has it as a source (`draft_written_with_the_journal`), unsent or only said to be sent by a report no one vouches for,
-  whether its turn gets the journal or not, and the list of what was sent names no reference such a report gives: the journal's words are in a
-  snapshot through its own retrieval, or not at all. A snapshot an earlier build froze with such a draft counts as one that holds a quotation.
-- **When only the checker reads it.** A draft written with quotations in view, before anyone had read the conversation as one about wanting to
-  die, isn't sent once this turn's checker does: the program adds `PROGRAM_JOURNAL_IN_CRISIS` (high), and the repair goes on with a snapshot
-  frozen again without its quotations; where the turn ends instead, its fixed message or notice shows. The repair isn't shown the draft
+  and a refresh alike, where a journal reader is attached or the case has read its journal: the part is then closed, `unavailable` and
+  `not_attempted` with the reason `journal_withheld`, no search is made and nothing is carried over. The models read that reason, so it says
+  nothing of the level: it also stands for a message read as thoughts of death, as unclear or not at all. A decision that can't be made is a
+  failed retrieval. A journal read earlier in the case still needs the open gate.
+- **A case that has read its journal** is one with an evidence snapshot that holds a quotation (`caseHasReadJournal`). Whatever is written in it
+  besides its conversation may hold the journal's words: a draft, one written from a snapshot that held such a draft, a report and the
+  reference it gives, an instruction, what the communication projection lists of them. Nothing in the record tells which does, so three rules
+  go by the case:
+  - A snapshot of it, and any that is given quotations, has the conversation's own turns and those quotations as its sources, and lists nothing
+    (`buildResponseEvidenceSourceItems`). What is left out is counted: the sources as `journal_case_conversation_alone`, the lists in `omitted`.
+  - A model call of a turn that gets no journal goes out only with a snapshot **of the conversation alone** (`snapshotOfConversationAlone`: the
+    turns and the retrieval's record, nothing listed, nothing required), whatever froze the one it would go out with, an earlier build
+    included, and whatever was read since (`prepareCall`). A call that writes gets one frozen again (three snapshots a turn; with none left,
+    the turn ends); a check, which is bound to its draft's snapshot, isn't made, and the turn ends. A decision that can't be made counts as
+    one for a call that writes, and stops no check.
+  - A draft that wasn't **written from the conversation alone** may hold the journal's words (`writtenFromConversationAlone`: its own snapshot
+    is of it, and so was the draft it was written from, unless that one was hidden from it; evidence that isn't there says it wasn't). It isn't
+    shown to its repair, or to the check of that, once its turn gets no journal, and isn't sent in a conversation about wanting to die.
+
+  A case that has read no journal has every source and list it had, byte for byte, and nothing of it is hidden or stopped. (This replaces
+  following each draft that quoted the journal through its versions, reports and later snapshots, where review after review found one more
+  way around: a rule about the whole case has nothing to follow.)
+- **When only the checker reads it.** A draft that wasn't written from the conversation alone, because nobody had read the conversation as one
+  about wanting to die, isn't sent once this turn's checker does: the program adds `PROGRAM_JOURNAL_IN_CRISIS` (high), and the repair goes on
+  with a snapshot of the conversation alone; where the turn ends instead, its fixed message or notice shows. The repair isn't shown the draft
   either, nor what was found of its words (it gets each finding's code, when it is a fixed one, its severity, and the program's own sentences),
   and neither is the check of the repaired reply: a reply written anew, from the conversation alone. The repair's stored result
-  says so (`draftHidden`), so the reply doesn't count as one written from that draft. One that was written from such a draft, its own
-  evidence holding no quotation (its expansion's search failed), counts as written with the journal in view.
+  says so (`draftHidden`), so the reply counts as one. One that was written from such a draft, whatever its own evidence holds (its expansion's
+  search may have failed), doesn't.
 - **Where each way is closed.** Journal words could reach a call or a reply of such a turn in these ways, each closed in one place (a new way
-  is closed in its place, not by one more check): a search, for the message or a check's questions (`freezeSnapshot`); a snapshot frozen
-  earlier that a call would go out with (`prepareCall`); earlier turns' drafts as sources (`buildResponseEvidenceSourceItems`); this turn's
-  draft, what its check found and its evidence review (`ofDraft`, for the repair and its check alike); a declared quote's source
-  (`evidenceQuoteSources`, the call's own evidence); the reply (`PROGRAM_JOURNAL_IN_CRISIS`, by `draftMayHoldJournal`); the conversation and
-  the earlier ones (`conversationView`, what the person was sent or shown and nothing else); the readers and so the provisional reply
-  (`readersPacket`, the conversation alone); the case's state (`stateAfterReadings`, the readings alone); the run log (`runnerLogFromRecord`,
-  fixed codes and numbers).
-- With response evidence off, or with no journal reader (a trial without clients), nothing is read first and every packet, prompt, order
-  of calls and stored record is as it was.
+  is closed in its place, not by one more check): a search, for the message or a check's questions (`freezeSnapshot`); anything written in the
+  case besides its conversation, as a source or listed (`buildResponseEvidenceSourceItems`); a snapshot frozen earlier that a call would go out
+  with (`prepareCall`); this turn's draft, what its check found and its evidence review (`ofDraft`, for the repair and its check alike); a
+  declared quote's source (`evidenceQuoteSources`, the call's own evidence); the reply (`PROGRAM_JOURNAL_IN_CRISIS`, by
+  `writtenFromConversationAlone`); the conversation and the earlier ones (`conversationView`, what the person was sent or shown and nothing
+  else); the readers and so the provisional reply (`readersPacket`, the conversation alone); the case's state (`stateAfterReadings`, the
+  readings alone); the run log (`runnerLogFromRecord`, fixed codes and numbers).
+- With no journal reader (a trial without clients) and no journal read, nothing is read first and every packet, prompt, order of calls and
+  stored record is as it was; so it is with response evidence off, in any case, since no call gets a source then.
 
 ## Limits
 
@@ -139,6 +151,8 @@ A turn without a quotation, so every turn without a journal reader, gets the not
   words are English and French; in any other language only the common-words rule leaves everyday words out, and words that are spelled alike
   in two languages find each other ("pain").
 - A new conversation gets the journal again, also right after one about wanting to die, when its message is read as none.
+- In a case that has read its journal, an earlier unsent draft, a report, a supervisor's input and the list of what was sent are in no
+  snapshot, also of a turn that may have the journal; what was sent is there as a turn of the conversation.
 - What the person has been sent stays what it is, a reply that quoted the journal included: in the conversation the models read, and among
   what was sent. The check that is the first to read someone who wants to die has the quotations in view, since nobody had read the message as
   one when it was searched for.
@@ -151,6 +165,8 @@ A turn without a quotation, so every turn without a journal reader, gets the not
 ## Tests
 
 `tests/journal-evidence-search.test.mjs` (the search), `tests/response-evidence-journal.test.mjs` (the reader),
-`tests/response-evidence-contract.test.mjs` (the note), `tests/response-evidence-runtime.test.mjs` (the controller's hooks) and
-`tests/runner-client-journal.test.mjs` (the trial), on invented journals only (`tests/helpers/invented-journal.mjs`: a few hundred
-paragraphs, English and French, from a seeded generator).
+`tests/response-evidence-contract.test.mjs` (the note, and the rules of a case that has read its journal),
+`tests/response-evidence-runtime.test.mjs` (the controller) and `tests/runner-client-journal.test.mjs` (the trial), on invented journals only
+(`tests/helpers/invented-journal.mjs`: a few hundred paragraphs, English and French, from a seeded generator) and an invented case with one of
+each thing a snapshot can be made from (`tests/helpers/evidence-case.mjs`). What main `86c6d3971` builds of that case, and of a turn of it that
+gets no journal, is compared byte for byte with what is built now, taken from main's own code.

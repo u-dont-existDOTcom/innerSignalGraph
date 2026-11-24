@@ -612,7 +612,7 @@ test("empty evidence extensions preserve existing non-journal publication digest
   assert.notEqual((await inspect()).non_journal_state_sha256, sha256Text(JSON.stringify(legacy)));
 });
 
-test("the encrypted store freezes a long case with full usable journal budget and bounded whole drafts and inputs", async (t) => {
+test("the encrypted store freezes a long case with bounded whole drafts and inputs, and, once it reads its journal, with full usable journal budget and neither", async (t) => {
   const env = await environment(t), { store } = env; await corpus(store);
   await store.saveCandidateResponse(CASE, "template:draft", "d".repeat(4000), { producer_context_id: "writer:template" });
   await store.recordSupervisorInputs(CASE, { inputs: [{ inputId: "template:input", inputType: "supervisor_revision", text: "s".repeat(2000) }], channel: "owner_ui" });
@@ -622,15 +622,20 @@ test("the encrypted store freezes a long case with full usable journal budget an
   record.candidate_responses = Array.from({ length: 60 }, (_, n) => ({ ...structuredClone(template), id: `foreign:draft:${n}`, root_candidate_id: `foreign:draft:${n}`, version: n + 1, status: "superseded" }));
   record.supervisor_artifacts = Array.from({ length: 40 }, (_, n) => ({ ...structuredClone(inputTemplate), id: `owner:input:${n}` }));
   await env.seed(record);
+  const count = (snapshot, kind) => snapshot.source_items.filter((item) => item.kind === kind).length;
+  const before = await store.freezeResponseEvidence(CASE, freezeInput());
+  assert.ok(Buffer.byteLength(JSON.stringify(before)) <= 192000);
+  assert.equal(before.source_items.filter((item) => item.locator.kind === "transcript_turn").length, 120);
+  assert.deepEqual([count(before, "unsent_draft"), count(before, "supervisor_instruction")], [6, 8]);
+  assert.ok(before.communication_projection.omitted.source_items.some((item) => item.reason === "draft_budget"));
   // 24,000 serialized bytes also fill the conservative 8,000-token allowance (bytes / 3).
-  const snapshot = await store.freezeResponseEvidence(CASE, freezeInput({ journal: journal([journalItem("full", "j".repeat(23998))]) }));
+  const snapshot = await store.freezeResponseEvidence(CASE, freezeInput({ snapshotId: "snapshot:two", revision: 2, parentSnapshotId: before.id, revisionReason: "dependency_refresh", journal: journal([journalItem("full", "j".repeat(23998))]) }));
   assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) <= 192000);
   assert.equal(snapshot.journal.budget.used_tokens, 8000);
   assert.equal(snapshot.journal.budget.used_bytes, 24000);
   assert.equal(snapshot.source_items.filter((item) => item.locator.kind === "transcript_turn").length, 120);
-  assert.equal(snapshot.source_items.filter((item) => item.kind === "unsent_draft").length, 6);
-  assert.equal(snapshot.source_items.filter((item) => item.kind === "supervisor_instruction").length, 8);
-  assert.ok(snapshot.communication_projection.omitted.source_items.some((item) => item.reason === "draft_budget"));
+  assert.deepEqual([count(snapshot, "journal_quotation"), count(snapshot, "unsent_draft"), count(snapshot, "supervisor_instruction")], [1, 0, 0]);
+  assert.deepEqual(snapshot.communication_projection.omitted.source_items.filter((item) => ["draft_budget", "journal_case_conversation_alone"].includes(item.reason)), [{ reason: "journal_case_conversation_alone", count: 100 }]);
 });
 
 test("recordSupervisorAudit records a valid exact PASS despite later state changes; supervisor approval releases nothing", async (t) => {
