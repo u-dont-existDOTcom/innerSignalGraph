@@ -37,8 +37,8 @@ const absent = (file, message) => assert.rejects(fs.readFile(file), { code: "ENO
 const fixture = async (name) => JSON.parse(await fs.readFile(new URL(`../schemas/journal-import/fixtures/${name}`, import.meta.url), "utf8"));
 
 // A synthetic journal of plain-text pages, one passage per line, the pages' sources listed in the order given.
-function generatedJournal(pages) {
-  const base = { case_id: SERVER_CASE, corpus_id: SERVER_CORPUS, version: 1, lifecycle: "active" };
+function generatedJournal(pages, corpusId = SERVER_CORPUS) {
+  const base = { case_id: SERVER_CASE, corpus_id: corpusId, version: 1, lifecycle: "active" };
   const nodes = [], representations = {};
   for (const page of pages) {
     const text = page.lines.map((line) => `${line}\n`).join("");
@@ -55,7 +55,7 @@ function generatedJournal(pages) {
       offset += Buffer.byteLength(quote);
     });
   }
-  return { graph: { schema_version: "1.0", case_id: SERVER_CASE, corpus_id: SERVER_CORPUS, generation: "generation-synthetic", nodes, edges: [] }, sources: representations };
+  return { graph: { schema_version: "1.0", case_id: SERVER_CASE, corpus_id: corpusId, generation: "generation-synthetic", nodes, edges: [] }, sources: representations };
 }
 
 async function serverJournal(t, { journal = null, extraIndexes = {}, indexRepresentations = false, shardTargetBytes = 4096 } = {}) {
@@ -347,9 +347,9 @@ test("the laptop commands: each client's key, an import that leaves a wrong file
 
   const outside = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-copy-transfer-"));
   t.after(() => fs.rm(outside, { recursive: true, force: true }));
-  const exportFor = async (publicKey, name, exportedAt) => {
+  const exportFor = async (publicKey, name, exportedAt, corpusId = SERVER_CORPUS) => {
     const file = path.join(outside, name);
-    await writeSealedJournalCopy(file, await exportJournalCopy({ caseAccessService: server.service, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, authContext: server.auth, recipientPublicKey: publicKey, exportedAt }));
+    await writeSealedJournalCopy(file, await exportJournalCopy({ caseAccessService: server.service, caseId: SERVER_CASE, corpusId, authContext: server.auth, recipientPublicKey: publicKey, exportedAt }));
     return file;
   };
   const sealedOne = await exportFor(keyOne.publicKey, "one.sealed.json", "2026-11-24T08:00:00.000Z");
@@ -389,6 +389,16 @@ test("the laptop commands: each client's key, an import that leaves a wrong file
   const sealedForTwo = await exportFor(keyTwo.publicKey, "two.sealed.json", "2026-11-24T08:01:00.000Z");
   await assert.rejects(importClientJournal({ home, number: 2, sealedPath: sealedForTwo }), /already copied for client 1/u);
   assert.equal(JSON.parse(await fs.readFile(sealedForTwo, "utf8")).kind, "runner_journal_copy_sealed");
+  // Another corpus of the same server case is the same person's: refused too.
+  const other = generatedJournal([{ sourceId: "source:c", representationId: "repr-9", lines: ["Another line about the garden."] }], "synthetic-second-corpus");
+  await server.service.createJournalCorpus(SERVER_CASE, { corpusId: "synthetic-second-corpus", manifestObjectId: "manifest:staging" }, server.auth);
+  let secondPersisted;
+  await server.service.withJournalCorpus(SERVER_CASE, "synthetic-second-corpus", { requiredScope: "case:write", requiredPurpose: "archive" }, async ({ corpusStore }) => {
+    secondPersisted = await persistGraphGeneration({ corpusStore, graph: other.graph, sourceRepresentations: other.sources, permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096 });
+  }, server.auth);
+  await server.service.publishJournalGeneration(SERVER_CASE, { corpusId: "synthetic-second-corpus", generation: other.graph.generation, manifestObjectId: secondPersisted.manifest_object_id }, server.auth);
+  const sealedSecond = await exportFor(keyTwo.publicKey, "two-second.sealed.json", "2026-11-24T08:01:30.000Z", "synthetic-second-corpus");
+  await assert.rejects(importClientJournal({ home, number: 2, sealedPath: sealedSecond }), /already copied for client 1/u);
 
   // The cold test: refused without consent; with it, the latest test that ends decides the receipt.
   await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: consumer() }), /no confirmed journal consent/u);

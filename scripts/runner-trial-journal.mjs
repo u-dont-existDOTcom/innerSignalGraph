@@ -88,8 +88,10 @@ export function parseJournalArguments(argv) {
 }
 
 async function requireReady(resolved) {
-  try { await fsp.readFile(path.join(resolved, "credentials.json")); }
+  let handle;
+  try { handle = await fsp.open(path.join(resolved, "credentials.json"), "r"); }
   catch { throw new StartError(`The trial folder ${resolved} isn't ready: start the trial once (or use --prepare-only) first.`); }
+  await handle.close();
 }
 
 // A file opened once and read through that handle, so what is checked (a regular file, its mode, its size) is what is read. Null when

@@ -112,7 +112,8 @@ A client's journal can inform their replies only through the session-use journal
      and that case alone (write, and the archive, organize_search and session_use purposes the store asks) it checks the whole copy
      before writing (its digest, its graph, and that the store can take it), imports it into a corpus the copy itself names,
      publishes it for session use without archive, and checks every quotation against the stored bytes and every stored record
-     against the export. Then the list names the corpus and a digest of its source, and the file is removed. A refused or failed
+     against the export. Then the list names the corpus and a digest of the server case it came from (a
+     server case is one person's, whatever its corpora), and the file is removed. A refused or failed
      import leaves the file where it was; the same file again is checked again, and a copy an import left unpublished is refused
      (export a new one). While the trial runs (it holds the vault) the import is refused. A new copy drops the earlier copy's
      receipt, so it needs its own cold test; the earlier copy stays in the case, unused, until the client's Delete.

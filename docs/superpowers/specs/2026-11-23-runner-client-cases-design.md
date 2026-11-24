@@ -232,8 +232,8 @@ problems; this is as built after the fixes.
   and session_use purposes the store asks), checks the whole bundle before anything is written (its digest, its graph, and its
   generation built once into a store that keeps nothing), rebuilds the graph under the client's runner case and a corpus the copy
   names, keeps the source order and the builder's own indexes, publishes it for session use without archive, checks every quotation
-  against the stored bytes (200 at a time) and every stored record against the export, then names the corpus and a digest of its
-  source on the client list and removes the file. The same file again is checked again; a copy an earlier import left unpublished is
+  against the stored bytes (200 at a time) and every stored record against the export, then names the corpus and a digest of the
+  server case it came from (a server case is one person's, whatever its corpora) on the client list and removes the file. The same file again is checked again; a copy an earlier import left unpublished is
   refused. A new copy drops the earlier copy's receipt; the earlier copy stays in the case, unused, until the client's Delete (a
   limit).
 - **The cold test** is `--cold-test` (`src/runner-trial/journal-cold-test.mjs`), on the journal import's cold-consumer runner: a

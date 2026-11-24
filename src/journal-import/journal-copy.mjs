@@ -226,9 +226,9 @@ export async function exportJournalCopy({ caseAccessService, caseId, corpusId, a
 // making another.
 export const journalCopyCorpusId = (bundle) => `journal-copy-${sha256(JSON.stringify([bundle.source, bundle.exported_at, bundle.content_sha256])).slice(0, 32)}`;
 
-// What the client list keeps of a copy's source: a digest of the server's case and corpus, never the ids themselves (a hosted case
-// id can be a readable name).
-export const journalCopySourceDigest = (bundle) => sha256(`inner-signal journal copy source v1\0${bundle.source.case_id}\0${bundle.source.corpus_id}`);
+// What the client list keeps of a copy's source: a digest of the server case it came from (a server case is one person's, whatever its
+// corpora), never the id itself (a hosted case id can be a readable name).
+export const journalCopySourceDigest = (bundle) => sha256(`inner-signal journal copy source v2\0${bundle.source.case_id}`);
 
 // A store that keeps nothing: the copy's generation is built into it before the client's case is touched, so whatever the vault's
 // store couldn't take (a record too large for its shards, an index it refuses) is found while nothing is written yet.
@@ -286,8 +286,14 @@ export async function importJournalCopy({ caseAccessService, caseId, corpusId, a
     try {
       for (let start = 0; start < passageIds.length; start += EVIDENCE_BATCH) await reader.resolveEvidence(passageIds.slice(start, start + EVIDENCE_BATCH));
     } finally { reader.close(); }
-    const stored = await readRecords(corpusStore, await corpusStore.readJsonObject({ objectId: reference.manifest_object_id }));
+    const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });
+    const stored = await readRecords(corpusStore, manifest);
     if (stored.length !== expected.size || stored.some((record) => expected.get(record.id) !== JSON.stringify(record))) invalid("JOURNAL_COPY_RECORDS_MISMATCH", "The stored copy differs from the export.");
+    const byKey = (left, right) => (left[0] < right[0] ? -1 : left[0] > right[0] ? 1 : 0);
+    for (const [name, entries] of Object.entries(bundle.extra_indexes)) {
+      const kept = [...(await readWholeIndex(corpusStore, manifest.indexes?.[name]))];
+      if (JSON.stringify(kept.sort(byKey)) !== JSON.stringify([...entries].sort(byKey))) invalid("JOURNAL_COPY_INDEX_MISMATCH", "The stored copy differs from the export.");
+    }
     return { generation: reference.active_generation, manifest_object_id: reference.manifest_object_id, visibility_epoch: reference.visibility_epoch,
       corpus_id: corpusId, passages_verified: passageIds.length, records_verified: stored.length };
   }, authContext);

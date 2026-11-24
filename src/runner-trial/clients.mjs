@@ -70,7 +70,7 @@ export function validateRunnerClients(value) {
     if (labels.has(folded)) invalid(`${name}'s label is another client's too.`);
     labels.add(folded);
     timestamp(client.added_at, `${name}.added_at`);
-    // `source_sha256`: a digest of the server case and corpus the copy came from (scripts/runner-trial-journal.mjs, --import), so one
+    // `source_sha256`: a digest of the server case the copy came from (scripts/runner-trial-journal.mjs, --import), so one
     // journal can't be copied for two clients; absent on lists written before the copy step.
     exactKeys(client.journal, Object.hasOwn(client.journal ?? {}, "source_sha256") ? ["corpus_id", "consent", "source_sha256"] : ["corpus_id", "consent"], `${name}.journal`);
     if (Object.hasOwn(client.journal, "source_sha256") && !/^[0-9a-f]{64}$/u.test(client.journal.source_sha256 ?? "")) invalid(`${name}'s journal source is invalid.`);
