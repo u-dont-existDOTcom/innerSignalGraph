@@ -266,7 +266,7 @@ export function createPrivateTherapyTurnController({
     }
     const prepared = await prepareGovernedModelCall({ record, snapshot, rootCandidate, completed, load: () => loadCase(caseId, authContext), freeze });
     if (prepared.exhausted && !checking) throw evidenceExhausted();
-    return { ...prepared, refreshed: prepared.refreshed || (closes && !checking), closes };
+    return { ...prepared, closes };
   };
 
   async function invoke({ caseId, runtimeTurn, operationKey, stage, inputIdentity, authContext, execute }) {
