@@ -11,6 +11,7 @@ import { SESSION_USE_READER_VERSION, createSessionUseJournalEvidenceProvider } f
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, coldTestReceiptMatches, readColdTestReceipt, validateColdTestReceipt } from "../src/runner-trial/clients.mjs";
 import { COLD_QUESTION_AUTHORS, COLD_TEST_RULE, PLANTED_KINDS } from "../src/runner-trial/cold-test-rule.mjs";
 import { JOURNAL_SEARCH_TIMEOUT_MS, createRunnerJournalGate, openSessionUseReader } from "../src/runner-trial/journal-gate.mjs";
+import { sha256Json } from "../src/supervisor/response-evidence-contract.mjs";
 import { COLD_CONSUMER_INSTRUCTION, COLD_CONSUMER_SCHEMA, COLD_JUDGE_INSTRUCTION, COLD_JUDGE_SCHEMA, MAX_COLD_QUESTIONS, MAX_COLD_RETRIES, createSealedColdTestPort, resolveColdKey, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
 import { ANSWER, JUDGE_REASON, PLANTED, RECEIPTS, coldWorkers, plantOn, questionsFile } from "./helpers/cold-workers.mjs";
 import { inventedPages, inventedParagraphs, persistInventedJournal } from "./helpers/invented-journal.mjs";
@@ -28,13 +29,13 @@ const THINGS = Object.freeze("abacus anvil bassoon beehive bellows birdcage bobb
 const ABSENT = Object.freeze("zeppelin gyroscope catapult submarine igloo didgeridoo portcullis samovar theremin velodrome".split(" "));
 const told = (place) => `That winter I gave the ${THINGS[place]} to a ${["neighbour", "cousin", "teacher", "landlord"][place % 4]} and asked for nothing in return.`;
 const keyQuote = (place) => `I gave the ${THINGS[place]} to a ${["neighbour", "cousin", "teacher", "landlord"][place % 4]}`;
-// The first thing was given on a dated day, the second in a dream, what the third one says was corrected later, and two are told of once more.
+// The first thing was given on a dated day, the second in a dream, the third one's passage is superseded, and two are told of once more.
 const DREAM = "I dreamed that I gave the anvil to a cousin and asked for nothing in return.";
 const PARAGRAPHS = Object.freeze([...THINGS.map((_, place) => (place === 1 ? DREAM : told(place))), "The cello leaned against the easel all summer.", ...inventedParagraphs({ size: 90 })]);
 // One thing told of so often that a message about it gets no more than the six quotations a message gets at most.
 const EVENINGS = Object.freeze(Array.from({ length: 8 }, (_, place) => `Evening ${place} and the jigsaw was still on the table in the hall, where nobody had touched it for weeks while the lamp burned over it and the dust came down.`));
 const DATED = new Map([[0, "March 3, 2019"]]);
-const correct = (node) => { if (node.data.quote === told(2)) node.lifecycle = "superseded"; };
+const supersede = (node) => { if (node.data.quote === told(2)) node.lifecycle = "superseded"; };
 
 // The questions: fifty the journal answers (the last ten worded without any of their passage's words, the first twenty with a planted wrong
 // answer) and thirty it doesn't (ten about things it never tells of, for which the search finds nothing, and twenty that take for granted what
@@ -59,7 +60,7 @@ const numberOf = (packet) => Number(/^question-(\d+)$/u.exec(packet.question_id)
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right);
 
 // A published copy of an invented journal in a vault of its own, and a cold test of it.
-async function copyOf(t, { paragraphs = PARAGRAPHS, dates = DATED, change = correct, index = "quote-index-v4" } = {}) {
+async function copyOf(t, { paragraphs = PARAGRAPHS, dates = DATED, change = supersede, index = "quote-index-v4" } = {}) {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-cold-"));
   const keys = { routineKek: Buffer.alloc(32, 71), recoverySecretBytes: Buffer.alloc(32, 72) };
   const store = createEncryptedPrivateCaseStore({ rootDir, ...keys, developmentExternalCredentialAuthorized: true });
@@ -735,6 +736,60 @@ test("a publication that changes during the test: not a pass after the last read
   await assert.rejects(runJournalColdTest({ service: unpublished, auth: AUTH, caseId: CASE, corpusId: CORPUS, questions: questionsFile(FEW), port: createSealedColdTestPort({ consumer: standIns().workerFor("W"), judge: standIns().workerFor("CW") }) }), { code: "COLD_TEST_NOT_PUBLISHED" });
 });
 
+// ---- The reader's version --------------------------------------------------------------------------------------------------------
+
+// What the replies' reader returns to a fixed set of messages on the invented journal, as a digest, for its version. A receipt names the
+// version, so a reader that returns something else must have another, or a copy's pass would carry over to a search it wasn't tested with.
+// (Where only the invented journal or the messages change, and the reader is as it was, the new digest is recorded for the same version.)
+const READS = Object.freeze({ "session-use-reader-v2:evidence-quotes-v1": "d1d1cfb4201d75b286e1caec6f8bcf080946066a782131042d510d0706a6a2e9" });
+// Words the search treats apart, for the messages about them.
+const APART = Object.freeze(["Not one of them came, no, and I cannot say when.", "Both my shoulders ached.", "My son took the car.", "L'été fut long.", "C'est la meme chose."]);
+// Several hundred words, most of what the journal's English paragraphs tell of among them, and one thing told of once.
+const LONG = `${inventedParagraphs({ size: 27, seed: 7 }).filter((_, place) => place % 3 < 2).join(" ")} And all that time I thought of the gramophone.`;
+const MESSAGES = Object.freeze([
+  // More passages than a message gets, with numbers, and two that may not be used: the one a repair's questions add to.
+  "Evening 1, evening 2 and evening 7: the jigsaw was still on the table.",
+  // A dream, a dated passage and a superseded one; French, with its accents and typed without; several hundred words.
+  "I had that dream about the anvil again, and lay awake over the abacus and the bassoon.", "Pourquoi est-ce que je repense au métronome du grenier, et à ma marraine qui l'a réparé ?",
+  "J'ai encore prepare une soupe pour ma collegue, et depuis l'ete je dors mal.", LONG,
+  // Nothing the journal holds; stop words alone; words that too many passages hold to go by; a word that twenty hold, eleven, and ten (just few
+  // enough to go by it alone); and several such words, of which a passage must hold two (of four) or three (of five, of seven).
+  "When did I buy a zeppelin?", "What was it that I did, and to whom?", "That winter I gave it away and asked for nothing in return.", "My teacher.", "I can't remember.", "My colleague.",
+  "My teacher and my neighbour walked and waited.", "My teacher and my neighbour walked, waited and fixed it.", "My teacher, my landlord and my neighbour walked, waited and fixed it in the evening.",
+  // Negations, and the words treated apart.
+  "I couldn't sleep, I don't know why I can't tell my brother about the lantern, and it isn't the first time.", "No, I'm not sure, and I cannot sing: it's my shoulder, and my son has the car.",
+  "Et l'été ? Et meme maintenant ?"
+]);
+// What is left of what the message was about, and another thing.
+const ASKED = Object.freeze(["What else was there about the jigsaw, and about my colleague?", "And what did I cook for my grandmother?"]);
+
+test("what the replies' reader returns to a fixed set of messages is what is recorded for its version: a reader that returns something else has another", async (t) => {
+  assert.ok(LONG.split(" ").length > 300);
+  // What of a part a reply could use, and nothing that is made anew at each run (the receipts, the names of what they read).
+  const usable = ({ availability, retrieval_status, source_items: items, omissions, coverage, more_available }) => ({ availability, retrieval_status, omissions, coverage, more_available,
+    quotations: items.map(({ locator: { start_byte, end_byte }, ...item }) => ({ ...item, span: [start_byte, end_byte] })) });
+  const returned = {};
+  let version = null;
+  for (const index of ["quote-index-v4", "quote-index-v2", "none"]) {
+    const { service } = await copyOf(t, { index, paragraphs: [...PARAGRAPHS, ...EVENINGS, ...APART], change: (node) => {
+      supersede(node);
+      if (node.data.quote === EVENINGS[1]) node.lifecycle = "revoked";
+      if (node.data.quote === EVENINGS[2]) { node.data.quote = null; node.data.disclosure = "restricted"; }
+    } });
+    const reader = await openSessionUseReader({ caseAccessService: service, corpusId: CORPUS });
+    const read = (request) => reader.read({ caseId: CASE, authContext: AUTH, ...request });
+    const parts = [];
+    for (const query of MESSAGES) parts.push(await read({ query }));
+    parts.push(await read({ query: MESSAGES[0], questions: ASKED, addsTo: parts[0] }));
+    assert.ok(parts.every(({ availability }) => availability === "available"), index);
+    returned[index] = parts.map(usable);
+    version = reader.version;
+  }
+  const digest = sha256Json(returned);
+  assert.equal(digest, READS[version], "what the replies' reader returns isn't what is recorded for its version: change SESSION_USE_READER_VERSION (src/journal-import/response-evidence-journal.mjs), "
+    + "and the search's own version when the search changed (EVIDENCE_QUOTE_SEARCH, src/journal-import/retrieval.mjs), and record the new digest in READS");
+});
+
 // ---- The receipt and the gate ----------------------------------------------------------------------------------------------------
 
 test("the receipt opens the gate for the reader and the rule that it names alone: one that names none, or another, is refused, for a reply's evidence and for everything else a case that read its journal does", async (t) => {
@@ -838,7 +893,7 @@ test("a key quote names its evidence: exact words of one to three usable passage
   // Three passages hold the same words, and four others; one passage is revoked and one restricted.
   const repeated = [...PARAGRAPHS, ...Array.from({ length: 3 }, (_, place) => `Three times ${place} the  same\tsentence stands here.`), ...Array.from({ length: 4 }, (_, place) => `Four times ${place} another sentence stands here.`), "A revoked account of the lighthouse.", "A restricted account of the lighthouse."];
   const { run, passageOf } = await copyOf(t, { paragraphs: repeated, change: (node) => {
-    correct(node);
+    supersede(node);
     if (node.data.quote === "A revoked account of the lighthouse.") node.lifecycle = "revoked";
     if (node.data.quote === "A restricted account of the lighthouse.") { node.data.quote = null; node.data.disclosure = "restricted"; }
   } });

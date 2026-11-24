@@ -331,7 +331,8 @@ judge for every question, the printed numbers) holds in it.
     nowhere: the consumer, the judge, the report and the errors name a question by its place in the file. A command refuses, before any
     call, a file by the company whose model would judge.
   - **The receipt** (schema version 2) names the case, the copy's corpus, generation, manifest and epoch, the reader that was tested
-    (`SESSION_USE_READER_VERSION`) and the rule's version; and, for the record, how many questions the rule counted and who wrote them, the
+    (`SESSION_USE_READER_VERSION`; a test records what a fixed set of messages gets from the invented journal for it, and fails when that
+    changes and the version doesn't) and the rule's version; and, for the record, how many questions the rule counted and who wrote them, the
     consumer's and the judge's provider and model, and which of the tests started on this copy it was (`run`: an import begins a new count;
     the report and the command say it too). The gate refuses a receipt that names no reader (the first design's), another than the one it
     would read with, or another rule than the present one (`cold_test_receipt_mismatch`), before anything of the journal is read, and so does
