@@ -1,15 +1,21 @@
 import { createHash } from "node:crypto";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { createCandidateAuditEvidence, REPAIR_INDUCED_ERROR_CHECKS } from "./private-candidate-lifecycle.mjs";
-import { privateRuntimeNextAction } from "./private-runtime-turn-lifecycle.mjs";
+import { isFinishedRuntimeTurn, privateRuntimeNextAction } from "./private-runtime-turn-lifecycle.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "./private-candidate-audit.mjs";
 import { OWNER_FALLBACK_KIND } from "./owner-fallback-message.mjs";
+import { PRIVATE_CASE_SCOPES } from "../storage/private-case-access.mjs";
 import { deriveEvidenceFindings, normalizeEvidenceReview, normalizeRecordOnlyFinding, runtimeAuditInputIdentity,
   runtimeCandidateInputIdentity as candidateInputIdentity, runtimeRepairInputIdentity as repairInputIdentity,
   prepareGovernedModelCall, responseEvidenceRefreshJournal, responseEvidenceDependenciesCurrent } from "./response-evidence-contract.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const jsonHash = (value) => sha256(JSON.stringify(value));
+
+// The most finished turns the runner trial page's reconcile returns at once: after the page's last one, or when it names none.
+const RECONCILE_TURN_LIMIT = 10;
+// What a runner trial turn does with its case: it reads the case, writes the turn and records the turn's audit.
+const RUNNER_TURN_SCOPES = Object.freeze([PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE, PRIVATE_CASE_SCOPES.AUDIT]);
 
 function requiredFunction(value, name) {
   if (typeof value !== "function") throw new ValidationError(`${name} must be a function.`);
@@ -65,6 +71,7 @@ function normalizeInvocationOutput(value) {
 export function createPrivateTherapyTurnController({
   privateCaseSource,
   modelRuntime,
+  runnerConfig = null,
   // Off by default. No production provider exists yet, and the servers build this controller
   // without one, so therapy turns read no journal evidence. Supplying one is a separate change,
   // made once the import has published a session-use generation that passed its cold test.
@@ -75,6 +82,10 @@ export function createPrivateTherapyTurnController({
   if (!privateCaseSource || typeof privateCaseSource !== "object") throw new ValidationError("privateCaseSource is required.");
   if (!modelRuntime || typeof modelRuntime !== "object") throw new ValidationError("modelRuntime is required.");
   for (const method of ["produceCandidate", "auditCandidate", "repairCandidate", "produceDiscriminator"]) requiredFunction(modelRuntime[method], `modelRuntime.${method}`);
+  // The runner trial's runtime (src/runner-trial/runtime.mjs) closes a turn it can't answer instead of producing a discriminator,
+  // and says whether a repair still fits in the turn's time; every other runtime leaves this path exactly as it was.
+  const closesTurns = typeof modelRuntime.closeTurn === "function";
+  if (closesTurns) for (const method of ["repairFits", "closingReason", "closeUnfinishedTurns", "currentConversationTurnIds"]) requiredFunction(modelRuntime[method], `modelRuntime.${method}`);
   const evidenceEnforced = responseEvidence.enforced === true;
   const journalTimeoutMs = responseEvidence.journalTimeoutMs ?? 4000;
   if (!Number.isSafeInteger(journalTimeoutMs) || journalTimeoutMs < 1) throw new ValidationError("Response evidence timeout invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
@@ -91,6 +102,72 @@ export function createPrivateTherapyTurnController({
   const loadCase = (caseId, authContext) => typeof privateCaseSource.loadPrivateRuntimeCase === "function"
     ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext)
     : privateCaseSource.loadOrCreate(caseId);
+  // The case's record when it exists, without creating one (the runner trial page's reconcile, for a case with no turns yet).
+  const loadExistingCase = async (caseId, authContext) => {
+    if (typeof privateCaseSource.loadPrivateRuntimeCase === "function") {
+      try { return await privateCaseSource.loadPrivateRuntimeCase(caseId, authContext); }
+      catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null; throw error; }
+    }
+    return typeof privateCaseSource.load === "function" ? privateCaseSource.load(caseId) : privateCaseSource.loadOrCreate(caseId);
+  };
+
+  // One case's work is taken one at a time, in arrival order: a turn, the trial page's reconcile after a reload, a deletion.
+  async function queued(caseId, operation) {
+    const previousTail = runTails.get(caseId) ?? Promise.resolve();
+    let release;
+    const currentTail = new Promise((resolve) => { release = resolve; });
+    runTails.set(caseId, currentTail);
+    await previousTail;
+    try { return await operation(); }
+    finally {
+      release();
+      if (runTails.get(caseId) === currentTail) runTails.delete(caseId);
+    }
+  }
+
+  // The check a runner trial turn of this case needs, made before anything of a turn is shared: the case's read, write and audit
+  // scopes, from a source that authorizes each request for its case (the access service); a source without that (the owner's own
+  // store opened by this server) has nothing to check. The turn makes it first, and the page's stream makes the same check before
+  // it listens for the case's events, so a request the turn would refuse hears nothing of another request's turn.
+  async function authorizeTurn({ caseId, authContext }) {
+    if (typeof privateCaseSource.authorizeCase !== "function") return;
+    for (const scope of RUNNER_TURN_SCOPES) await privateCaseSource.authorizeCase(caseId, authContext, scope);
+  }
+
+  // The runner trial page's recovery when it loads (docs/superpowers/specs/2026-11-21-runner-trial-design.md, section 8). The store
+  // can't list cases, so a restart can't find unfinished turns by itself: the page names its case. Inside the case's queue, so a
+  // turn still running in this server is waited for, never closed under it. Every unfinished turn is closed as interrupted, except
+  // an APPROVED one, which is delivered. Then a page that still shows its earlier turns gets the finished turns after the last one
+  // it shows, so a reply that finished while the page was gone is shown (at most RECONCILE_TURN_LIMIT, the latest); a page that
+  // shows none of them (a reload: the page keeps no transcript) gets every turn of the current conversation instead.
+  async function reconcileCase({ caseId, afterExchangeId, currentConversation = false, authContext }) {
+    let record = await loadExistingCase(caseId, authContext);
+    if (!record) return [];
+    // The runner trial's kept plan: one past its 30 days is deleted when the page loads, whether or not its switch is on now.
+    if (typeof modelRuntime.expireKeptPlans === "function") record = await modelRuntime.expireKeptPlans({ caseId, record, authContext });
+    if (record.runtime_turns.some((turn) => !isFinishedRuntimeTurn(turn))) {
+      await modelRuntime.closeUnfinishedTurns({ caseId, keepRuntimeTurnId: null, authContext });
+      record = await loadCase(caseId, authContext);
+    }
+    const finished = record.runtime_turns.filter(isFinishedRuntimeTurn);
+    let turns;
+    if (currentConversation) {
+      const conversation = new Set(modelRuntime.currentConversationTurnIds(record));
+      turns = finished.filter((turn) => conversation.has(turn.id));
+    } else {
+      const shownAt = afterExchangeId == null ? -1 : finished.findIndex((turn) => turn.exchange_id === afterExchangeId);
+      turns = finished.slice(shownAt + 1).slice(-RECONCILE_TURN_LIMIT);
+    }
+    return turns.map((turn) => Object.freeze({
+      exchangeId: turn.exchange_id,
+      userMessage: turn.inbound.exact_text,
+      answer: turn.delivery?.exact_text ?? turn.closure?.exact_text ?? null,
+      deliveryKind: turn.delivery?.kind ?? turn.closure?.kind ?? null,
+      closing: turn.closure ? Object.freeze({ kind: turn.closure.kind, reason_code: turn.closure.reason_code }) : null,
+      provisional: turn.provisional?.exact_text ?? null,
+      emergencyLineShown: Boolean(turn.emergency_line_shown_at)
+    }));
+  }
 
   const freezeJournalEvidence = async ({ caseId, runtimeTurn, userInput, authContext }) => {
     if (!journalEvidenceProvider) return null;
@@ -157,6 +234,7 @@ export function createPrivateTherapyTurnController({
   };
 
   async function invoke({ caseId, runtimeTurn, operationKey, stage, inputIdentity, authContext, execute }) {
+    let lastError = null;
     const inputSha256 = jsonHash(inputIdentity);
     const events = runtimeTurn.events.filter((event) => event.stage === stage && event.input_sha256 === inputSha256);
     const completed = [...events].reverse().find((event) => event.event_type === "INVOCATION_COMPLETED");
@@ -231,6 +309,7 @@ export function createPrivateTherapyTurnController({
           inputSha256,
           details: safeInvocationFailure(error)
         }], authContext);
+        lastError = error;
         if (error?.code === "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED") throw error;
         if (nonRetryable(error)) break;
         attempt += 1;
@@ -238,7 +317,7 @@ export function createPrivateTherapyTurnController({
     }
     throw new RuntimeError("InnerSignal could not safely complete this response. Nothing unaudited was delivered.", {
       code: "THERAPY_RUNTIME_UNAVAILABLE",
-      details: { stage, attempts_exhausted: true }
+      details: { stage, attempts_exhausted: true, last_error_code: typeof lastError?.code === "string" ? lastError.code.slice(0, 80) : null }
     });
   }
 
@@ -248,25 +327,22 @@ export function createPrivateTherapyTurnController({
     if (userInput && Object.hasOwn(userInput, "pendingReplyRevision")) {
       throw new ValidationError("Supervisor reply revision cannot be submitted to the private therapy response endpoint.");
     }
-    await call("beginPrivateRuntimeTurn", [caseId, { runtimeTurnId, exchangeId, userTurnId, exactText: userMessage }], authContext);
+    // Inside the per-case queue (run below): on the runner trial's path the request is authorized for every scope the turn uses
+    // before the turn does anything, then a turn of this case that a restart or a failure left unfinished is closed first, so the
+    // new message isn't refused as busy. Only the runner trial's runtime does this.
+    if (closesTurns) {
+      await authorizeTurn({ caseId, authContext });
+      await modelRuntime.closeUnfinishedTurns({ caseId, keepRuntimeTurnId: runtimeTurnId, authContext });
+    }
+    await call("beginPrivateRuntimeTurn", [caseId, { runtimeTurnId, exchangeId, userTurnId, exactText: userMessage, ...(closesTurns && runnerConfig ? { runnerConfig } : {}) }], authContext);
     const operationKey = sha256(`${caseId}\u0000${runtimeTurnId}`).slice(0, 24);
 
-    for (let step = 0; step < 40; step += 1) {
-      try {
-      const runtimeTurn = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);
-      if (runtimeTurn.state === "DELIVERED") {
-        const record = await loadCase(caseId, authContext);
-        const productionResult = runtimeTurn.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "candidate")?.details?.output?.result ?? {};
-        return Object.freeze({
-          answer: runtimeTurn.delivery.exact_text,
-          deliveryKind: runtimeTurn.delivery.kind,
-          runtimeTurn: structuredClone(runtimeTurn),
-          runtimeMetadata: structuredClone(productionResult),
-          durableCaseState: structuredClone(record.case_state),
-          caseStateDiff: record.last_state_diff ? structuredClone(record.last_state_diff) : null
-        });
-      }
-
+    const closeTurn = async (runtimeTurn, reasonCode) => {
+      await modelRuntime.closeTurn({ caseId, runtimeTurn, reasonCode, assistantTurnId, eventId: `runtime-event:${operationKey}:closed`, authContext });
+    };
+    // One step of the turn's lifecycle, from its stored state. On the runner trial's path, a failed check with no time left for a
+    // repair, and the end of the repairs, close the turn instead of producing a discriminator.
+    const advance = async (runtimeTurn) => {
       if (runtimeTurn.state === "RECEIVED") {
         // A candidate that already completed keeps the evidence it was produced with. Freezing again
         // after a restart could pick up a newer snapshot, miss the completed call, produce a second
@@ -320,7 +396,7 @@ export function createPrivateTherapyTurnController({
           },
           eventId: `runtime-event:${operationKey}:candidate:v1:persisted`
         }], authContext);
-        continue;
+        return;
       }
 
       if (runtimeTurn.state === "CANDIDATE_PENDING_AUDIT") {
@@ -329,7 +405,7 @@ export function createPrivateTherapyTurnController({
           toState: "AUDITING",
           details: { candidate_id: runtimeTurn.current_candidate_id, repair_cycle: runtimeTurn.repair_cycle }
         }], authContext);
-        continue;
+        return;
       }
 
       if (runtimeTurn.state === "AUDITING") {
@@ -347,7 +423,7 @@ export function createPrivateTherapyTurnController({
             await call("commitPrivateRuntimeEvidenceStale", [caseId, runtimeTurnId, {
               eventId: `runtime-event:${operationKey}:audit:v${candidate.repair_cycle + 1}:stale`
             }], authContext);
-            continue;
+            return;
           }
           responseEvidenceInput = prepared.evidence ?? { snapshot };
         }
@@ -376,16 +452,21 @@ export function createPrivateTherapyTurnController({
         await call("commitPrivateRuntimeAudit", [caseId, runtimeTurnId, evidence, {
           eventId: `runtime-event:${operationKey}:audit:v${candidate.repair_cycle + 1}:persisted`
         }], authContext);
-        continue;
+        return;
       }
 
       if (runtimeTurn.state === "REPAIR_REQUIRED") {
+        // The runner trial starts a repair only when a whole writer-and-checker round still fits in the turn's time.
+        if (closesTurns && !(await modelRuntime.repairFits({ caseId, runtimeTurn }))) {
+          await closeTurn(runtimeTurn, "checks_failed");
+          return;
+        }
         await call("transitionPrivateRuntimeTurn", [caseId, runtimeTurnId, {
           eventId: `runtime-event:${operationKey}:repair:v${runtimeTurn.repair_cycle + 2}:started`,
           toState: "RECONSTRUCTING",
           details: { parent_candidate_id: runtimeTurn.current_candidate_id, next_repair_cycle: runtimeTurn.repair_cycle + 1 }
         }], authContext);
-        continue;
+        return;
       }
 
       if (runtimeTurn.state === "RECONSTRUCTING") {
@@ -434,19 +515,29 @@ export function createPrivateTherapyTurnController({
           },
           eventId: `runtime-event:${operationKey}:candidate:v${parent.repair_cycle + 2}:persisted`
         }], authContext);
-        continue;
+        return;
       }
 
       if (runtimeTurn.state === "APPROVED") {
+        // The runner trial delivers an approved reply itself: one written with a client's journal in view only while that client's
+        // consent stands, and one that response evidence no longer admits is closed instead (the design for clients, point 6).
+        if (closesTurns && typeof modelRuntime.deliverApproved === "function") {
+          await modelRuntime.deliverApproved({ caseId, runtimeTurn, assistantTurnId, eventId: `runtime-event:${operationKey}:candidate:delivered`, closeEventId: `runtime-event:${operationKey}:closed`, authContext });
+          return;
+        }
         await call("deliverPrivateRuntimeCandidate", [caseId, runtimeTurnId, {
           candidateId: runtimeTurn.current_candidate_id,
           assistantTurnId,
           eventId: `runtime-event:${operationKey}:candidate:delivered`
         }], authContext);
-        continue;
+        return;
       }
 
       if (runtimeTurn.state === "DISCRIMINATING_QUESTION_REQUIRED") {
+        if (closesTurns) {
+          await closeTurn(runtimeTurn, "checks_failed");
+          return;
+        }
         const needsFirstReview = runtimeTurn.discriminator && runtimeTurn.discriminator.kind !== OWNER_FALLBACK_KIND
           && !runtimeTurn.discriminator_review && (evidenceEnforced || snapshotsFor(await loadCase(caseId, authContext), runtimeTurn).length > 0);
         if (!runtimeTurn.discriminator || needsFirstReview) {
@@ -517,16 +608,53 @@ export function createPrivateTherapyTurnController({
           assistantTurnId,
           eventId: `runtime-event:${operationKey}:discriminator:delivered`
         }], authContext);
-        continue;
+        return;
       }
 
       throw new RuntimeError(`Private runtime has no executable action for ${runtimeTurn.state}.`, {
         code: "PRIVATE_RUNTIME_FRONTIER_INVALID",
         details: { next_action: privateRuntimeNextAction(runtimeTurn) }
       });
+    };
+
+    for (let step = 0; step < 40; step += 1) {
+      const runtimeTurn = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);
+      if (runtimeTurn.state === "UNANSWERED") {
+        const record = await loadCase(caseId, authContext);
+        return Object.freeze({
+          answer: runtimeTurn.closure.exact_text,
+          deliveryKind: runtimeTurn.closure.kind,
+          closing: Object.freeze({ kind: runtimeTurn.closure.kind, reason_code: runtimeTurn.closure.reason_code }),
+          runtimeTurn: structuredClone(runtimeTurn),
+          runtimeMetadata: {},
+          durableCaseState: structuredClone(record.case_state),
+          caseStateDiff: record.last_state_diff ? structuredClone(record.last_state_diff) : null
+        });
+      }
+      if (runtimeTurn.state === "DELIVERED") {
+        const record = await loadCase(caseId, authContext);
+        const productionResult = runtimeTurn.events.find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "candidate")?.details?.output?.result ?? {};
+        return Object.freeze({
+          answer: runtimeTurn.delivery.exact_text,
+          deliveryKind: runtimeTurn.delivery.kind,
+          runtimeTurn: structuredClone(runtimeTurn),
+          runtimeMetadata: structuredClone(productionResult),
+          durableCaseState: structuredClone(record.case_state),
+          caseStateDiff: record.last_state_diff ? structuredClone(record.last_state_diff) : null
+        });
+      }
+
+      try {
+        await advance(runtimeTurn);
       } catch (error) {
+        // A call whose response-evidence input changed under it is retried from the stored state.
         if (error?.code === "RESPONSE_EVIDENCE_CALL_INPUT_CHANGED") continue;
-        throw error;
+        if (!closesTurns) throw error;
+        // The runner trial ends every failure with a closing, so the case is never left busy (design, section 7).
+        const current = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);
+        if (isFinishedRuntimeTurn(current)) continue;
+        if (current.state === "APPROVED") throw error;
+        await closeTurn(current, modelRuntime.closingReason(error));
       }
     }
     throw new RuntimeError("Private runtime exceeded its bounded transition ceiling.", { code: "PRIVATE_RUNTIME_FRONTIER_INVALID" });
@@ -534,17 +662,28 @@ export function createPrivateTherapyTurnController({
 
   return Object.freeze({
     async run(input) {
-      const caseId = input?.caseId;
-      const previousTail = runTails.get(caseId) ?? Promise.resolve();
-      let release;
-      const currentTail = new Promise((resolve) => { release = resolve; });
-      runTails.set(caseId, currentTail);
-      await previousTail;
-      try { return await executeRun(input); }
-      finally {
-        release();
-        if (runTails.get(caseId) === currentTail) runTails.delete(caseId);
-      }
-    }
+      return queued(input?.caseId, () => executeRun(input));
+    },
+    // Only the runner trial's controller offers these: the turn's authorization, for the page's stream before it listens (it needs
+    // no queue: it reads nothing of the case); its page's reconcile and "Delete this case", which wait for the case's queue.
+    ...(closesTurns ? {
+      authorizeTurn,
+      async reconcile({ caseId, afterExchangeId = null, currentConversation = false, authContext } = {}) {
+        return queued(caseId, () => reconcileCase({ caseId, afterExchangeId, currentConversation: currentConversation === true, authContext }));
+      },
+      async deleteCase({ caseId, authContext } = {}) {
+        return queued(caseId, () => call("deletePrivateCase", [caseId], authContext));
+      },
+      // The plan kept for next time, only when the trial's runtime has it on (design, section 9): what the page needs to ask "Pick
+      // up where we left off?" when it loads (read without creating a case), and its "Delete the kept plan". Both wait for the queue.
+      ...(typeof modelRuntime.resumeStatus === "function" && typeof modelRuntime.deleteKeptPlans === "function" ? {
+        async resumeStatus({ caseId, authContext } = {}) {
+          return queued(caseId, async () => modelRuntime.resumeStatus({ caseId, record: await loadExistingCase(caseId, authContext), authContext }));
+        },
+        async deleteKeptPlan({ caseId, authContext } = {}) {
+          return queued(caseId, () => modelRuntime.deleteKeptPlans({ caseId, authContext }));
+        }
+      } : {})
+    } : {})
   });
 }

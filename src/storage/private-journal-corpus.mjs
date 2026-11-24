@@ -58,14 +58,21 @@ async function readRegularJson(file) {
   } finally { await handle.close(); }
 }
 
+// Where one case's journal corpus keeps its objects: a folder named from the case id and the corpus id together, so no other case
+// or corpus can share it. Deleting a case removes the folders of the corpora its record names.
+export function privateJournalCorpusDirectory({ rootDir, caseId, corpusId }) {
+  if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private path.");
+  const storageId = digest(Buffer.from(`${validId(caseId, "caseId")}\0${validId(corpusId, "corpusId")}`, "utf8")).slice(0, 48);
+  return path.join(path.resolve(rootDir), ".journal-corpora", storageId);
+}
+
 export function createPrivateJournalCorpusStore({ rootDir, caseId, corpusId, corpusKey, resumeMatchingObjects = false }) {
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private path.");
   const checkedCaseId = validId(caseId, "caseId");
   const checkedCorpusId = validId(corpusId, "corpusId");
   if (!(corpusKey instanceof Uint8Array) || corpusKey.byteLength !== 32) throw new ValidationError("corpusKey must be 32-byte key material.");
   const key = Buffer.from(corpusKey);
-  const storageId = digest(Buffer.from(`${checkedCaseId}\0${checkedCorpusId}`, "utf8")).slice(0, 48);
-  const corpusDirectory = path.join(path.resolve(rootDir), ".journal-corpora", storageId);
+  const corpusDirectory = privateJournalCorpusDirectory({ rootDir, caseId: checkedCaseId, corpusId: checkedCorpusId });
   let closed = false;
   const ensureOpen = () => { if (closed) throw new ValidationError("Journal corpus store is closed."); };
   const objectFile = ({ objectId, objectVersion, chunkIndex }) => path.join(

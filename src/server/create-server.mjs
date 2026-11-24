@@ -10,6 +10,7 @@ import { runCaseFormulation } from "../case-formulation/run.mjs";
 import { runHypnosisCompilerPipeline } from "../orchestrator/run-hypnosis-compiler.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
+import { RuntimeError } from "../core/errors.mjs";
 import { buildDiagnosticBundle } from "../export/diagnostic-bundle.mjs";
 import { recordDevelopmentFeedback } from "../dev/feedback-store.mjs";
 import { recordAutomaticDevelopmentIncident } from "../dev/incidents.mjs";
@@ -37,6 +38,15 @@ import { summarizeTrackerWindow } from "../case-state/tracker.mjs";
 import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-model-runtime.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
+import { createRunnerTrialController, isRunnerEventHub, runnerEventLine } from "../runner-trial/trial-controller.mjs";
+import { loadRunnerRules } from "../runner-trial/released-rules.mjs";
+import { runnerLogFromRecord } from "../runner-trial/run-log.mjs";
+import { runnerTurnDetailsFromRecord } from "../runner-trial/turn-details.mjs";
+import { runnerArrangement } from "../runner-trial/settings.mjs";
+import { RUNNER_TRIAL_CASE_ID_PATTERN, RUNNER_TRIAL_CASE_ID_SETTING } from "../runner-trial/switch.mjs";
+import { readColdTestReceipt, readRunnerClients, runnerCasesView } from "../runner-trial/clients.mjs";
+import { runnerTrialDirectory } from "../runner-trial/released-rules.mjs";
+import { FEEDBACK_PAGE_URL } from "../feedback/address.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(here, "../../apps/web");
@@ -217,6 +227,8 @@ async function readJson(req, maxBytes = 2_000_000) {
 // authorization; a request that carries its own bearer token is an authenticated agent acting for someone, which does not make
 // it the owner.
 const SUPERVISOR_PATH = /^\/v1\/case\/supervisor\/(prepare|submit|export|report-sent)$/u;
+const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/clients", "/v1/runner/log", "/v1/runner/turn-details", "/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
+const RUNNER_PAGE_GETS = Object.freeze(["/v1/runner/clients", "/v1/runner/log", "/v1/runner/turn-details"]);
 const LOOPBACK_HOST = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/iu;
 const SUPERVISOR_STATUS = Object.freeze({
   SUPERVISOR_ARTIFACT_NOT_FOUND: 404,
@@ -244,16 +256,113 @@ const supervisorChannelFor = (req) => (typeof req.headers.authorization === "str
 // the Host must be a loopback name and the Origin must be present and name that same host over http. A request with no Origin did
 // not come from a page, so it is refused too. This is all the owner channel can check: a process on this machine that deliberately
 // sends these headers looks the same as the owner's page (see "Who is calling" in docs/PRIVATE-CASE-CONTINUITY.md).
-function assertOwnerChannelRequest(req) {
+function assertOwnerChannelRequest(req, { pageGet = false } = {}) {
   const refused = () => supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
   if (!LOOPBACK_HOST.test(String(req.headers.host ?? ""))) throw refused();
   let origin = null;
   if (typeof req.headers.origin === "string") {
     try { origin = new URL(req.headers.origin); } catch { /* an unreadable Origin is refused below, like an absent one */ }
   }
+  // Browsers omit Origin on a same-origin GET and forbid scripts from setting it. For this read-only page route,
+  // require both the browser's same-origin fetch marker and a matching Referer when Origin is absent.
+  if (!origin && req.headers.origin === undefined && pageGet && req.headers["sec-fetch-site"] === "same-origin" && typeof req.headers.referer === "string") {
+    try { origin = new URL(req.headers.referer); } catch { /* refused below */ }
+  }
   if (!origin || origin.protocol !== "http:" || origin.host.toLowerCase() !== String(req.headers.host).toLowerCase()) throw refused();
   const site = req.headers["sec-fetch-site"];
   if (site !== undefined && !["same-origin", "none"].includes(site)) throw refused();
+}
+
+// What an error answers: its status and a body with a safe message. A private failure's message is fixed words, never case content.
+function failureResponse(error) {
+  const code = error?.code ?? "UNEXPECTED_ERROR";
+  const status = SUPERVISOR_STATUS[code]
+    ?? (code === "VALIDATION_ERROR" ? 400
+      : code === "PRIVATE_CASE_ACCESS_DENIED" ? 403
+        : code === "PRIVATE_CASE_NOT_FOUND" ? 404
+        : ["THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_CASE_KEY_UNAVAILABLE"].includes(code) ? 503
+          : 500);
+  const privateFailure = /^(?:PRIVATE_|THERAPY_RUNTIME_|PROVIDER_)/u.test(code);
+  // The reasons a supervisor draft was refused are fixed words, never case content, so they are safe to return.
+  const reasons = Object.hasOwn(SUPERVISOR_STATUS, code) && Array.isArray(error?.details?.reasons)
+    && error.details.reasons.every((reason) => typeof reason === "string" && /^[a-z_]{1,60}$/u.test(reason))
+    ? { reasons: error.details.reasons }
+    : {};
+  return {
+    status,
+    body: {
+      error: privateFailure ? "InnerSignal could not safely complete this request." : error?.message,
+      code,
+      ...reasons
+    }
+  };
+}
+
+// The answer to one private therapy turn, as JSON or as the stream's final line. A turn the runner trial closed without a reply
+// also carries its closing: the kind (the notice or the owner's fixed message) and the reason, in fixed words. With the trial on,
+// every answer also carries what the stored turn showed before its reply: the provisional reply's exact text (or null) and whether
+// the emergency line was put into the conversation, so a page that got no live events (a JSON answer, or a replay of a finished
+// turn) shows them as the stream would have. With the kept plan on too, it says whether the turn kept a plan or deleted the kept
+// plan ("kept", "deleted" or null), so the page can say so outside the reply: the writer can't know what the program keeps.
+function therapyAnswer(result, { runnerTrial = false, keptPlan = false } = {}) {
+  const metadata = result.runtimeMetadata ?? {};
+  return {
+    answer: result.answer,
+    mode: metadata.mode ?? "private-runtime",
+    processingTier: metadata.processingTier ?? metadata.mode ?? "private-runtime",
+    routingReason: metadata.routingReason ?? "automatic exact-version audit lifecycle",
+    graphBundleVersion: metadata.graphBundleVersion ?? null,
+    caseFormulation: metadata.caseFormulation ?? null,
+    interventionContract: metadata.interventionContract ?? null,
+    responseContract: metadata.responseContract ?? null,
+    processingMs: metadata.processingMs ?? null,
+    durableCaseState: caseStateForClient(result.durableCaseState),
+    caseState: projectCaseStateForInspection(result.durableCaseState),
+    caseStateDiff: result.caseStateDiff,
+    privateCaseStorage: "encrypted",
+    orchestration: {
+      state: result.runtimeTurn.state,
+      deliveryKind: result.deliveryKind,
+      repairCycle: result.runtimeTurn.repair_cycle,
+      lifecycleOwner: "server"
+    },
+    ...(result.closing ? { closing: { kind: result.closing.kind, reason_code: result.closing.reason_code } } : {}),
+    ...(runnerTrial ? {
+      provisional: typeof result.runtimeTurn?.provisional?.exact_text === "string" ? result.runtimeTurn.provisional.exact_text : null,
+      emergencyLineShown: Boolean(result.runtimeTurn?.emergency_line_shown_at)
+    } : {}),
+    ...(runnerTrial && keptPlan ? { keptPlan: result.runtimeTurn?.kept_plan_kept_at ? "kept" : result.runtimeTurn?.kept_plan_deleted_at ? "deleted" : null } : {})
+  };
+}
+
+const acceptsNdjson = (req) => /(?:^|,)\s*application\/x-ndjson\s*(?:[;,]|$)/iu.test(String(req.headers.accept ?? ""));
+
+// The runner trial's page asks for newline-delimited JSON: one line per event of this request's turn as it happens (status,
+// provisional, emergency_line, closed), then one final line with the same fields as the JSON answer, or an error line. Nothing
+// is logged, and the subscription (to this case's turn, never another case's turn of the same id) ends with the request. The
+// request is authorized for its case first, with the check the turn itself makes (`authorize`): a request the turn would refuse
+// gets that refusal as its answer (thrown before anything is written) and never listens, so it hears no line of another
+// request's turn of the same case and turn id.
+async function streamRunnerTurn(res, { events, caseId, runtimeTurnId, authorize, run, keptPlan = false }) {
+  await authorize();
+  res.writeHead(200, securityHeaders({ "content-type": "application/x-ndjson" }));
+  const write = (line) => {
+    if (res.writableEnded || res.destroyed) return;
+    try { res.write(`${JSON.stringify(line)}\n`); } catch { /* a page that went away never stops the turn */ }
+  };
+  const unsubscribe = events.subscribe(caseId, runtimeTurnId, (event) => {
+    const line = runnerEventLine(event);
+    if (line) write(line);
+  });
+  try {
+    write({ type: "final", ...therapyAnswer(await run(), { runnerTrial: true, keptPlan }) });
+  } catch (error) {
+    const { body } = failureResponse(error);
+    write({ type: "error", error: body.error, code: body.code });
+  } finally {
+    unsubscribe();
+    if (!res.writableEnded) res.end();
+  }
 }
 
 async function readSupervisorBody(req) {
@@ -267,9 +376,23 @@ async function readSupervisorBody(req) {
   return input;
 }
 
-export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateTherapyController = null, privateSupervisorService = null }) {
+export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateCaseAuthContexts = new Map(), privateTherapyController = null, privateSupervisorService = null, runnerTrialEvents = null, runnerTrialSettings = null }) {
   const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
-  const automaticPrivateTherapy = privateTherapyController ?? (privateCaseSource
+  // The runner trial (INNER_SIGNAL_RUNNER_TRIAL): its controller and the hub that carries its events to the page. A caller that
+  // brings its own controller (the loopback launcher, which shares one between its listeners, or a test) brings the hub too.
+  // With the switch off, everything below is as it was, and a hub passed in is ignored.
+  let runnerTrial = null;
+  if (config.runnerTrialEnabled === true) {
+    if (privateTherapyController) {
+      if (!isRunnerEventHub(runnerTrialEvents)) throw new RuntimeError("A runner trial controller needs its event hub.", { code: "BAD_CONFIG" });
+      // The stream authorizes a request for its case before it listens for the case's events, with the turn's own check.
+      if (typeof privateTherapyController.authorizeTurn !== "function") throw new RuntimeError("A runner trial controller needs its turn authorization.", { code: "BAD_CONFIG" });
+      runnerTrial = { controller: privateTherapyController, events: runnerTrialEvents };
+    } else {
+      runnerTrial = createRunnerTrialController({ privateCaseSource, config, clientCaseIds: [...privateCaseAuthContexts.keys()] });
+    }
+  }
+  const automaticPrivateTherapy = runnerTrial?.controller ?? privateTherapyController ?? (privateCaseSource
     ? createPrivateTherapyTurnController({
         privateCaseSource,
         modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
@@ -277,6 +400,37 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
       })
     : null);
+  const runnerEvents = runnerTrial?.events ?? null;
+  const runnerRules = runnerTrial ? runnerTrial.runnerRules ?? loadRunnerRules(config).runnerRules : null;
+  if (runnerTrial) automaticPrivateTherapy.startRunLog?.(privateAuthContext, privateCaseAuthContexts);
+  // With the trial on: what the page's badge shows of its arrangement (from the settings of the trial built here, or those a caller
+  // that brings its own controller passes along), and the case its page uses (INNER_SIGNAL_RUNNER_TRIAL_CASE_ID), checked again
+  // here so a value given to the server directly can't bypass the form loadConfig requires.
+  const trialSettings = runnerTrial ? runnerTrial.settings ?? runnerTrialSettings : null;
+  const runnerArrangementView = trialSettings ? runnerArrangement(trialSettings) : null;
+  const runnerCaseId = runnerTrial && config.runnerTrialCaseId != null ? config.runnerTrialCaseId : null;
+  if (runnerCaseId !== null && (typeof runnerCaseId !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(runnerCaseId))) {
+    throw new RuntimeError(`${RUNNER_TRIAL_CASE_ID_SETTING} must be a case id of the form case-<random UUID>, as scripts/runner-trial-start.mjs makes it.`, { code: "BAD_CONFIG" });
+  }
+  // The cases the trial's page may use (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, points 2 and 3): the owner's
+  // own, then each client's that the start script gave a grant. Every request names its case, and one not on the list is refused.
+  // Only when the start script named the owner's case: a trial server built without it (the tests' own) takes any case, as before.
+  const runnerCaseIds = runnerTrial && runnerCaseId !== null ? new Set([runnerCaseId, ...privateCaseAuthContexts.keys()]) : null;
+  const runnerCaseRefused = (caseId) => runnerCaseIds !== null && !runnerCaseIds.has(caseId);
+  const refuseRunnerCase = (res) => send(res, 404, { error: "This case isn't one of the runner trial's cases.", code: "RUNNER_CASE_UNKNOWN" });
+  // The plan kept for next time (INNER_SIGNAL_RUNNER_KEPT_PLAN; design, section 9): on only with the trial on. A controller brought in
+  // with it on must offer the page's two kept-plan methods; the trial built here offers them exactly when the switch is on.
+  let runnerKeptPlan = false;
+  const controllerKeepsPlans = runnerTrial && (typeof runnerTrial.controller.resumeStatus === "function" || typeof runnerTrial.controller.deleteKeptPlan === "function");
+  if (runnerTrial && config.runnerKeptPlanEnabled === true) {
+    if (typeof runnerTrial.controller.resumeStatus !== "function" || typeof runnerTrial.controller.deleteKeptPlan !== "function") {
+      throw new RuntimeError("A runner trial controller with the kept plan on needs its resume status and its kept-plan deletion.", { code: "BAD_CONFIG" });
+    }
+    runnerKeptPlan = true;
+  } else if (controllerKeepsPlans) {
+    // The switch has one state: a controller built with the kept plan on can't serve a server whose switch is off.
+    throw new RuntimeError("The kept plan is off, but the runner trial controller brought in has it on.", { code: "BAD_CONFIG" });
+  }
   // Built on first use, so a server that never serves a supervisor request never builds a second model runtime.
   let supervisorDrafts = privateSupervisorService;
   const supervisorDraftService = () => {
@@ -289,8 +443,10 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
     }
     return supervisorDrafts;
   };
-  const requestAuthContext = (req) => ({
-    ...(privateAuthContext ?? {}),
+  // A client case's own token for that case (the runner trial's clients), the owner's for every other; a request's own bearer token
+  // replaces either, and opens only what its grant opens.
+  const requestAuthContext = (req, caseId = null) => ({
+    ...((caseId !== null && privateCaseAuthContexts.get(caseId)) || privateAuthContext || {}),
     ...(typeof req.headers.authorization === "string" ? { bearerToken: req.headers.authorization.replace(/^Bearer\s+/iu, "") } : {})
   });
   const loadPrivateRecord = (caseId, authContext) => typeof privateCaseSource?.loadPrivateRuntimeCase === "function"
@@ -328,6 +484,38 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // so a deploy can check it before and after the owner turns it on. Reading a saved fallback does not depend on it.
           responseEvidence: responseEvidenceReadback(config.responseEvidenceEnforced === true),
           ownerFallback: config.ownerFallbackEnabled === true ? "on" : "off",
+          // Whether therapy turns run through the runner trial. It is on exactly when INNER_SIGNAL_RUNNER_TRIAL is on: with the switch
+          // on, a server that can't build the trial doesn't start. The page shows the trial's banner, line and stream from it.
+          runnerTrial: runnerEvents ? "on" : "off",
+          ...(runnerEvents ? { runnerRules } : {}),
+          // Whether the trial keeps a plan for next time (INNER_SIGNAL_RUNNER_KEPT_PLAN): on only with the trial on. The page shows the
+          // "Pick up where we left off?" question and the "Delete the kept plan" button from it.
+          runnerKeptPlan: runnerKeptPlan ? "on" : "off",
+          // Whether the trial gives the emergency number at once for what the crisis section sends there now though the person
+          // hasn't said they've acted (INNER_SIGNAL_RUNNER_NUMBER_NOW; design, section 9b): on only with the trial on. The trial built
+          // here, or by the loopback launcher, reads it from the same config; the page needs nothing new for it.
+          runnerNumberNow: runnerEvents && config.runnerNumberNowEnabled === true ? "on" : "off",
+          // Whether a turn the plan's limit, a lapsed sign-in or the time ends, in a conversation about wanting to die or getting safe,
+          // closes with the owner's fixed message instead of the notice (INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE; design, section 7):
+          // on only with the trial on and INNER_SIGNAL_OWNER_FALLBACK on, since it extends that message. The trial built here, or by
+          // the loopback launcher, reads it from the same config; the page shows the closing it gets as before.
+          runnerFixedMessageOnFailure: runnerEvents && config.ownerFallbackEnabled === true && config.runnerFixedMessageOnFailureEnabled === true ? "on" : "off",
+          // Whether every other failure there (a refusal, any other failed call, an interruption) closes with the owner's fixed message
+          // too (INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE; design, section 7): on only when runnerFixedMessageOnFailure is on as
+          // well, since it extends that switch. The trial reads it from the same config; the page shows the closing it gets as before.
+          runnerFixedMessageOnAnyFailure: runnerEvents && config.ownerFallbackEnabled === true && config.runnerFixedMessageOnFailureEnabled === true && config.runnerFixedMessageOnAnyFailureEnabled === true ? "on" : "off",
+          // Whether the trial page shows its "Send feedback about InnerSignal" link (INNER_SIGNAL_RUNNER_FEEDBACK_LINK): on only with
+          // the trial on, and then with the page's one address (src/feedback/address.mjs), so the link and the served rules agree.
+          runnerFeedbackLink: runnerEvents && config.runnerFeedbackLinkEnabled === true ? "on" : "off",
+          ...(runnerEvents && config.runnerFeedbackLinkEnabled === true ? { feedbackPageUrl: FEEDBACK_PAGE_URL } : {}),
+          // The trial's arrangement, for the page's badge: the writer's and the checkers' modes and the providers of the readers, the
+          // writer and the checkers. Null with the trial off, or when a controller was brought in without its settings.
+          runnerArrangement: runnerEvents ? runnerArrangementView : null,
+          // The case the trial's page uses, only with the trial on and INNER_SIGNAL_RUNNER_TRIAL_CASE_ID set: a page that holds another
+          // case (a fresh browser makes up its own) takes this one before its reconcile.
+          // The owner's own case. The page no longer takes it from here: it asks /v1/runner/clients which cases it may use, and the
+          // owner picks one for each conversation (the design for clients, point 3).
+          ...(runnerEvents && runnerCaseId ? { runnerCaseId } : {}),
           endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/case/supervisor/prepare", "/v1/case/supervisor/submit", "/v1/case/supervisor/export", "/v1/case/supervisor/report-sent", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }
@@ -340,43 +528,30 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       if (req.method === "POST" && url.pathname === "/v1/therapy/respond") {
         const input = await readJson(req);
         const caseId = readCaseId(input.caseId ?? "local-case");
+        if (runnerEvents && runnerCaseRefused(caseId)) return refuseRunnerCase(res);
         const exchangeId = safeEntryId(input.exchangeId, `exchange-${randomUUID()}`);
         const userTurnId = safeEntryId(input.userTurnId, `${exchangeId}-user`);
         const assistantTurnId = safeEntryId(input.assistantTurnId, `${exchangeId}-assistant`);
         if (automaticPrivateTherapy) {
           const runtimeTurnId = safeEntryId(input.runtimeTurnId, `runtime:${exchangeId}`);
-          const result = await automaticPrivateTherapy.run({
+          const authContext = requestAuthContext(req, caseId);
+          const run = () => automaticPrivateTherapy.run({
             caseId,
             runtimeTurnId,
             exchangeId,
             userTurnId,
             assistantTurnId,
             userMessage: input.userMessage,
-            userInput: input,
-            authContext: requestAuthContext(req)
+            // The trial starts a new conversation only on exactly true (the page's "New conversation" button). With the kept plan on, the
+            // answer to "Pick up where we left off?" is a Yes only on exactly true too.
+            userInput: runnerEvents ? { ...input, newConversation: input.newConversation === true, ...(runnerKeptPlan ? { resumeConfirmed: input.resumeConfirmed === true } : {}) } : input,
+            authContext
           });
-          const metadata = result.runtimeMetadata ?? {};
-          return send(res, 200, {
-            answer: result.answer,
-            mode: metadata.mode ?? "private-runtime",
-            processingTier: metadata.processingTier ?? metadata.mode ?? "private-runtime",
-            routingReason: metadata.routingReason ?? "automatic exact-version audit lifecycle",
-            graphBundleVersion: metadata.graphBundleVersion ?? null,
-            caseFormulation: metadata.caseFormulation ?? null,
-            interventionContract: metadata.interventionContract ?? null,
-            responseContract: metadata.responseContract ?? null,
-            processingMs: metadata.processingMs ?? null,
-            durableCaseState: caseStateForClient(result.durableCaseState),
-            caseState: projectCaseStateForInspection(result.durableCaseState),
-            caseStateDiff: result.caseStateDiff,
-            privateCaseStorage: "encrypted",
-            orchestration: {
-              state: result.runtimeTurn.state,
-              deliveryKind: result.deliveryKind,
-              repairCycle: result.runtimeTurn.repair_cycle,
-              lifecycleOwner: "server"
-            }
-          });
+          if (runnerEvents && acceptsNdjson(req)) {
+            const authorize = () => automaticPrivateTherapy.authorizeTurn({ caseId, authContext });
+            return await streamRunnerTurn(res, { events: runnerEvents, caseId, runtimeTurnId, authorize, run, keptPlan: runnerKeptPlan });
+          }
+          return send(res, 200, therapyAnswer(await run(), { runnerTrial: Boolean(runnerEvents), keptPlan: runnerKeptPlan }));
         }
         if (config.mode !== "mock") {
           return send(res, 503, { error: "Encrypted automatic therapy orchestration is not configured.", code: "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE" });
@@ -447,10 +622,92 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           privateCaseStorage: privateCaseStore ? "encrypted" : "session_only"
         });
       }
+      // The runner trial page's own routes (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 6, 8 and 9): its
+      // reconcile when it loads, "Delete this case" and, with the kept plan on, "Delete the kept plan". Only with the trial on (the
+      // last only with the kept plan on too), only from the owner's page on this machine (no agent's bearer token, a loopback Host and
+      // a matching Origin), and only as JSON; anything else is refused.
+      const runnerPageGet = RUNNER_PAGE_GETS.includes(url.pathname);
+      if ((req.method === "POST" || (req.method === "GET" && runnerPageGet)) && RUNNER_PAGE_ROUTES.has(url.pathname)) {
+        if (!runnerEvents || typeof automaticPrivateTherapy?.reconcile !== "function" || typeof automaticPrivateTherapy?.deleteCase !== "function") return send(res, 404, { error: "Not found" });
+        if (url.pathname === "/v1/runner/kept-plan/delete" && !runnerKeptPlan) return send(res, 404, { error: "Not found" });
+        if (supervisorChannelFor(req) !== "owner_ui") throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
+        assertOwnerChannelRequest(req, { pageGet: req.method === "GET" && runnerPageGet });
+        if (runnerPageGet && req.method !== "GET") return send(res, 404, { error: "Not found" });
+        if (url.pathname === "/v1/runner/clients") {
+          // Who the page's conversations can be with (design, point 3): the owner's own case and each client's, with their labels,
+          // read from the client list now, for this page on this computer only. A client added since the start has no grant yet.
+          res.setHeader("Cache-Control", "no-store");
+          const trialDir = runnerTrialDirectory(config);
+          const { clients } = trialDir ? await readRunnerClients(trialDir) : { clients: [] };
+          const granted = [...privateCaseAuthContexts.keys()];
+          const passed = new Set();
+          for (const client of clients) {
+            if (!granted.includes(client.case_id) || client.journal.corpus_id === null) continue;
+            const receipt = await readColdTestReceipt(trialDir, client.case_id);
+            if (receipt?.corpus_id === client.journal.corpus_id) passed.add(client.case_id);
+          }
+          return send(res, 200, runnerCasesView({ ownCaseId: runnerCaseId, clients, grantedCaseIds: granted, receiptsFor: (caseId) => passed.has(caseId) }));
+        }
+        const input = req.method === "GET" ? { caseId: url.searchParams.get("caseId") } : await readSupervisorBody(req);
+        // A malformed or missing case id on the Details route gets the same fixed not-found as a malformed turn (Codex's review 5).
+        const detailsRoute = url.pathname === "/v1/runner/turn-details";
+        const unavailable = () => send(res, 404, { error: "Turn details unavailable.", code: "RUNNER_TURN_NOT_FOUND" });
+        let caseId;
+        try { caseId = readCaseId(input.caseId); } catch (error) { if (detailsRoute && error?.code === "VALIDATION_ERROR") return unavailable(); throw error; }
+        if (runnerCaseRefused(caseId)) return detailsRoute ? unavailable() : refuseRunnerCase(res);
+        const authContext = requestAuthContext(req, caseId);
+        if (detailsRoute) {
+          const value = url.searchParams.get("turn");
+          if (url.searchParams.getAll("caseId").length !== 1 || url.searchParams.getAll("turn").length !== 1 || !/^[1-9][0-9]{0,15}$/u.test(value ?? "") || !Number.isSafeInteger(Number(value))) return unavailable();
+          let details;
+          try {
+            details = typeof automaticPrivateTherapy.turnDetails === "function"
+              ? await automaticPrivateTherapy.turnDetails({ caseId, turn: Number(value), authContext })
+              : runnerTurnDetailsFromRecord(await (typeof privateCaseSource?.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource?.load(caseId)), Number(value));
+          } catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return unavailable(); throw error; }
+          return details ? send(res, 200, details) : unavailable();
+        }
+        if (url.pathname === "/v1/runner/log") {
+          const log = typeof automaticPrivateTherapy.runLog === "function"
+            ? await automaticPrivateTherapy.runLog({ caseId, authContext })
+            : runnerLogFromRecord(await loadPrivateRecord(caseId, authContext));
+          return send(res, 200, log);
+        }
+        if (url.pathname === "/v1/runner/reconcile") {
+          // A page that shows none of the case's turns (a reload) asks for the current conversation, all of it; a page that still
+          // shows its earlier turns asks for those after the last one it shows.
+          const currentConversation = input.conversation === "current";
+          const afterExchangeId = currentConversation || input.afterExchangeId == null ? null : safeEntryId(input.afterExchangeId, null);
+          const turns = await automaticPrivateTherapy.reconcile({ caseId, afterExchangeId, currentConversation, authContext });
+          // With the kept plan on, whether to ask "Pick up where we left off?": the case has a conversation and the next message opens
+          // a new one. Nothing in it says whether a plan is kept.
+          const resume = runnerKeptPlan ? await automaticPrivateTherapy.resumeStatus({ caseId, authContext }) : null;
+          return send(res, 200, { caseId, turns, ...(resume ? { resume: { hasConversation: resume.hasConversation === true, nextStartsNewConversation: resume.nextStartsNewConversation === true } } : {}) });
+        }
+        if (url.pathname === "/v1/runner/kept-plan/delete") {
+          // The page's "Delete the kept plan", after the person confirmed its plain words. The answer is the same whether or not a
+          // plan was kept: none remains.
+          if (input.confirmed !== true) return send(res, 400, { error: "Confirm to delete the kept plan.", code: "VALIDATION_ERROR" });
+          await automaticPrivateTherapy.deleteKeptPlan({ caseId, authContext });
+          return send(res, 200, { caseId, keptPlanRemains: false });
+        }
+        if (input.confirmation !== "DELETE") return send(res, 400, { error: "Type DELETE to delete this case.", code: "VALIDATION_ERROR" });
+        const deleted = await automaticPrivateTherapy.deleteCase({ caseId, authContext });
+        return send(res, 200, {
+          caseId,
+          deleted: true,
+          caseFileRemoved: deleted.case_file_removed === true,
+          handoffsRemoved: deleted.handoffs_removed ?? 0,
+          journalCorporaRemoved: deleted.journal_corpora_removed ?? 0,
+          locatorFilesRemoved: (deleted.locator_files_removed ?? 0) + (deleted.alias_locator_files_removed ?? 0),
+          handoffsKept: Array.isArray(deleted.handoffs_kept) ? deleted.handoffs_kept.length : 0
+        });
+      }
       if (req.method === "GET" && url.pathname === "/v1/case/state") {
         if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; state remains session-only.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
         const caseId = readCaseId(url.searchParams.get("caseId"));
-        const record = await loadPrivateRecord(caseId, requestAuthContext(req));
+        if (runnerCaseRefused(caseId)) return refuseRunnerCase(res);
+        const record = await loadPrivateRecord(caseId, requestAuthContext(req, caseId));
         return send(res, 200, {
           caseId,
           durableCaseState: caseStateForClient(record.case_state),
@@ -466,29 +723,33 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; tracker entry was not persisted.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
         const input = await readJson(req);
         const caseId = readCaseId(input.caseId);
-        const record = await privateCaseSource.appendTracker(caseId, input.entry, requestAuthContext(req));
+        if (runnerCaseRefused(caseId)) return refuseRunnerCase(res);
+        const record = await privateCaseSource.appendTracker(caseId, input.entry, requestAuthContext(req, caseId));
         return send(res, 200, { caseId, trackerWindow: summarizeTrackerWindow(record.tracker_entries), persisted: "encrypted" });
       }
       if (req.method === "POST" && url.pathname === "/v1/case/journal") {
         if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; journal entry was not persisted.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
         const input = await readJson(req);
         const caseId = readCaseId(input.caseId);
-        const record = await privateCaseSource.appendJournal(caseId, input.entry, requestAuthContext(req));
+        if (runnerCaseRefused(caseId)) return refuseRunnerCase(res);
+        const record = await privateCaseSource.appendJournal(caseId, input.entry, requestAuthContext(req, caseId));
         return send(res, 200, { caseId, journalEntryCount: record.journal_entries.length, persisted: "encrypted" });
       }
       if (req.method === "POST" && url.pathname === "/v1/case/handoff") {
         if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; a handoff cannot be created.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
         const input = await readJson(req);
         const caseId = readCaseId(input.caseId);
-        const result = await privateCaseSource.createHandoff(caseId, {}, requestAuthContext(req));
+        if (runnerCaseRefused(caseId)) return refuseRunnerCase(res);
+        const result = await privateCaseSource.createHandoff(caseId, {}, requestAuthContext(req, caseId));
         return send(res, 200, result);
       }
       if (req.method === "GET" && url.pathname === "/v1/case/handoff/export") {
         if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; a handoff cannot be exported.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
         const caseId = readCaseId(url.searchParams.get("caseId"));
         const handoffId = readHandoffId(url.searchParams.get("handoffId"));
+        if (runnerCaseRefused(caseId)) return refuseRunnerCase(res);
         const payload = typeof privateCaseSource.loadPrivateRuntimeCase === "function"
-          ? await privateCaseSource.exportHandoff(handoffId, requestAuthContext(req))
+          ? await privateCaseSource.exportHandoff(handoffId, requestAuthContext(req, caseId))
           : await privateCaseSource.exportHandoff(caseId, handoffId);
         return sendEncryptedHandoff(res, payload, handoffId);
       }
@@ -627,7 +888,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         if (channel === "owner_ui") assertOwnerChannelRequest(req);
         const input = await readSupervisorBody(req);
         const caseId = readCaseId(input.caseId);
-        const authContext = requestAuthContext(req);
+        const authContext = requestAuthContext(req, caseId);
         switch (supervisorRoute[1]) {
           case "prepare":
             return send(res, 200, await drafts.prepareResponseContext({ caseId, inputs: input.inputs ?? [], authContext, channel }));
@@ -659,24 +920,13 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       }
       return send(res, 404, { error: "Not found" });
     } catch (error) {
-      const code = error.code ?? "UNEXPECTED_ERROR";
-      const status = SUPERVISOR_STATUS[code]
-        ?? (code === "VALIDATION_ERROR" ? 400
-          : code === "PRIVATE_CASE_ACCESS_DENIED" ? 403
-            : code === "PRIVATE_CASE_NOT_FOUND" ? 404
-            : ["THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_CASE_KEY_UNAVAILABLE"].includes(code) ? 503
-              : 500);
-      const privateFailure = /^(?:PRIVATE_|THERAPY_RUNTIME_|PROVIDER_)/u.test(code);
-      // The reasons a supervisor draft was refused are fixed words, never case content, so they are safe to return.
-      const reasons = Object.hasOwn(SUPERVISOR_STATUS, code) && Array.isArray(error.details?.reasons)
-        && error.details.reasons.every((reason) => typeof reason === "string" && /^[a-z_]{1,60}$/u.test(reason))
-        ? { reasons: error.details.reasons }
-        : {};
-      return send(res, status, {
-        error: privateFailure ? "InnerSignal could not safely complete this request." : error.message,
-        code,
-        ...reasons
-      });
+      const { status, body } = failureResponse(error);
+      // A stream that already began has said everything it can in its own error line.
+      if (res.headersSent) {
+        if (!res.writableEnded) res.end();
+        return;
+      }
+      return send(res, status, body);
     }
   });
 }

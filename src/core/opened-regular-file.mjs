@@ -7,7 +7,8 @@ function noFollowFlags() {
     error.code = "ERR_NOFOLLOW_UNAVAILABLE";
     throw error;
   }
-  return fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW;
+  // Non-blocking, so a named pipe is opened at once and refused as no regular file, never waited on (nothing changes for a file).
+  return fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW | (fs.constants.O_NONBLOCK ?? 0);
 }
 
 function requireRegularFile(openedStat) {
