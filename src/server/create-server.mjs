@@ -45,6 +45,7 @@ import { runnerTurnDetailsFromRecord } from "../runner-trial/turn-details.mjs";
 import { runnerArrangement } from "../runner-trial/settings.mjs";
 import { RUNNER_TRIAL_CASE_ID_PATTERN, RUNNER_TRIAL_CASE_ID_SETTING } from "../runner-trial/switch.mjs";
 import { readColdTestReceipt, readRunnerClients, runnerCasesView } from "../runner-trial/clients.mjs";
+import { COLD_TEST_RULE } from "../runner-trial/cold-test-rule.mjs";
 import { runnerTrialDirectory } from "../runner-trial/released-rules.mjs";
 import { FEEDBACK_PAGE_URL } from "../feedback/address.mjs";
 
@@ -644,7 +645,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           for (const client of clients) {
             if (!granted.includes(client.case_id) || client.journal.corpus_id === null) continue;
             const receipt = await readColdTestReceipt(trialDir, client.case_id);
-            if (receipt?.corpus_id === client.journal.corpus_id) passed.add(client.case_id);
+            // One of another rule, or an earlier test's that names none, opens nothing (clients.mjs).
+            if (receipt?.rule === COLD_TEST_RULE.version && receipt.corpus_id === client.journal.corpus_id) passed.add(client.case_id);
           }
           return send(res, 200, runnerCasesView({ ownCaseId: runnerCaseId, clients, grantedCaseIds: granted, receiptsFor: (caseId) => passed.has(caseId) }));
         }
@@ -693,6 +695,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         }
         if (input.confirmation !== "DELETE") return send(res, 400, { error: "Type DELETE to delete this case.", code: "VALIDATION_ERROR" });
         const deleted = await automaticPrivateTherapy.deleteCase({ caseId, authContext });
+        // The case is gone from the vault; what couldn't be cleared besides is named by fixed codes, and deleting again clears it.
+        const cleanupLeft = Array.isArray(deleted.cleanup_left) ? deleted.cleanup_left.filter((code) => /^[A-Z_]{1,40}$/u.test(code)) : [];
         return send(res, 200, {
           caseId,
           deleted: true,
@@ -700,7 +704,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           handoffsRemoved: deleted.handoffs_removed ?? 0,
           journalCorporaRemoved: deleted.journal_corpora_removed ?? 0,
           locatorFilesRemoved: (deleted.locator_files_removed ?? 0) + (deleted.alias_locator_files_removed ?? 0),
-          handoffsKept: Array.isArray(deleted.handoffs_kept) ? deleted.handoffs_kept.length : 0
+          handoffsKept: Array.isArray(deleted.handoffs_kept) ? deleted.handoffs_kept.length : 0,
+          ...(cleanupLeft.length ? { cleanupLeft } : {})
         });
       }
       if (req.method === "GET" && url.pathname === "/v1/case/state") {

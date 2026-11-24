@@ -3,6 +3,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
+import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
+import { COLD_QUESTION_AUTHORS, COLD_TEST_RULE } from "./cold-test-rule.mjs";
 import { RUNNER_TRIAL_CASE_ID_PATTERN } from "./switch.mjs";
 
 // The runner trial's clients (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, the owner's answer 1a to question
@@ -12,16 +14,18 @@ import { RUNNER_TRIAL_CASE_ID_PATTERN } from "./switch.mjs";
 // or a report. Nothing here reads the vault.
 
 export const RUNNER_CLIENTS_FILE = "clients.json";
-// Each client's journal folder in the trial folder: the cold-test receipt now; the copy's bundle and staging when the copy step is
-// built (design, point 4). "Delete this case" removes it with the case.
+// Each client's journal folder in the trial folder: their key for journal copies, their copy's cold-test receipt and the marker of the
+// cold test started last (scripts/runner-trial-journal.mjs). "Delete this case" removes it with the case.
 export const RUNNER_JOURNAL_FOLDER = "journal";
 export const COLD_TEST_RECEIPT_FILE = "cold-test-receipt.json";
+export const COLD_TEST_ATTEMPT_FILE = "cold-test-attempt.json";
 export const MAX_RUNNER_CLIENTS = 50;
 export const CLIENT_LABEL_MAX = 80;
 
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/u;
 const CORPUS_ID = /^[A-Za-z0-9:_-]{1,160}$/u;
 const ID = /^[A-Za-z0-9:._-]{1,160}$/u;
+const ATTEMPT = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
 const invalid = (message) => { throw new ValidationError(message, { code: "RUNNER_CLIENTS_INVALID" }); };
 const plainObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -70,7 +74,11 @@ export function validateRunnerClients(value) {
     if (labels.has(folded)) invalid(`${name}'s label is another client's too.`);
     labels.add(folded);
     timestamp(client.added_at, `${name}.added_at`);
-    exactKeys(client.journal, ["corpus_id", "consent"], `${name}.journal`);
+    // `source_sha256`: a digest of the server case the client's copies come from (scripts/runner-trial-journal.mjs, --import), written
+    // before the first import touches the vault and kept until a Delete of theirs that the vault finishes: no other server case can be
+    // imported for them, and this one for no other client. Absent before a first import.
+    exactKeys(client.journal, Object.hasOwn(client.journal ?? {}, "source_sha256") ? ["corpus_id", "consent", "source_sha256"] : ["corpus_id", "consent"], `${name}.journal`);
+    if (Object.hasOwn(client.journal, "source_sha256") && !/^[0-9a-f]{64}$/u.test(client.journal.source_sha256 ?? "")) invalid(`${name}'s journal source is invalid.`);
     if (client.journal.corpus_id !== null && (typeof client.journal.corpus_id !== "string" || !CORPUS_ID.test(client.journal.corpus_id))) invalid(`${name}'s journal corpus id is invalid.`);
     validateConsent(client.journal.consent, `${name}'s journal consent`);
   });
@@ -92,22 +100,23 @@ export function journalConsentState(client) {
   return consent.withdrawn_at === null ? "confirmed" : "withdrawn";
 }
 
-async function lstatOrNull(file) {
-  try { return await fs.lstat(file); } catch (error) {
+// How an open refuses what is no regular file: a link, a socket, or (checked on the opened handle) a folder or a named pipe.
+const NOT_A_FILE = new Set(["ELOOP", "ENXIO", "ERR_NOT_REGULAR_FILE"]);
+
+// A private file of the trial folder: a regular file only you can read (mode 0600), never a link. Its text, or null when missing. It is
+// opened once, without following a link or waiting on a pipe, and checked and read through that one handle.
+async function readPrivateFile(file, name) {
+  try {
+    return await withOpenedRegularFile(file, async (handle, info) => {
+      if ((info.mode & 0o077) !== 0) invalid(`${name} can be read by others (it must be mode 0600).`);
+      if (typeof process.getuid === "function" && info.uid !== process.getuid()) invalid(`${name} belongs to another user.`);
+      return handle.readFile("utf8");
+    });
+  } catch (error) {
     if (error?.code === "ENOENT") return null;
+    if (NOT_A_FILE.has(error?.code)) invalid(`${name} must be a file, not a link or a folder.`);
     throw error;
   }
-}
-
-// A private file of the trial folder: a regular file only you can read (mode 0600), never a link. Its text, or null when missing.
-async function readPrivateFile(file, name) {
-  const info = await lstatOrNull(file);
-  if (info === null) return null;
-  if (!info.isFile()) invalid(`${name} must be a file, not a link or a folder.`);
-  if ((info.mode & 0o077) !== 0) invalid(`${name} can be read by others (it must be mode 0600).`);
-  if (typeof process.getuid === "function" && info.uid !== process.getuid()) invalid(`${name} belongs to another user.`);
-  const handle = await fs.open(file, constants.O_RDONLY | constants.O_NOFOLLOW);
-  try { return await handle.readFile("utf8"); } finally { await handle.close(); }
 }
 
 export const runnerClientsPath = (trialDir) => path.join(trialDir, RUNNER_CLIENTS_FILE);
@@ -144,6 +153,20 @@ export async function writeRunnerClients(trialDir, value) {
   await syncFolder(trialDir);
 }
 
+// After "Delete this case" of a client has removed their copies from the vault: the list names no copy of theirs and no server case they
+// came from, so a copy from another one can be imported for them. With `keepSource` (the vault removed the case and couldn't finish, so
+// the case and its copies may come back after a power cut) the list keeps naming the server case, which stays theirs alone. Their consent
+// stays as recorded. A list with nothing to take off is made durable, since an earlier Delete may have changed it and not got that far.
+// The caller holds the folder's lock.
+export async function forgetClientCopy(trialDir, caseId, { keepSource = false } = {}) {
+  const list = await readRunnerClients(trialDir);
+  const client = list.clients.find((entry) => entry.case_id === caseId);
+  const tied = Boolean(client) && Object.hasOwn(client.journal, "source_sha256");
+  if (!client || (client.journal.corpus_id === null && (keepSource || !tied))) return syncFolder(trialDir);
+  client.journal = { corpus_id: null, consent: client.journal.consent, ...(keepSource && tied ? { source_sha256: client.journal.source_sha256 } : {}) };
+  await writeRunnerClients(trialDir, list);
+}
+
 // A rename is durable only once its folder is synced (Codex's reviews 1 and 2): without it, a power cut could keep a newer client
 // list beside older credentials. A failed sync stops the command before anything that depends on it is written; only a filesystem
 // that can't sync a folder at all (EINVAL, ENOTSUP) is let through.
@@ -159,17 +182,46 @@ export function clientJournalFolder(trialDir, caseId) {
   return path.join(trialDir, RUNNER_JOURNAL_FOLDER, caseId);
 }
 
-// The cold test's receipt for a client's journal (design, point 5c): a passing test of exactly this case's corpus, at exactly one
-// published generation, manifest and visibility epoch. The cold test that writes it isn't built yet; this is the shape it must
-// write. A receipt that is missing, malformed or not a pass counts as none, like a withdrawal: no journal is used.
+// "Delete this case" of a client: their journal folder goes (their key for journal copies, their copy's cold-test receipt and its test's
+// marker), and that is made durable: until the folder it was in is synced, a power cut could bring the key back, and with it the means
+// to open a sealed copy. The sync is made also when the folder is gone already, since an earlier Delete may not have got that far; where
+// no client ever had such a folder there's nothing to sync. The caller holds the folder's lock.
+export async function removeClientJournalFolder(trialDir, caseId) {
+  const folder = clientJournalFolder(trialDir, caseId);
+  await fs.rm(folder, { recursive: true, force: true });
+  try { await syncFolder(path.dirname(folder)); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+}
+
+// The cold test's receipt for a client's journal (design, point 5c), written by the cold test (scripts/runner-trial-journal.mjs,
+// --cold-test): a passing test of exactly this case's corpus, at exactly one published generation, manifest and visibility epoch, of what
+// one version of the replies' reader gives (`reader_version`), by one version of the pass rule (`rule`); and, for the record, how many
+// questions the rule counted and who wrote them, the provider and model of the consumer and of the judge, and which of the tests started on
+// this copy it was (`run`). A receipt that is missing, malformed or not a pass counts as none, like a withdrawal: no journal is used. One of
+// the first form (schema version 1, of a test that searched another way than a reply does) names no reader, so it matches none.
+const RECEIPT_FIELDS = Object.freeze(["schema_version", "kind", "result", "case_id", "corpus_id", "generation", "manifest_object_id", "visibility_epoch", "tested_at"]);
+const RECEIPT_TEST_FIELDS = Object.freeze(["reader_version", "rule", "questions", "author", "consumer", "judge", "run"]);
+const PROVIDER = /^[a-z][a-z0-9-]{0,39}$/u;
+// A model's name, or the words a worker gives where the provider's CLI chooses it ("codex default").
+const MODEL = /^[A-Za-z0-9][A-Za-z0-9 ._:-]{0,79}$/u;
+
 export function validateColdTestReceipt(value) {
-  exactKeys(value, ["schema_version", "kind", "result", "case_id", "corpus_id", "generation", "manifest_object_id", "visibility_epoch", "tested_at"], "The cold-test receipt");
-  if (value.schema_version !== 1 || value.kind !== "journal_cold_test" || value.result !== "pass") invalid("The cold-test receipt isn't a passing journal cold test.");
+  exactKeys(value, value?.schema_version === 1 ? RECEIPT_FIELDS : [...RECEIPT_FIELDS, ...RECEIPT_TEST_FIELDS], "The cold-test receipt");
+  if (![1, 2].includes(value.schema_version) || value.kind !== "journal_cold_test" || value.result !== "pass") invalid("The cold-test receipt isn't a passing journal cold test.");
   if (typeof value.case_id !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(value.case_id)) invalid("The cold-test receipt's case id is invalid.");
   if (typeof value.corpus_id !== "string" || !CORPUS_ID.test(value.corpus_id)) invalid("The cold-test receipt's corpus id is invalid.");
   for (const field of ["generation", "manifest_object_id"]) if (typeof value[field] !== "string" || !ID.test(value[field])) invalid(`The cold-test receipt's ${field} is invalid.`);
   if (!Number.isSafeInteger(value.visibility_epoch) || value.visibility_epoch < 0) invalid("The cold-test receipt's visibility epoch is invalid.");
   timestamp(value.tested_at, "The cold-test receipt's tested_at");
+  if (value.schema_version === 1) return value;
+  for (const field of ["reader_version", "rule"]) if (typeof value[field] !== "string" || !ID.test(value[field])) invalid(`The cold-test receipt's ${field} is invalid.`);
+  exactKeys(value.questions, ["answerable", "unanswerable", "planted"], "The cold-test receipt's questions");
+  for (const kind of ["answerable", "unanswerable", "planted"]) if (!Number.isSafeInteger(value.questions[kind]) || value.questions[kind] < 1) invalid("The cold-test receipt's question counts are invalid.");
+  if (!COLD_QUESTION_AUTHORS.includes(value.author)) invalid("The cold-test receipt's author is invalid.");
+  if (!Number.isSafeInteger(value.run) || value.run < 1) invalid("The cold-test receipt's run is invalid.");
+  for (const role of ["consumer", "judge"]) {
+    exactKeys(value[role], ["provider", "model"], `The cold-test receipt's ${role}`);
+    if (typeof value[role].provider !== "string" || !PROVIDER.test(value[role].provider) || typeof value[role].model !== "string" || !MODEL.test(value[role].model)) invalid(`The cold-test receipt's ${role} is invalid.`);
+  }
   return value;
 }
 
@@ -184,9 +236,36 @@ export async function readColdTestReceipt(trialDir, caseId) {
   }
 }
 
-// Whether a receipt names exactly the snapshot a retrieval read: the same case, corpus, generation, manifest and epoch.
-export function coldTestReceiptMatches(receipt, { caseId, corpusId, generation, manifestObjectId, visibilityEpoch }) {
-  return Boolean(receipt) && receipt.case_id === caseId && receipt.corpus_id === corpusId && receipt.generation === generation
+// The marker every cold test writes when it starts: its attempt, the copy it tests and how many tests were started on that copy, itself
+// included. Only the test it names may give a receipt or take one away (scripts/runner-trial-journal.mjs). Null when it's missing or
+// malformed, so that no test may.
+export async function readColdTestMarker(trialDir, caseId) {
+  try {
+    const text = await readPrivateFile(path.join(clientJournalFolder(trialDir, caseId), COLD_TEST_ATTEMPT_FILE), COLD_TEST_ATTEMPT_FILE);
+    if (text === null) return null;
+    const marker = JSON.parse(text);
+    exactKeys(marker, ["schema_version", "attempt", "started_at", "corpus_id", "run"], "The cold test's marker");
+    timestamp(marker.started_at, "The cold test's started_at");
+    return marker.schema_version === 1 && typeof marker.attempt === "string" && ATTEMPT.test(marker.attempt) && typeof marker.corpus_id === "string" && CORPUS_ID.test(marker.corpus_id)
+      && Number.isSafeInteger(marker.run) && marker.run >= 1 ? marker : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function readColdTestAttempt(trialDir, caseId) {
+  return (await readColdTestMarker(trialDir, caseId))?.attempt ?? null;
+}
+
+// Whether a receipt names the version of the reader given and the pass rule as it is. One of the first form names neither.
+export function coldTestReceiptNames(receipt, readerVersion) {
+  return Boolean(receipt) && typeof readerVersion === "string" && receipt.reader_version === readerVersion && receipt.rule === COLD_TEST_RULE.version;
+}
+
+// Whether a receipt names exactly the snapshot a retrieval read (the same case, corpus, generation, manifest and epoch), the version of the
+// reader that read it and the pass rule as it is.
+export function coldTestReceiptMatches(receipt, { caseId, corpusId, generation, manifestObjectId, visibilityEpoch, readerVersion }) {
+  return coldTestReceiptNames(receipt, readerVersion) && receipt.case_id === caseId && receipt.corpus_id === corpusId && receipt.generation === generation
     && receipt.manifest_object_id === manifestObjectId && receipt.visibility_epoch === visibilityEpoch;
 }
 

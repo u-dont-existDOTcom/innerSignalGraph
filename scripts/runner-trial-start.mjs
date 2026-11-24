@@ -44,7 +44,7 @@ import { RESPONSE_EVIDENCE_SETTING } from "../src/core/on-off-setting.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { MAX_RUNNER_CLIENTS, journalConsentCurrent, journalConsentState, readRunnerClients, syncFolder, validateClientLabel, writeRunnerClients } from "../src/runner-trial/clients.mjs";
-import { TrialFolderLockError, acquireTrialFolderLock as acquireFolderLock } from "../src/runner-trial/folder-lock.mjs";
+import { TrialFolderLockError, acquireTrialFolderLock as acquireFolderLock, folderLockLeftNotice, releaseAfterFailure, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
 import {
   RUNNER_RULES_ROOT,
   RUNNER_TRIAL_CLIENT_TOKENS_SETTING,
@@ -123,7 +123,7 @@ export const USAGE = `Usage: node scripts/runner-trial-start.mjs --provider mixe
                      excerpts go to the companies running the workers), or that they withdrew it; asks which client.
                      A withdrawal holds at once, also while the trial runs; a consent holds from the next start`;
 
-class StartError extends Error {
+export class StartError extends Error {
   constructor(message, exitCode = 1) {
     super(message);
     this.exitCode = exitCode;
@@ -241,7 +241,7 @@ async function lstatOrNull(file) {
 }
 
 // A folder only you can open (mode 0700), made if it's missing. A link or a file in its place is refused.
-async function privateFolder(folder, name) {
+export async function privateFolder(folder, name) {
   await fsp.mkdir(folder, { recursive: true, mode: 0o700 });
   const info = await fsp.lstat(folder);
   if (!info.isDirectory()) throw new StartError(`${name} (${folder}) must be a folder, not a link or a file.`);
@@ -250,7 +250,7 @@ async function privateFolder(folder, name) {
 }
 
 // Writes a file only you can read (mode 0600) whole or not at all: a new file beside it, then renamed over it.
-async function writePrivateFile(file, text) {
+export async function writePrivateFile(file, text) {
   const temporary = `${file}.${randomUUID()}.tmp`;
   const handle = await fsp.open(temporary, "wx", 0o600);
   try {
@@ -280,8 +280,7 @@ export async function acquireTrialFolderLock(home, { pid = process.pid, waitMs =
   try { return await acquireFolderLock(home, { pid, waitMs }); } catch (error) { throw asStartError(error); }
 }
 export async function withTrialFolderLock(home, operation, { pid = process.pid, waitMs = COMMAND_LOCK_WAIT_MS } = {}) {
-  const held = await acquireTrialFolderLock(home, { pid, waitMs });
-  try { return await operation(); } finally { await held.release(); }
+  try { return await withFolderLock(home, operation, { pid, waitMs }); } catch (error) { throw asStartError(error); }
 }
 
 const newCaseKeys = () => ({ routine_kek_base64: randomBytes(32).toString("base64"), recovery_secret_base64: randomBytes(32).toString("base64") });
@@ -349,7 +348,7 @@ export async function prepareCredentials(file, vault, clients = []) {
   return { token: own.token, caseId, clientTokens };
 }
 
-function checkTrialHome(home) {
+export function checkTrialHome(home) {
   const resolved = path.resolve(home);
   let outside;
   try { outside = isOutside(repositoryRoot, resolved); } catch { throw new StartError(`The trial folder ${resolved} can't be checked.`); }
@@ -357,7 +356,7 @@ function checkTrialHome(home) {
   return resolved;
 }
 
-async function readClientList(home) {
+export async function readClientList(home) {
   try { return await readRunnerClients(home); }
   catch (error) { throw new StartError(`The client list can't be read: ${error.message} It was left as it is.`); }
 }
@@ -443,7 +442,7 @@ const CONSENT_WORDS = Object.freeze({ none: "no journal consent", confirmed: "jo
 
 // A question in the terminal. With `hidden`, what is typed isn't shown (as for a password), so a label never stays on the screen or in
 // a terminal's scrollback that another program can read.
-async function ask(question, { hidden = false } = {}) {
+export async function ask(question, { hidden = false } = {}) {
   if (!process.stdin.isTTY) throw new StartError("This command asks a question: run it in a terminal.");
   let muted = false;
   const output = new Writable({ write(chunk, encoding, callback) { if (!muted) process.stdout.write(chunk, encoding); callback(); } });
@@ -604,11 +603,14 @@ async function main(argv) {
   const resolvedHome = checkTrialHome(home);
   await privateFolder(resolvedHome, "The trial folder");
   const startLock = await acquireTrialFolderLock(resolvedHome);
-  try {
-    return await startServer({ options, home: resolvedHome, commands, claudeConfigDir, startLock });
-  } finally {
-    await startLock.release();
+  let code;
+  try { code = await startServer({ options, home: resolvedHome, commands, claudeConfigDir, startLock }); } catch (error) {
+    // What stopped the start is what's told, whether or not the lock could be let go (one that couldn't be is told after it).
+    await releaseAfterFailure(startLock, resolvedHome, error);
+    throw error;
   }
+  await startLock.release();
+  return code;
 }
 
 async function startServer({ options, home, commands, claudeConfigDir, startLock }) {
@@ -651,8 +653,13 @@ async function startServer({ options, home, commands, claudeConfigDir, startLock
     });
   }
   const ready = await untilReady(options.port, exited, 120_000);
-  // The server has read its credentials once it answers (or it stopped): the folder is free again for other commands.
-  await startLock.release();
+  // The server has read its credentials once it answers (or it stopped): the folder is free again for other commands. A lock that can't
+  // be let go would keep them all out while the trial runs, a withdrawal of a journal consent included, so it isn't run like that.
+  try { await startLock.release(); } catch (error) {
+    if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
+    await exited;
+    throw error;
+  }
   if (ready.timedOut) {
     console.error(`The server didn't answer on port ${options.port} within two minutes; it was stopped.`);
     child.kill("SIGTERM");
@@ -691,6 +698,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
         console.error(`The runner trial couldn't start: ${error?.message ?? error}`);
         process.exitCode = 1;
       }
+      const lockLeft = folderLockLeftNotice(error);
+      if (lockLeft) console.error(lockLeft);
     }
   );
 }

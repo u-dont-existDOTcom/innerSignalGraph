@@ -165,6 +165,24 @@ function intersection(lists) {
   return [...new Set(first)].filter((id) => sets.every((set) => set.has(id)));
 }
 
+// Whether a quote holds a word of an evidence search (one of `evidenceTerms`): read as the generation's word list reads words, or exactly as
+// written where it has none and for a word looked up as written.
+function quoteHoldsTerm(text, forms) {
+  const read = forms ? new Set(formsReadingTokens(text)) : null;
+  const written = new Set(lexicalTerms(text));
+  return ({ term, exact }) => (exact ? exact.some((word) => written.has(word)) : read.has(term));
+}
+
+/**
+ * The words of a message that an evidence search goes by and that `quote` holds, read as `findEvidenceQuotes` reads both on a generation
+ * with a word list (`wordList`) or without one. With none, no search by words can find the quote for that message. How many quotes hold a
+ * word isn't asked here: one the search leaves out as common counts too.
+ */
+export function evidenceWordsShared(message, quote, { wordList }) {
+  invariant(typeof message === "string" && typeof quote === "string" && typeof wordList === "boolean", "QUOTE_QUERY_INVALID");
+  return Object.freeze(evidenceTerms(message, wordList).filter(quoteHoldsTerm(quote, wordList)).map(({ term }) => term));
+}
+
 /**
  * The ordered results of a search or timeline query, kept so the pages after the first slice them
  * instead of rebuilding the whole result on every cursor request. Keys name the exact snapshot,
@@ -1050,9 +1068,6 @@ export async function openPrivateJournalGraph({
       if (unusable) { omitted.set(unusable, (omitted.get(unusable) ?? 0) + 1); continue; }
       const text = record.data.quote;
       const date = (quoteIndex ? (await readIndex("quote_meta", id))[0] : null)?.written ?? null;
-      const read = wordList ? new Set(formsReadingTokens(text)) : null;
-      const written = new Set(lexicalTerms(text));
-      const holds = ({ term, exact }) => (exact ? exact.some((word) => written.has(word)) : read.has(term));
       quotes.push(Object.freeze({
         record_id: id,
         text,
@@ -1062,7 +1077,7 @@ export async function openPrivateJournalGraph({
         written: date ? Object.freeze({ from: date.from, to: date.to, precision: date.precision, between: date.between === true,
           ambiguous: date.ambiguous === true, year_inferred: date.year_inferred === true }) : null,
         cues: quoteCues(text),
-        matched_terms: Object.freeze(chosen.map((place) => terms[place]).filter(holds).map(({ term }) => term))
+        matched_terms: Object.freeze(chosen.map((place) => terms[place]).filter(quoteHoldsTerm(text, wordList)).map(({ term }) => term))
       }));
     }
     const result = Object.freeze({

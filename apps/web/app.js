@@ -232,6 +232,20 @@ function forgetDeletedCase(pageState, empty) {
   return Object.assign(pageState, empty, kept);
 }
 
+// What "Delete this case" couldn't clear on this computer once the case was gone from the vault, from the server's codes in fixed words.
+const RUNNER_LEFTOVERS = Object.freeze({
+  VAULT_CLEANUP: "some of the vault's own files for the case",
+  JOURNAL_LIST: "their journal copy's place on the client list",
+  JOURNAL_FOLDER: "their journal folder (their key for journal copies and the cold-test receipt)",
+  FOLDER_LOCK: "the trial folder's lock (stop the trial and remove .trial-folder.lock by hand first)",
+  RUNTIME_STATE: "what the running trial remembers of the case",
+  RUN_LOG: "the case's run log file"
+});
+function runnerLeftoversText(codes) {
+  const left = Array.isArray(codes) ? codes.map((code) => (typeof code === "string" && Object.hasOwn(RUNNER_LEFTOVERS, code) ? RUNNER_LEFTOVERS[code] : "something else")) : [];
+  return left.length ? `The case was deleted. Some leftovers on this computer remain: ${left.join(", ")}; press Delete again to clear them.` : "";
+}
+
 // The cases the page may use (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, point 3), from /v1/runner/clients:
 // the owner's own case, then each client's, with the client's number on the list (the start script's commands ask for it) and the
 // label the owner gave. The page doesn't take a case from /health: the owner picks one for each conversation. Only ids of the start
@@ -1745,8 +1759,11 @@ $("#runner-delete-case").addEventListener("click", async () => {
     if (deleting === state.caseId) clearDeletedCase();
     else runnerCases.buckets.delete(deleting);
     if (payload.handoffsKept) alert(`${payload.handoffsKept} handoff file(s) couldn't be confirmed as this case's and were kept.`);
+    const leftovers = runnerLeftoversText(payload.cleanupLeft);
+    if (leftovers) alert(`${runnerConversationWords(choice)}. ${leftovers}`);
   } catch (error) {
-    alert(`The case was not deleted: ${error.message}`);
+    // Whether the case is still in the vault isn't known here (an earlier Delete may have removed it, or an answer may be lost).
+    alert(`Delete didn't finish: ${error.message}`);
   } finally {
     setBusy(button, false);
   }

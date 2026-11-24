@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
-import { createJournalResultCache, EVIDENCE_QUOTE_SEARCH, openPrivateJournalGraph, QUOTE_BM25 } from "../src/journal-import/retrieval.mjs";
+import { createJournalResultCache, evidenceWordsShared, EVIDENCE_QUOTE_SEARCH, openPrivateJournalGraph, QUOTE_BM25 } from "../src/journal-import/retrieval.mjs";
 import { quoteCues } from "../src/journal-import/quote-index.mjs";
 import { formsReadingTokens, formsReadingTerm } from "../src/journal-import/word-forms.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
@@ -415,4 +415,28 @@ test("a snapshot that isn't current is refused before the search and after it", 
   }
   const reader = await open();
   try { for (const query of [null, 7, "x".repeat(40_001)]) await assert.rejects(reader.findEvidenceQuotes({ query, limit: 6 }), { code: "QUOTE_QUERY_INVALID" }); } finally { reader.close(); }
+});
+
+test("the words of a message that a quote holds, by the search's own rule: what it matched, with and without a word list, stop words, negations and the other language's words included", async (t) => {
+  const told = ["Les cerisiers fleurissaient derrière l'école, and I dreamed of climbing one.", "My left shoulder aches again.", "Son père tenait le but du terrain vague.", "I couldn't sleep in the greenhouse, and the greenhouses were cold.", "The harbour1 was empty."];
+  const messages = ["Pourquoi est-ce que je rêve encore du cerisier de notre école ?", "It's my shoulder, I think you should know.", "I had a fight with my son", "Je cherche son frère", "I couldn't and wouldn't, I don't", "My shoulders in the greenhouse, at harbour1", "yes", "…"];
+  for (const index of ALL) {
+    const { find } = await journal(t, { paragraphs: [...countedParagraphs(60), ...told], index });
+    const wordList = index === "quote-index-v4";
+    for (const message of messages) {
+      const result = await find(message, { limit: 40 });
+      for (const quote of told) {
+        // None of these words is common, so what a search says it matched is all the message and the quote share.
+        const matched = result.quotes.find(({ text }) => text === quote)?.matched_terms ?? [];
+        assert.deepEqual([...evidenceWordsShared(message, quote, { wordList })].sort(), [...matched].sort(), `${index}: ${message} / ${quote}`);
+      }
+    }
+  }
+  // With a word list other forms of a word are the same word; without one they aren't.
+  assert.deepEqual([evidenceWordsShared("le cerisier", told[0], { wordList: true }), evidenceWordsShared("le cerisier", told[0], { wordList: false })], [["cerisi"], []]);
+  // A word many quotes hold, which the search ranks nothing by, is shared all the same.
+  const { find } = await journal(t, { paragraphs: countedParagraphs(60, { common1: 30 }) });
+  assert.deepEqual((await find("common1")).terms.dropped, [{ term: "common1", quotes: 30, reason: "common" }]);
+  assert.deepEqual(evidenceWordsShared("common1", "own1a own1b own1c common1.", { wordList: true }), ["common1"]);
+  for (const bad of [[null, "a", { wordList: true }], ["a", null, { wordList: true }], ["a", "a", { wordList: undefined }]]) assert.throws(() => evidenceWordsShared(...bad), { code: "QUOTE_QUERY_INVALID" });
 });

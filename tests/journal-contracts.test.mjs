@@ -374,7 +374,7 @@ test("doctor reports a UTF-8 text source as importable and other non-PDF bytes a
 });
 
 test("commands that are designed but not built fail plainly instead of opening a run", async () => {
-  for (const command of ["cold-test", "export"]) {
+  for (const command of ["cold-test"]) {
     let stderr = "";
     let opened = false;
     const code = await runJournalImportCli([command, "--config", "/synthetic/private/run.json"], {
@@ -389,8 +389,9 @@ test("commands that are designed but not built fail plainly instead of opening a
   }
   let help = "";
   await runJournalImportCli(["--help"], { stdout: { write: (chunk) => { help += chunk; } }, stderr: { write: () => {} } });
-  assert.match(help, /Planned, not available yet: cold-test, export/);
-  assert.doesNotMatch(help.split("Planned")[0], /cold-test|export/);
+  assert.match(help, /Planned, not available yet: cold-test\n/);
+  assert.doesNotMatch(help.split("Planned")[0], /cold-test/);
+  assert.match(help.split("Planned")[0], /\bexport\b/);
 });
 
 test("doctor reports what a run requires of the config, and paths are judged on their real location", async (t) => {

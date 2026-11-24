@@ -15,6 +15,7 @@ import { journalCalibrationCriticalMissLimit, journalCalibrationFailureLimit, jo
   journalQuoteNumericDateOrder, journalReplacedPublication, journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
+import { exportJournalCopy, validateJournalCopyRecipient, writeSealedJournalCopy } from "../journal-import/journal-copy.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
@@ -54,9 +55,10 @@ export const JOURNAL_IMPORT_COMMANDS = Object.freeze([
   "delete-plan"
 ]);
 
-// Designed but not built yet: they fail with JOURNAL_COMMAND_NOT_AVAILABLE rather than open a run.
-// The cold test still needs question freezing, the separate consumer and scoring wired together.
-export const JOURNAL_IMPORT_PLANNED_COMMANDS = Object.freeze(["cold-test", "export"]);
+// Designed but not built yet: it fails with JOURNAL_COMMAND_NOT_AVAILABLE rather than open a run.
+// The cold test still needs question freezing, the separate consumer and scoring wired together. (The runner trial's cold test of a
+// client's copy is its own command: scripts/runner-trial-journal.mjs.)
+export const JOURNAL_IMPORT_PLANNED_COMMANDS = Object.freeze(["cold-test"]);
 
 export function journalImportHelp() {
   return [
@@ -310,7 +312,46 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
   });
 }
 
-export async function runJournalImportCli(argv, { stdout = process.stdout, stderr = process.stderr, environment = process.env, runtimeFactory = null } = {}) {
+// `export`: the runner trial's copy of the case's journal (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md,
+// point 4), a server step run only on the owner's go for each copy. The corpus's active generation, published for session use, is
+// read with the operator's grant (which must hold the vault's `export` purpose), sealed for one client's public key
+// (src/journal-import/journal-copy.mjs) and written whole to a new file. Which corpus, that key, the file and the scope the operator's
+// grant holds come from the private configuration's `runner_trial_export`, never the command line; the file goes outside the public
+// checkout and never over another file.
+export function runnerTrialExportSettings(config) {
+  const settings = config?.runner_trial_export;
+  if (!settings || typeof settings !== "object" || Array.isArray(settings)
+    || typeof settings.corpus_id !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/u.test(settings.corpus_id)
+    || typeof settings.output_path !== "string" || !path.isAbsolute(settings.output_path)
+    || !["case:read", "case:write", undefined].includes(settings.scope)) {
+    throw new ValidationError("The private configuration has no valid runner_trial_export.", { code: "JOURNAL_EXPORT_CONFIG_INVALID" });
+  }
+  try { validateJournalCopyRecipient(settings.recipient_public_key); }
+  catch { throw new ValidationError("The runner trial's public key isn't valid.", { code: "JOURNAL_EXPORT_RECIPIENT_INVALID" }); }
+  const outputPath = path.normalize(settings.output_path);
+  let outside = false;
+  try { outside = outsideRepository(path.dirname(outputPath)); } catch { outside = false; }
+  if (!outside) throw new ValidationError("The export file must be written outside the public repository.", { code: "JOURNAL_EXPORT_PATH_PRIVATE_REQUIRED" });
+  return Object.freeze({ corpusId: settings.corpus_id, recipientPublicKey: settings.recipient_public_key, outputPath, scope: settings.scope ?? "case:read" });
+}
+
+async function exportForRunnerTrial({ config, settings, environment, authContextProvider, providersLoader }) {
+  const providers = await providersLoader({ ...environment });
+  try {
+    if (!vaultRootMatchesConfig(config, providers.rootDir)) throw new ValidationError("The operator's vault isn't the configured one.", { code: "OPERATOR_PRIVATE_ROOT_MISMATCH" });
+    const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider });
+    const authContext = authContextProvider ? await authContextProvider() : { bearerToken: environment.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN };
+    const sealed = await exportJournalCopy({ caseAccessService: service, caseId: config.target_profile.case_id, corpusId: settings.corpusId,
+      authContext, recipientPublicKey: settings.recipientPublicKey, requiredScope: settings.scope });
+    await writeSealedJournalCopy(settings.outputPath, sealed);
+    return Object.freeze({ schema_version: 1, exported: true, recipient_sha256: sealed.recipient_sha256 });
+  } finally {
+    providers.close();
+  }
+}
+
+export async function runJournalImportCli(argv, { stdout = process.stdout, stderr = process.stderr, environment = process.env, runtimeFactory = null,
+  exportProvidersLoader = loadHostedPrivateCaseOperatorProvidersFromEnvironment } = {}) {
   try {
     const parsed = parseJournalImportArgs(argv);
     if (parsed.help) {
@@ -329,6 +370,14 @@ export async function runJournalImportCli(argv, { stdout = process.stdout, stder
     // reports run-config blockers itself; every other command stops on the first one here, with the
     // same code the run would give.
     const config = await loadPrivateConfig(parsed.configPath);
+    // The export opens no run: its own settings are checked before any env file is read or any sign-in is attempted.
+    if (parsed.command === "export") {
+      const settings = runnerTrialExportSettings(config);
+      const prepared = await prepareJournalOperatorEnvironment(environment, { envFiles: parsed.envFiles, config });
+      stdout.write(`${JSON.stringify(await exportForRunnerTrial({ config, settings, environment: prepared.environment,
+        authContextProvider: prepared.authContextProvider, providersLoader: exportProvidersLoader }))}\n`);
+      return 0;
+    }
     if (parsed.command !== "doctor") {
       const [blocker] = runConfigBlockers(config);
       if (blocker) throw new ValidationError("The private journal configuration can't open a run.", { code: blocker });

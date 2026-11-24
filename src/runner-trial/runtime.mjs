@@ -18,6 +18,7 @@ import { FIXED_MESSAGE_ANY_FAILURE_REASONS, FIXED_MESSAGE_FAILURE_REASONS, KEPT_
 import { fixedFindingCode } from "./run-log.mjs";
 import { caseHasReadJournal, normalizeEvidenceReview, sha256Json, writtenFromConversationAlone } from "../supervisor/response-evidence-contract.mjs";
 import { acquireTrialFolderLock } from "./folder-lock.mjs";
+import { RETRYABLE_WORKER_FAILURES } from "./worker-failures.mjs";
 import {
   KEPT_PLAN_LIMITS,
   crisisReadingOf,
@@ -279,7 +280,7 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
         return { value, receipts };
       } catch (error) {
         receipts.push({ ...receipt, role, attempt, provider: receipt?.provider ?? worker?.provider ?? configuredProvider, model: receipt?.model ?? worker?.model ?? spec?.model ?? null, effort: receipt?.effort ?? worker?.effort ?? spec?.effort ?? null, failed: error?.code ?? "PROVIDER_FAILED", duration_ms: receipt?.duration_ms ?? now() - started, rule_parts: ruleParts });
-        const retryable = ["TIMEOUT", "PROVIDER_MALFORMED", "CODEX_RECEIPT_INCOMPLETE"].includes(error?.code) || error instanceof ValidationError;
+        const retryable = RETRYABLE_WORKER_FAILURES.includes(error?.code) || error instanceof ValidationError;
         if (attempt === attempts || !retryable || deadlineOf(runtimeTurn) - now() < config.limits[kind] / 2) {
           const failed = error instanceof Error ? error : new Error(String(error));
           // The generic controller already persists details on invocation failure. Keep worker metadata there too.

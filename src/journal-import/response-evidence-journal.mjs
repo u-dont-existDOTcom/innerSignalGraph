@@ -8,7 +8,9 @@ const access = Object.freeze({ requiredScope: "case:read", requiredPurpose: "ses
 // many of an expansion's questions are searched. Quotations go with every call of the writer and the checker, so there are few.
 export const SESSION_USE_READER_LIMITS = Object.freeze({ message: 6, expanded: 12, questions: 4 });
 // What a message or a question gets from a journal, by name: change it whenever this reader would return something else for the same
-// words and the same publication. The search's own version is part of it. (A cold test's pass can be bound to it; it isn't yet.)
+// words and the same publication. The search's own version is part of it. A cold test's pass is bound to it: the runner trial's journal
+// gate opens for the reader that was tested alone (src/runner-trial/journal-gate.mjs). A test holds it: what a fixed set of messages gets
+// is recorded for it, and one that gets something else fails (tests/runner-cold-test.test.mjs, READS).
 export const SESSION_USE_READER_VERSION = `session-use-reader-v2:${EVIDENCE_QUOTE_SEARCH.version}`;
 const empty = (availability, retrieval_status = "not_attempted") => ({
   availability, retrieval_status, source_items: [], receipts: [], coverage: null, more_available: false, omissions: [],

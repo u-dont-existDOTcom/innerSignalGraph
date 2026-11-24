@@ -745,10 +745,19 @@ test("rules extraction uses one quiet fetch, a local stable snapshot after fetch
   assert.equal(calls.filter((args) => args[0] === "fetch").length, 1);
   const config = configFor(dir, { runnerRulesRoot: released.rulesRoot });
   const rules = loadRunnerRules(config).runnerRules;
-  // The release origin/stable holds: 0.2.7 since 24 Nov 2026 (#242).
-  assert.equal(rules.version, "0.2.7");
-  assert.equal(rules.sha256, "9b4c9c99cc9838e859a4713c3598b17e78cf5ed52989fa7a31c1880f9e83b985");
-  assert.match(rules.source, /^stable [a-f0-9]{9}$/u);
+  // They are the release origin/stable holds, whichever it is (a release must not fail this test): its commit, and its plugin's files as git
+  // itself gives them, loaded apart from the extraction.
+  const stable = String((await exec("git", ["rev-parse", "--verify", "refs/remotes/origin/stable^{commit}"])).stdout).trim();
+  const apart = await directory(t);
+  const files = String((await exec("git", ["ls-tree", "-r", "-z", "--name-only", stable, "plugins/inner-signal-therapy"])).stdout).split("\0").filter(Boolean);
+  assert.ok(files.length > 10);
+  for (const file of files) {
+    await fs.mkdir(path.dirname(path.join(apart, file)), { recursive: true });
+    await fs.writeFile(path.join(apart, file), (await exec("git", ["cat-file", "blob", `${stable}:${file}`], { encoding: "buffer", maxBuffer: 16 * 1024 * 1024 })).stdout);
+  }
+  const release = loadTherapyProtocol({ pluginRoot: path.join(apart, "plugins", "inner-signal-therapy"), boxGuidance: true });
+  assert.match(release.version, /^\d+\.\d+\.\d+$/u);
+  assert.deepEqual(rules, { version: release.version, sha256: release.protocolSha256, source: `stable ${stable.slice(0, 9)}` });
   assert.equal((await fs.stat(path.dirname(path.dirname(path.dirname(released.rulesRoot))))).mode & 0o777, 0o700);
   const offlineGit = async (args, options) => { if (args[0] === "fetch") throw new Error("offline"); return exec("git", args, options); };
   const before = await fs.realpath(released.rulesRoot);
