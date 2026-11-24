@@ -25,6 +25,7 @@ appears here, in a test or in a log.
   `session_use` purpose, opens the corpus's active published generation, refuses one whose manifest doesn't permit `session_use`,
   makes one lexical search, checks each quote against the stored bytes and keeps its quotes to about 8,000 tokens (estimated) and
   64 KB per retrieval. It reads a local vault.
+  (Since 24 Nov 2026 the search is a ranked one for the message's less common words: `2026-11-24-runner-journal-search-design.md`.)
 - **The cold test isn't wired yet.** The journal import lists `cold-test` among its planned commands
   (`JOURNAL_IMPORT_PLANNED_COMMANDS` in `src/cli/journal-import.mjs`: question freezing, the separate consumer and scoring aren't
   joined yet, though pieces such as `src/journal-import/cold-profile-runner.mjs` exist), and no passing cold test of the imported
@@ -181,7 +182,8 @@ mechanism changed instead of growing more exceptions: **a case that has read its
 journal gate is open now** (consent, the same copy, the grant with session_use, a receipt for exactly the current publication),
 asked when a turn starts, before every worker call, by the worker at its last moment, and before delivery. While it is closed the
 case makes no model call and delivers nothing; confirming the consent again or deleting the case are the ways on. The cost, a
-tradeoff for the owner: after a withdrawal, a case that has used its journal gives no replies until one of the two. The same
+tradeoff for the owner: after a withdrawal, a case that has used its journal gives no replies until one of the two (the owner's i75 2a, 24 Nov 2026, was worded for
+the conversation that used it; this stops the client's whole case, and that scope goes back to the owner). The same
 review's other findings are fixed too: the store's journal hold needs a case that has read its journal (the gate itself stays the
 trial's record, outside the case, so the store can't evaluate it; the hold only ever stops a reply); the folder lock is never
 taken over by a command; a failed folder sync stops a command; and a deletion invalidates what the page had asked of the case.
@@ -200,8 +202,8 @@ Codex's fifth review (24 Nov) found the class one stage later again: after the l
 (the HTTP answer, a reconcile). That was the fourth recurrence, so the boundary is now a stated decision rather than a further
 check: **an output is made when it is recorded in the case as shown or delivered**, under the lock, so a withdrawal is ordered
 before or after that moment; sending an output already recorded to the page, or showing the conversation again, is not a new use
-of the journal. Recalling an output already recorded would need the page and the HTTP layer inside the lock, for a gain the owner
-can weigh (lane question). The same review's minor finding is fixed: a lock file is removed by its identity, so a failed first
+of the journal. Recalling an output already recorded would need the page and the HTTP layer inside the lock; the owner chose to leave
+replies already shown as they are (i75 3a, 24 Nov 2026). The same review's minor finding is fixed: a lock file is removed by its identity, so a failed first
 write never leaves it behind.
 
 Not built, each needed before any client's journal reaches a reply: **point 4, the copy step** (the export on the server, only on

@@ -986,6 +986,9 @@ const CUE_PATTERNS = Object.freeze([
   ["reported_speech", /\b(?:said|says|told me|tells me|asked me|according to|claims?|claimed)\b/giu]
 ]);
 
+/** The kinds of cue `quoteCues` can find. */
+export const QUOTE_CUE_KINDS = Object.freeze(CUE_PATTERNS.map(([kind]) => kind));
+
 export function quoteCues(text) {
   invariant(typeof text === "string", "QUOTE_TEXT_INVALID");
   const found = [];

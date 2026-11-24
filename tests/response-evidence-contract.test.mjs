@@ -1,13 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import Ajv2020 from "ajv/dist/2020.js";
 import { createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { createTranscriptCompletionAmendment } from "../src/storage/transcript-amendments.mjs";
 import { chunkExactSourceText, createExactSourceArtifact } from "../src/storage/exact-source-artifact.mjs";
 import {
-  RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildEvidenceModelView,
+  JOURNAL_NOTE_CUE_KINDS, RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildResponseEvidenceSourceItems, buildEvidenceModelView, caseHasReadJournal,
   computeEvidenceDependencyBinding, normalizeEvidenceReview, deriveEvidenceFindings,
-  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, responseEvidenceRefreshJournal, inspectGovernedModelCall, prepareGovernedModelCall, sha256Json, sha256Text, validateResponseEvidenceSnapshot
+  responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, responseEvidenceRefreshJournal, inspectGovernedModelCall, prepareGovernedModelCall, sha256Json, sha256Text,
+  snapshotOfConversationAlone, validateResponseEvidenceSnapshot, writtenFromConversationAlone
 } from "../src/supervisor/response-evidence-contract.mjs";
+import { QUOTE_CUE_KINDS, quoteCues } from "../src/journal-import/quote-index.mjs";
+import { EVIDENCE_NOW, WRITTEN_WORDS, asIfNoJournalWasRead, evidenceCase, evidenceInput } from "./helpers/evidence-case.mjs";
 
 const NOW = "2026-11-23T12:00:00.000Z";
 const turn = (id, role = "user", text = "Synthetic exact words.") => ({ id, role, text, at: NOW, exchange_id: id, episode_id: null });
@@ -403,4 +408,228 @@ test("audit prompt uses the owner's exact amended advice paragraph", async () =>
   const { privateRuntimeAuditPrompt } = await import("../src/prompts/private-runtime-audit.mjs");
   const paragraph = "Personalized advice depends on history when whether the method was tried before, what happened, or a barrier to it would change the advice. When the sources settle that, check the advice against them: advice that repeats what the sources say failed, or ignores a barrier they state, is contradicted, even with no historical claim in its wording and even if it is called general information. When the sources do not settle it, a suggestion that says or implies nothing about the person's past with the method is current-message support: assess it uncertain_but_worded_accurately, not missing history. List missing_material_history only when the response itself asserts, presupposes or depends on an answer the sources do not give.";
   assert.ok(privateRuntimeAuditPrompt({ response_evidence: {} }).system.includes(paragraph));
+});
+
+// A journal quotation's note (24 Nov 2026): when the entry says it was written, its wording cues and its lifecycle.
+const JOURNAL_WORDS = "I dreamt I had missed the train. Maybe I will write it down.";
+const journalNote = () => ({ written: { from: "2019-03-03", to: "2019-04-10", precision: "interval", between: true, ambiguous: false, year_inferred: true },
+  cues: quoteCues(JOURNAL_WORDS).map((cue) => ({ ...cue })), lifecycle: "superseded" });
+function journalRecord(note) {
+  const r = record();
+  r.journal_corpora = [{ corpus_id: "corpus:one", active_generation: "generation:one", visibility_epoch: 0, manifest_object_id: "manifest:one" }];
+  const item = { id: "src:journal:1", kind: "journal_quotation", actor: "client", audience: "private_journal", time: { at: null, status: "unavailable" },
+    epistemic_status: "client_written_account", excerpt_sha256: sha256Text(JOURNAL_WORDS), excerpt_bytes: Buffer.byteLength(JOURNAL_WORDS), exact_excerpt: JOURNAL_WORDS,
+    locator: { kind: "journal", corpus_id: "corpus:one", generation: "generation:one", visibility_epoch: 0, record_id: "record:one", start_byte: 0, end_byte: Buffer.byteLength(JOURNAL_WORDS) },
+    ...(note === undefined ? {} : { journal_note: note }) };
+  const receipt = { operation_id: "retrieval:one", corpus_id: "corpus:one", generation: "generation:one", visibility_epoch: 0, manifest_object_id: "manifest:one", purpose: "session_use",
+    query_sha256: sha256Text("query"), filters_sha256: sha256Json({}), returned_source_ids: [item.id], packet_sha256: sha256Json([item]), more_available: false, omitted_count: 0,
+    budget_used_tokens: 0, budget_used_bytes: 0 };
+  return { r, journal: { availability: "available", retrieval_status: "returned", source_items: [item], receipts: [receipt] } };
+}
+const freezeJournal = (note) => {
+  const { r, journal } = journalRecord(note);
+  return { r, snapshot: buildResponseEvidenceSnapshot(r, { ...input(), journal }, { createdAt: NOW }) };
+};
+
+test("a journal quotation's note is stored with it and passed on in the models' view; a quotation without one stays valid", () => {
+  const { r, snapshot } = freezeJournal(journalNote());
+  assert.equal(validateResponseEvidenceSnapshot(snapshot), snapshot);
+  assert.deepEqual(snapshot.source_items.find((item) => item.kind === "journal_quotation").journal_note, journalNote());
+  const shown = buildEvidenceModelView(r, snapshot).view.source_items.find((item) => item.kind === "journal_quotation");
+  assert.deepEqual([shown.exact_excerpt, shown.journal_note], [JOURNAL_WORDS, journalNote()]);
+  assert.deepEqual(shown.time, { at: null, status: "unavailable" }, "a writing date is never the time of anything");
+  for (const note of [{ ...journalNote(), written: null }, { ...journalNote(), cues: [] }, ...["active", "candidate"].map((lifecycle) => ({ ...journalNote(), lifecycle })),
+    ...[["2019", "2019", "year"], ["2019-03", "2019-03", "month"], ["2019-03-03", "2019-03-03", "day"], [null, "2019-04", "interval"], ["2019-03-03", null, "interval"]]
+      .map(([from, to, precision]) => ({ ...journalNote(), written: { from, to, precision, between: precision === "interval", ambiguous: true, year_inferred: false } }))]) {
+    assert.doesNotThrow(() => freezeJournal(note), JSON.stringify(note));
+  }
+  const { r: plain, snapshot: without } = freezeJournal(undefined);
+  assert.equal(validateResponseEvidenceSnapshot(without), without);
+  assert.equal(Object.hasOwn(buildEvidenceModelView(plain, without).view.source_items.find((item) => item.kind === "journal_quotation"), "journal_note"), false);
+});
+
+test("a journal note is strict, and no other kind of source may hold one", () => {
+  const note = journalNote();
+  for (const bad of [
+    null, "note", {}, { ...note, extra: true }, { written: note.written, cues: note.cues }, { ...note, lifecycle: "revoked" }, { ...note, lifecycle: "deleted" }, { ...note, cues: null },
+    { ...note, cues: [{ kind: "feeling", words: "sad" }] }, { ...note, cues: [{ kind: "dream" }] }, { ...note, cues: [{ kind: "dream", words: "dream", at: 1 }] }, { ...note, cues: [{ kind: "dream", words: "x".repeat(81) }] },
+    { ...note, written: {} }, { ...note, written: { ...note.written, date_line: "March 3, 2019" } }, { ...note, written: { ...note.written, precision: "about" } },
+    { ...note, written: { ...note.written, from: "March 2019" } }, { ...note, written: { ...note.written, to: "2019-03-03T12:00:00.000Z" } }, { ...note, written: { ...note.written, between: null } }
+  ]) malformed(() => freezeJournal(bad));
+  const { snapshot } = freezeJournal(note);
+  for (const kind of ["exact_client_turn", "journal_retrieval_record"]) {
+    const changed = structuredClone(snapshot);
+    changed.source_items.find((item) => item.kind === kind).journal_note = structuredClone(note);
+    changed.snapshot_sha256 = responseEvidenceSnapshotSha256(changed);
+    malformed(() => validateResponseEvidenceSnapshot(changed));
+  }
+  // The contract names the cue kinds itself, since the encrypted store must start without an installed package: the same ones.
+  assert.deepEqual([...JOURNAL_NOTE_CUE_KINDS], [...QUOTE_CUE_KINDS]);
+});
+
+// ---- A case that has read its client's journal (24 Nov 2026) ------------------------------------------------------------------------
+
+const NO_MATCH = { availability: "available", retrieval_status: "no_match" }, FAILED = { availability: "unavailable", retrieval_status: "failed" };
+const WITHHELD = { availability: "unavailable", retrieval_status: "not_attempted", omissions: [{ reason: "journal_withheld", count: 1 }] };
+const freezeCase = (r, extra = {}) => buildResponseEvidenceSnapshot(r, evidenceInput(extra), { createdAt: EVIDENCE_NOW });
+// The full invented case once it has read its journal: a snapshot of it, its first, holds a quotation.
+function readCase() {
+  const { r: { journal_corpora }, journal } = journalRecord(journalNote());
+  const r = { ...evidenceCase(), journal_corpora };
+  const quoting = freezeCase(r, { snapshotId: "snapshot:quoting", journal });
+  return { r: { ...r, response_evidence_snapshots: [quoting] }, journal, quoting };
+}
+const sourceIds = (snapshot) => snapshot.source_items.map((item) => item.id).sort();
+const CONVERSATION = ["first", "sent", "second", "reported", "third", "loose"].map((id) => `src:turn:turn:${id}`).concat("src:turn:inbound", "src:journal:record").sort();
+const held = (r, snapshot) => WRITTEN_WORDS.filter((words) => JSON.stringify(buildEvidenceModelView(r, snapshot).view).includes(words));
+const digest = (value) => sha256Text(JSON.stringify(value));
+
+test("a case has read its journal once one of its snapshots holds a quotation; a missing or malformed snapshot, or list of them, holds none and never throws", () => {
+  const { quoting } = readCase();
+  const none = [undefined, null, {}, "snapshots", 7, [], [null], [undefined], ["snapshot"], [{}], [{ source_items: null }], [{ source_items: "journal_quotation" }], [{ source_items: {} }], [{ source_items: [null, undefined, {}, { kind: "unsent_draft" }] }]];
+  for (const response_evidence_snapshots of none) assert.equal(caseHasReadJournal({ response_evidence_snapshots }), false, JSON.stringify(response_evidence_snapshots));
+  for (const r of [undefined, null, {}]) assert.equal(caseHasReadJournal(r), false);
+  for (const others of none.filter(Array.isArray)) assert.equal(caseHasReadJournal({ response_evidence_snapshots: [...others, quoting] }), true, JSON.stringify(others));
+});
+
+test("in a case that has read its journal a snapshot's sources are the conversation's own turns and the quotations it is given, and nothing else, whatever its turn gets of the journal", () => {
+  const { r, journal, quoting } = readCase();
+  const listed = { confirmed_or_reported_client_outbound: 4, supervisor_only_artifacts: 8, unresolved_delivery: 3 };
+  const projection = (...omissions) => ({ confirmed_or_reported_client_outbound: [], supervisor_only_artifacts: [], unresolved_delivery: [], omitted: { ...listed, source_items: [{ reason: "unresolved_report_locator", count: 1 }, ...omissions] } });
+  // Twelve sources that aren't turns of the conversation: seven unsent drafts, three reports (one of a turn), two supervisor inputs.
+  const all = [{ reason: "journal_case_conversation_alone", count: 12 }], withLineage = [{ reason: "reviewed_lineage_draft", count: 2 }, { reason: "journal_case_conversation_alone", count: 10 }];
+  for (const owner of [evidenceInput().owner, { kind: "supervisor_draft", operation_key: "a".repeat(24) }]) {
+    for (const part of [null, NO_MATCH, WITHHELD, FAILED, { availability: "not_authorized" }]) {
+      const snapshot = freezeCase(r, { owner, journal: part });
+      assert.deepEqual([sourceIds(snapshot), snapshot.communication_projection], [CONVERSATION, projection(...all)], JSON.stringify(part));
+      assert.deepEqual([snapshotOfConversationAlone(snapshot), held(r, snapshot)], [true, []]);
+    }
+    const again = freezeCase(r, { owner, journal });
+    assert.deepEqual([sourceIds(again), again.communication_projection, held(r, again)], [["src:journal:1", ...CONVERSATION].sort(), projection(...all), []], "with a quotation of its own");
+    assert.equal(snapshotOfConversationAlone(again), false);
+  }
+  assert.deepEqual(freezeCase(r, { lineageRootId: "reviewed" }).communication_projection, projection(...withLineage));
+  // The first snapshot that is given one is no different: nothing of it was read before.
+  assert.deepEqual([sourceIds(quoting), quoting.communication_projection, held(r, quoting)], [["src:journal:1", ...CONVERSATION].sort(), projection(...all), []]);
+  // What was sent stays a source as what it is, and the same case without its journal holds all of it.
+  assert.equal(quoting.source_items.find((item) => item.id === "src:turn:turn:sent").kind, "app_committed_client_outbound");
+  const before = freezeCase(asIfNoJournalWasRead(r));
+  assert.deepEqual([sourceIds(before).length, held(r, before)], [CONVERSATION.length + 12, [...WRITTEN_WORDS]]);
+  // A quotation whose publication changed before the freeze isn't one that it was given.
+  const changed = { ...asIfNoJournalWasRead(r), journal_corpora: [{ ...r.journal_corpora[0], manifest_object_id: "manifest:other" }] };
+  assert.equal(sourceIds(freezeCase(changed, { journal })).length, CONVERSATION.length + 12);
+});
+
+test("a case that has read no journal gets what main 86c6d3971 builds, byte for byte: every source, list and omission, whatever its turn gets of a journal and whoever asks", () => {
+  // Taken from main 86c6d3971's own code (`git archive 86c6d3971`, with tests/helpers/evidence-case.mjs): what it builds of the same case.
+  const r = evidenceCase();
+  const built = buildResponseEvidenceSourceItems(r, { inbound: evidenceInput().inbound, lineageRootId: "reviewed" });
+  assert.deepEqual(built.source_items.map((item) => [item.id, item.kind]), [
+    ["src:report:event:owner", "owner_reported_client_outbound"], ["src:report:event:agent", "agent_relayed_report"], ["src:report:event:pair", "owner_reported_client_outbound"],
+    ["src:turn:turn:first", "exact_client_turn"], ["src:turn:turn:sent", "app_committed_client_outbound"], ["src:turn:turn:second", "exact_client_turn"], ["src:turn:turn:reported", "unattributed_assistant_turn"],
+    ["src:turn:turn:third", "exact_client_turn"], ["src:turn:turn:loose", "unattributed_assistant_turn"],
+    ["src:draft:stopped:v2", "unsent_draft"], ["src:draft:repaired:v3", "unsent_draft"], ["src:draft:exported:v4", "unsent_draft"], ["src:draft:ambiguous:v7", "unsent_draft"], ["src:draft:withdrawn:v8", "unsent_draft"],
+    ["src:input:input:message", "relayed_client_message"], ["src:input:input:revision", "supervisor_instruction"], ["src:turn:inbound", "exact_client_turn"]
+  ]);
+  const { omitted, ...lists } = built.communication_projection;
+  assert.deepEqual(Object.entries(lists).map(([name, entries]) => [name, entries.map((entry) => [entry.state, entry.subject.candidate_id ?? entry.subject.kind, entry.source.source_ref])]), [
+    ["confirmed_or_reported_client_outbound", [["app_committed", "sent", null], ["reported_sent", "owner-reported", "silver-lantern-owner"], ["reported_sent", "agent-reported", "silver-lantern-agent"], ["reported_sent", "transcript_turn", "silver-lantern-pair"]]],
+    ["supervisor_only_artifacts", [["draft", "stopped", null], ["draft", "repaired", null], ["exported", "exported", "silver-lantern-export"], ["draft", "ambiguous", null], ["draft", "withdrawn", null], ["draft", "reviewed", null], ["draft", "reviewed-again", null], ["exported", "companion", "silver-lantern-companion"]]],
+    ["unresolved_delivery", [["unknown", "marked-sent", null], ["reported_sent", "unresolved", "silver-lantern-ambiguous"], ["unknown", "unattributed_assistant_turns", null]]]
+  ]);
+  assert.deepEqual(omitted, { confirmed_or_reported_client_outbound: 0, supervisor_only_artifacts: 0, unresolved_delivery: 0, source_items: [{ reason: "unresolved_report_locator", count: 1 }, { reason: "reviewed_lineage_draft", count: 2 }] });
+  assert.equal(digest(built), "9949d2b91562943a416d9fc1a94a70495bdfdfef9abf052396bc3199b6842051");
+  const supervisor = { owner: { kind: "supervisor_draft", operation_key: "a".repeat(24) }, candidateOrigin: "external_draft", lineageRootId: "reviewed", journal: { availability: "not_configured" },
+    historyRequirements: [{ id: "history:one", topic: "Asking for help.", why_material: "The answer changes the advice.", source_ids: ["src:turn:turn:first"], disposition: "answered_by_sources" }] };
+  // The snapshot's bytes, and its model view's digest.
+  for (const [name, extra, bytes, view] of [
+    ["a turn", {}, "a54178089e398c55851245868109bf0def973b7288e662d3d5aa99501dacd22b", "d80dae2732bd846b9ac1885f99de6ec8c9a0e84aaff6106931fbfe2d54581739"],
+    ["a repair", { lineageRootId: "reviewed" }, "42e0c29461f97959ef4752b952e6835fb55f2854dfaaf1e1fee2e330f57bdc0c", "f21462f7d93e5dfd88cd46c39be47d6359085386a3f666b7ba48118bbfa78fd9"],
+    ["a turn that gets no journal", { journal: WITHHELD }, "8cdd9c09ed37200edfb2b2f1cc1f9e2363d24e5e3b3cdf5e84512aec979b66d6", "efd3b67c8a8bd215863a72ecbcbdb34caa9e031363b6b2f06f797b2015236409"],
+    ["a search that found nothing", { journal: NO_MATCH }, "d3d1dab1121a692630173950caad469d9d38552ff714be15da40086754c1213b", "d2eb05481144177d609b2a58e54736023063ada8403f08f5948b694f82a79b1b"],
+    ["a supervisor's draft", supervisor, "6ff24352c2d33eec06300a1436b8e6a7a05c600bbb5d4e466f500192edaf2137", "bcb43276b5a2d55bbd0b00806e590a47bc39cd2efca1be60401af8d16b8a25fa"]
+  ]) {
+    const snapshot = freezeCase(r, extra);
+    assert.deepEqual([digest(snapshot), buildEvidenceModelView(r, snapshot).view_sha256], [bytes, view], name);
+    assert.equal(snapshotOfConversationAlone(snapshot), false, name);
+  }
+  // Nor does a stored snapshot that holds no quotation change anything.
+  assert.equal(digest(freezeCase({ ...r, response_evidence_snapshots: [freezeCase(r), freezeCase(r, { journal: FAILED })] })), "a54178089e398c55851245868109bf0def973b7288e662d3d5aa99501dacd22b");
+});
+
+test("a snapshot is of the conversation alone when its sources are its turns and the retrieval record and it lists and requires nothing; any other source or entry, or a part that is missing, makes it not", () => {
+  const { r, quoting } = readCase(), alone = freezeCase(r, { journal: WITHHELD }), full = freezeCase(asIfNoJournalWasRead(r));
+  assert.equal(snapshotOfConversationAlone(alone), true);
+  const kinds = new Set(["owner_reported_client_outbound", "agent_relayed_report", "unsent_draft", "relayed_client_message", "supervisor_instruction", "journal_quotation"]);
+  const others = [...full.source_items, ...quoting.source_items].filter((item) => !sourceIds(alone).includes(item.id));
+  assert.deepEqual(new Set(others.map((item) => item.kind)), kinds);
+  for (const item of others) assert.equal(snapshotOfConversationAlone({ ...alone, source_items: [...alone.source_items, item] }), false, item.id);
+  const { communication_projection: projection } = alone, lists = Object.keys(projection).filter((name) => name !== "omitted");
+  for (const name of lists) for (const list of [full.communication_projection[name].slice(0, 1), null, {}, undefined]) {
+    assert.equal(snapshotOfConversationAlone({ ...alone, communication_projection: { ...projection, [name]: list } }), false, `${name} ${JSON.stringify(list)}`);
+  }
+  for (const history_requirements of [[{ id: "history:one", topic: "Asking for help.", why_material: "It matters.", source_ids: [], disposition: "open" }], null, {}, undefined]) assert.equal(snapshotOfConversationAlone({ ...alone, history_requirements }), false);
+  const [said] = alone.source_items.filter((item) => item.kind === "exact_client_turn");
+  for (const item of [null, undefined, {}, "src:turn:turn:first", { ...said, kind: undefined }, { ...said, locator: undefined }, { ...said, locator: { kind: "candidate", candidate_id: "stopped", candidate_version: 2 } }, { ...said, kind: "agent_relayed_report" }]) {
+    assert.equal(snapshotOfConversationAlone({ ...alone, source_items: [item] }), false, JSON.stringify(item));
+  }
+  for (const missing of [undefined, null, {}, [], "snapshot", { ...alone, source_items: undefined }, { ...alone, source_items: {} }, { ...alone, communication_projection: undefined }, { ...alone, communication_projection: null }]) assert.equal(snapshotOfConversationAlone(missing), false);
+});
+
+test("a draft is written from the conversation alone when its snapshot is and the draft it was written from was, or was hidden from it; evidence that isn't there says it wasn't", () => {
+  const { r, quoting } = readCase(), alone = freezeCase(r, { snapshotId: "snapshot:alone" });
+  const runtimeTurn = { id: "runtime:one", events: [] };
+  const draft = (id, parent, evidence, hidden = false) => {
+    r.candidate_responses.push({ id, version: r.candidate_responses.length + 1, root_candidate_id: parent ? "quoting" : id, parent_candidate_id: parent, producer_context_id: `context:${id}`, status: "superseded", exact_text: `The draft ${id}: a silver lantern.`,
+      created_at: EVIDENCE_NOW, audit_history: [], metadata: evidence ? { response_evidence: { snapshot_id: evidence } } : {} });
+    runtimeTurn.events.push({ event_type: "INVOCATION_COMPLETED", details: { actual_context_id: `context:${id}`, output: { result: hidden ? { draftHidden: true } : {} } } });
+    return r.candidate_responses.at(-1);
+  };
+  draft("quoting", null, quoting.id);
+  // As an earlier build froze it, when nothing was left out: with the draft that quotes the journal among its sources.
+  const older = freezeCase(asIfNoJournalWasRead(r), { snapshotId: "snapshot:older" });
+  assert.ok(older.source_items.some((item) => item.locator.candidate_id === "quoting"));
+  r.response_evidence_snapshots.push(alone, older);
+  for (const [id, parent, evidence, hidden, expected] of [
+    ["plain", null, alone.id, false, true], ["from-plain", "plain", alone.id, false, true], ["from-it", "quoting", alone.id, false, false], ["from-from-it", "from-it", alone.id, false, false],
+    ["anew", "quoting", alone.id, true, true], ["from-anew", "anew", alone.id, false, true], ["anew-with-one", "quoting", quoting.id, true, false],
+    // Its own evidence holds no quotation, but a draft that does.
+    ["from-an-older-snapshot", null, older.id, false, false], ["from-that", "from-an-older-snapshot", alone.id, false, false], ["anew-from-that", "from-an-older-snapshot", alone.id, true, true],
+    ["unbound", null, null, false, false], ["from-unbound", "unbound", alone.id, false, false], ["bound-to-nothing", null, "snapshot:gone", false, false], ["of-a-lost-parent", "candidate:gone", alone.id, false, false]
+  ]) assert.equal(writtenFromConversationAlone(r, runtimeTurn, draft(id, parent, evidence, hidden)), expected, id);
+  assert.equal(writtenFromConversationAlone(r, runtimeTurn, null), false);
+  // And none of them, nor anything that was reported or listed of them, is in a later snapshot.
+  for (const journal of [WITHHELD, NO_MATCH]) assert.deepEqual([sourceIds(freezeCase(r, { journal })), held(r, freezeCase(r, { journal }))], [CONVERSATION, []]);
+});
+
+test("a record from before any of this neither throws nor is misjudged: snapshots without sources, candidates without roots, metadata or producers, turns without events", () => {
+  const legacy = [null, {}, { id: "snapshot:legacy" }, { id: "snapshot:legacy", source_items: null }, { id: "snapshot:legacy", source_items: [null, {}] }];
+  const r = evidenceCase();
+  for (const candidate of r.candidate_responses.filter((entry) => entry.status !== "sent")) for (const field of ["root_candidate_id", "metadata", "producer_context_id"]) delete candidate[field];
+  // Without a journal, what main 86c6d3971 builds of it (taken from its code, as above); it ignores the snapshots, whatever they are.
+  for (const response_evidence_snapshots of [undefined, legacy]) assert.equal(digest(freezeCase({ ...r, response_evidence_snapshots }, { lineageRootId: "reviewed" })), "f8741d137e83ff6404f7581097fe7fb5ec4b59e953c2a252e28e10ef0b90cb42");
+  // With one among them that holds a quotation, it is a case that has read its journal, and nothing in it is known to be of the conversation alone.
+  const { r: { journal_corpora }, quoting } = readCase(), read = { ...r, journal_corpora, response_evidence_snapshots: [...legacy, quoting] };
+  const snapshot = freezeCase(read, { lineageRootId: "reviewed" });
+  assert.deepEqual([sourceIds(snapshot), held(read, snapshot), snapshotOfConversationAlone(snapshot)], [CONVERSATION, [], true]);
+  const turns = [undefined, {}, { events: null }, { events: [] }, { events: [{ event_type: "INVOCATION_COMPLETED" }, { event_type: "INVOCATION_COMPLETED", details: {} }] }];
+  for (const candidate of read.candidate_responses) for (const runtimeTurn of turns) assert.equal(writtenFromConversationAlone(read, runtimeTurn, candidate), false, candidate.id);
+  // Nor a draft bound to a snapshot of the conversation alone, when what it was written from isn't known to be, or isn't there.
+  const repaired = { ...read.candidate_responses.find((entry) => entry.id === "repaired"), metadata: { response_evidence: { snapshot_id: snapshot.id } } };
+  for (const runtimeTurn of turns) for (const candidate_responses of [read.candidate_responses, [], undefined, null, {}]) {
+    assert.equal(writtenFromConversationAlone({ candidate_responses, response_evidence_snapshots: [...legacy, snapshot] }, runtimeTurn, repaired), false);
+  }
+  for (const response_evidence_snapshots of [undefined, null, {}, legacy]) assert.equal(writtenFromConversationAlone({ ...read, response_evidence_snapshots }, undefined, { ...repaired, parent_candidate_id: null }), false);
+});
+
+test("the public schema takes a snapshot with a journal note, and refuses one the contract refuses", async () => {
+  const validate = new Ajv2020({ strict: true, validateFormats: false }).compile(JSON.parse(await fs.readFile(new URL("../schemas/private-case/response-evidence-snapshot-v1.schema.json", import.meta.url), "utf8")));
+  const { snapshot } = freezeJournal(journalNote());
+  assert.equal(validate(snapshot), true, JSON.stringify(validate.errors));
+  assert.equal(validate(freezeJournal(undefined).snapshot), true);
+  for (const change of [(note) => { note.lifecycle = "revoked"; }, (note) => { note.extra = true; }, (note) => { note.written.from = "March 2019"; }, (note) => { delete note.cues; }]) {
+    const changed = structuredClone(snapshot);
+    change(changed.source_items.find((item) => item.kind === "journal_quotation").journal_note);
+    assert.equal(validate(changed), false);
+  }
 });

@@ -98,6 +98,22 @@ A client's journal can inform their replies only through the session-use journal
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
 `cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.
 
+**How a journal is searched** (`docs/superpowers/specs/2026-11-24-runner-journal-search-design.md`). The readers read the message first,
+and its first words (a provisional reply, the emergency line) wait for no search. Then one ranked search goes by the message's less common
+words (of the whole message, up to 40,000 characters): at most six quotations come back, each with when its entry says it was written,
+its wording cues (found for English wording only) and its lifecycle. Sharing words doesn't make a quotation relevant: the writer is told to use one only when it helps,
+and the checker checks every claim against its source. A repair whose check asked for history searches each of its questions (at most four)
+and adds to the quotations, up to twelve. A message that shares no less common word with the journal finds nothing.
+
+**A conversation about wanting to die gets no journal.** When the message isn't read, or is read as anything but none (wanting to die, having
+acted or being about to, thoughts of death with no wish to act, or something that could mean either), or, with the number now on, as needing
+the emergency number now, or its conversation has been read as one about wanting to die by any reader or checker, no search is made, and the
+turn's evidence says `journal_withheld`. When only the checker reads it as one, after a draft was written with quotations in view, that draft
+isn't sent, and its repair gets neither them nor the draft. The reply is made from the conversation alone; a new conversation gets the journal
+again. Once a case has read its journal, no turn of it gets anything but the conversation and its own quotations as evidence: no unsent draft,
+report, instruction or list of them, since any of these may hold the journal's words (a rule about the whole case, in place of following
+each draft, which kept leaving a way).
+
 **Once a client's case has read its journal, the case is used only while the gate is open.** The gate is open when the owner's
 confirmation of the consent stands, the client list names the copy, the client's current grant opens it for session use, and a
 passing cold-test receipt names exactly the copy's current publication. It is asked when a turn starts, before every call of a
@@ -117,7 +133,8 @@ withdrawn. Cases that never read a journal, the owner's own included, are never 
 `--response-evidence`, every turn (your own included) is checked against the sources it rests on: the writer sees the turn's
 evidence, the whole checker returns the evidence review the program then checks word for word, a declared journal quote must be
 word for word in its source, and the store admits the reply only with its evidence. It needs the whole checker. A reply resting on
-the journal sends up to about 8,000 more tokens of quotations to the writer and the checker, again at each repair.
+the journal sends up to about 8,000 more tokens of quotations (six of them, twelve after a repair's search) to the writer and the
+checker, again at each repair.
 
 ## Providers
 

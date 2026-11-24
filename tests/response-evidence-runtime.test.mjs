@@ -4,14 +4,16 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
-import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
+import { createEncryptedPrivateCaseStore, serializeVaultEnvelope } from "../src/storage/private-case-store.mjs";
+import { createVaultEnvelope } from "../src/storage/vault-crypto.mjs";
 import { createPrivateTherapyTurnController } from "../src/supervisor/private-therapy-turn-controller.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
-import { RESPONSE_EVIDENCE_DIMENSIONS, responseEvidenceDependenciesCurrent, responseEvidenceSnapshotCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, responseEvidenceDependenciesCurrent, responseEvidenceSnapshotCurrent, sha256Json, sha256Text, validateResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
 import { responseEvidenceFailures } from "../src/supervisor/private-therapy-model-runtime.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "../src/supervisor/owner-fallback-message.mjs";
 import { compatibilityStateBinding, protectiveCompatibilityDecision, updateProtectiveCompatibilityState } from "../src/case-formulation/protective-compatibility.mjs";
 import { validatePrivateRuntimeDiscriminatorReview } from "../src/supervisor/private-runtime-turn-lifecycle.mjs";
+import { asIfNoJournalWasRead } from "./helpers/evidence-case.mjs";
 
 const CASE = "synthetic-evidence-runtime", NOW = "2026-11-23T12:00:00.000Z";
 const request = () => ({ caseId: CASE, runtimeTurnId: "runtime:one", exchangeId: "exchange:one", userTurnId: "turn:user", assistantTurnId: "turn:assistant", userMessage: "What is happening for me now?" });
@@ -564,4 +566,394 @@ test("origin/main reads a governed runtime delivery with a reviewed fallback", a
   const record = await assertDelivered(env.store);
   assert.ok(record.runtime_turns[0].discriminator_review);
   assert.doesNotThrow(() => validateOld(structuredClone(record)));
+});
+
+// ---- The two optional hooks for a turn's journal (24 Nov 2026) ---------------------------------------------------------------------
+
+// The runtime's hooks and calls, the freeze and the journal search, in the order they happen.
+function hooked(env, { withheld = () => null, read = async () => {} } = {}) {
+  const happened = [], inputs = [];
+  env.runtime.readBeforeEvidence = async (input) => { happened.push("read"); inputs.push(input); return read(input); };
+  env.runtime.journalWithheld = async (input) => { happened.push("withheld?"); return withheld(input); };
+  for (const [method, name] of [["produceCandidate", "write"], ["repairCandidate", "repair"]]) {
+    const original = env.runtime[method];
+    env.runtime[method] = async (input) => { happened.push(Object.hasOwn(input, "turnRead") ? `${name}, read before` : name); return original(input); };
+  }
+  const source = { ...env.store, freezeResponseEvidence(...args) { happened.push("freeze"); return env.store.freezeResponseEvidence(...args); } };
+  const searches = [];
+  const journal = (part = { availability: "available", retrieval_status: "no_match" }) => ({ async freezeResponseEvidenceJournal(input) { happened.push("search"); searches.push(input); return typeof part === "function" ? part(input) : part; } });
+  return { happened, inputs, searches, journal, source, controller: (extra) => env.controller({ privateCaseSource: source, ...extra }) };
+}
+const withheldPart = (snapshot) => [snapshot.journal.availability, snapshot.journal.retrieval_status, snapshot.journal.omissions, snapshot.journal.receipts];
+
+test("a runtime that reads first is asked before anything is searched or frozen, and its writer is told", async (t) => {
+  const env = await setup(t), h = hooked(env);
+  await h.controller({ journalEvidenceProvider: h.journal() }).run({ ...request(), userInput: { newConversation: true } });
+  await assertDelivered(env.store);
+  assert.deepEqual(h.happened, ["read", "withheld?", "search", "freeze", "write, read before"]);
+  assert.deepEqual([h.inputs[0].caseId, h.inputs[0].runtimeTurn.id, h.inputs[0].userInput], [CASE, "runtime:one", { newConversation: true }]);
+  assert.deepEqual(Object.keys(h.searches[0]).sort(), ["authContext", "caseId", "maximumBytes", "maximumTokens", "query"], "the message's own search is asked for as before");
+});
+
+test("the journal is searched for the whole message, as long as one may be", async (t) => {
+  for (const length of [9_000, 40_000]) {
+    const env = await setup(t), h = hooked(env);
+    const userMessage = "What is happening for me now, after all of this? ".repeat(1_100).slice(0, length);
+    await h.controller({ journalEvidenceProvider: h.journal() }).run({ ...request(), userMessage });
+    assert.deepEqual([h.searches[0].query.length, h.searches[0].query === userMessage], [length, true]);
+  }
+});
+
+for (const [name, extra] of [
+  ["no journal provider", {}],
+  ["a provider of the older contract", { journalEvidenceProvider: { async freezeForTurn() { throw new Error("must not be called"); } } }]
+]) test(`with ${name} nothing is read first and nothing else changes`, async (t) => {
+  const env = await setup(t), h = hooked(env);
+  await h.controller(extra).run(request());
+  assert.deepEqual(h.happened, ["freeze", "write"]);
+  assert.equal((await assertDelivered(env.store)).response_evidence_snapshots.length, 1);
+});
+
+test("with response evidence off nothing is read first", async (t) => {
+  const env = await setup(t, { policy: "advisory" }), h = hooked(env);
+  await h.controller({ responseEvidence: { enforced: false } }).run(request());
+  assert.deepEqual(h.happened, ["write"]);
+});
+
+test("a turn that gets no journal makes no search, its own or the repair's, and each snapshot says why", async (t) => {
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => "journal_withheld" });
+  await h.controller({ journalEvidenceProvider: h.journal() }).run(request());
+  const record = await assertDelivered(env.store);
+  assert.deepEqual(record.response_evidence_snapshots.map((snapshot) => [snapshot.revision_reason, ...withheldPart(snapshot)]), [
+    ["initial", "unavailable", "not_attempted", [{ reason: "journal_withheld", count: 1 }], []], ["evidence_expansion", "unavailable", "not_attempted", [{ reason: "journal_withheld", count: 1 }], []]
+  ]);
+  assert.deepEqual(h.happened, ["read", "withheld?", "freeze", "write, read before", "withheld?", "freeze", "repair"]);
+});
+
+test("a decision that can't be made is a failed retrieval: no search, and the turn goes on without the journal", async (t) => {
+  const env = await setup(t), h = hooked(env, { withheld: () => { throw new Error("Synthetic store failure."); } });
+  await h.controller({ journalEvidenceProvider: h.journal() }).run(request());
+  const [snapshot] = (await assertDelivered(env.store)).response_evidence_snapshots;
+  assert.deepEqual([snapshot.journal.availability, snapshot.journal.retrieval_status], ["unavailable", "failed"]);
+  assert.deepEqual(h.happened, ["read", "withheld?", "freeze", "write, read before"]);
+});
+
+test("a restart reads first again while there is no candidate, and not once a writer has finished; the frozen evidence is kept", async (t) => {
+  const env = await setup(t), h = hooked(env);
+  const provider = h.journal();
+  const unfinished = { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } };
+  await assert.rejects(h.controller({ privateCaseSource: unfinished, journalEvidenceProvider: provider }).run(request()), /stop before the writer/u);
+  assert.deepEqual(h.happened.splice(0), ["read", "withheld?", "search", "freeze"]);
+  const uncommitted = { ...h.source, async commitPrivateRuntimeCandidate() { throw new Error("Synthetic stop after the writer."); } };
+  await assert.rejects(h.controller({ privateCaseSource: uncommitted, journalEvidenceProvider: provider }).run(request()), /stop after the writer/u);
+  assert.deepEqual(h.happened.splice(0), ["read", "write, read before"], "the snapshot it had, and no second search");
+  await h.controller({ journalEvidenceProvider: provider }).run(request());
+  assert.deepEqual(h.happened, [], "the finished writer's own evidence and words");
+  assert.equal((await assertDelivered(env.store)).response_evidence_snapshots.length, 1);
+});
+
+test("a reading that fails stops the turn before anything is searched or frozen, as a failed step does", async (t) => {
+  const env = await setup(t);
+  let failing = true;
+  const h = hooked(env, { read: async () => { if (failing) throw new Error("Synthetic reading failure."); } });
+  await assert.rejects(h.controller({ journalEvidenceProvider: h.journal() }).run(request()), /reading failure/u);
+  assert.deepEqual(h.happened.splice(0), ["read"]);
+  assert.deepEqual((await env.store.load(CASE)).response_evidence_snapshots, []);
+  failing = false;
+  await h.controller({ journalEvidenceProvider: h.journal() }).run(request());
+  await assertDelivered(env.store);
+});
+
+// A published synthetic corpus, its quotations, and the part a reader returns with some of them.
+async function publishedCorpus(env) {
+  await env.store.createJournalCorpus(CASE, { corpusId: "corpus:a", manifestObjectId: "manifest:a" });
+  await env.store.publishJournalGeneration(CASE, { corpusId: "corpus:a", generation: "generation:one", manifestObjectId: "manifest:a" });
+  const item = (number) => {
+    const exact_excerpt = `Exact synthetic journal quotation ${number}.`;
+    return { id: `src:journal:${number}`, kind: "journal_quotation", actor: "client", audience: "private_journal", time: { at: null, status: "unavailable" }, epistemic_status: "client_written_account",
+      exact_excerpt, excerpt_sha256: sha256Text(exact_excerpt), excerpt_bytes: Buffer.byteLength(exact_excerpt),
+      locator: { kind: "journal", corpus_id: "corpus:a", generation: "generation:one", visibility_epoch: 0, record_id: `record:${number}`, start_byte: 0, end_byte: Buffer.byteLength(exact_excerpt) } };
+  };
+  const found = (source_items) => ({ availability: "available", retrieval_status: "returned", source_items, coverage: "A synthetic search.", receipts: [{ operation_id: `retrieval:${source_items.length}`, corpus_id: "corpus:a",
+    generation: "generation:one", visibility_epoch: 0, manifest_object_id: "manifest:a", purpose: "session_use", query_sha256: sha256Text("query"), filters_sha256: sha256Json({}), returned_source_ids: source_items.map((entry) => entry.id),
+    packet_sha256: sha256Json(source_items), more_available: false, omitted_count: 0, budget_used_tokens: 0, budget_used_bytes: 0 }] });
+  return { item, found };
+}
+const quotationIds = (snapshot) => snapshot.source_items.filter((entry) => entry.kind === "journal_quotation").map((entry) => entry.id);
+
+test("the expansion hands the reader each question and the part it adds to", async (t) => {
+  const questions = ["What was already tried?", "And what helped?"];
+  const review = (text) => ({ ...missing(text), missing_material_history: questions.map((question, index) => ({ ...missing(text).missing_material_history[0], id: `missing-${index}`, question })) });
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? review(text) : emptyReview() }), h = hooked(env);
+  const { item, found } = await publishedCorpus(env);
+  await h.controller({ journalEvidenceProvider: h.journal(({ addsTo }) => found(addsTo ? [...addsTo.source_items, item(3)] : [item(1), item(2)])) }).run(request());
+  const record = await assertDelivered(env.store);
+  assert.equal(h.searches.length, 2);
+  assert.deepEqual([h.searches[1].query, h.searches[1].questions], [questions.join("\n"), questions]);
+  const { source_items: added, ...part } = h.searches[1].addsTo;
+  assert.deepEqual([added, part], [[item(1), item(2)], record.response_evidence_snapshots[0].journal]);
+  assert.deepEqual(record.response_evidence_snapshots.map((snapshot) => snapshot.source_items.filter((entry) => entry.kind === "journal_quotation").map((entry) => entry.id)),
+    [["src:journal:1", "src:journal:2"], ["src:journal:1", "src:journal:2", "src:journal:3"]]);
+  assert.deepEqual(env.calls.find((entry) => entry.stage === "repair").responseEvidence.view.source_items.filter((entry) => entry.kind === "journal_quotation").map((entry) => entry.exact_excerpt),
+    [1, 2, 3].map((number) => item(number).exact_excerpt), "the repair sees what the draft rested on, and what was added");
+});
+
+test("a repair whose turn gets no journal any more goes on without: the snapshot it would use is frozen again without its quotations", async (t) => {
+  let withhold = null;
+  const env = await setup(t, { alwaysFail: true, onAudit: async () => { withhold = "journal_withheld"; } }), h = hooked(env, { withheld: () => withhold });
+  const { item, found } = await publishedCorpus(env);
+  await h.controller({ journalEvidenceProvider: h.journal(() => found([item(1), item(2)])) }).run(request());
+  const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
+  assert.ok(env.calls.some((entry) => entry.stage === "repair"));
+  assert.deepEqual(snapshots.slice(0, 2).map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), [["initial", ["src:journal:1", "src:journal:2"]], ["dependency_refresh", []]]);
+  assert.deepEqual(withheldPart(snapshots[1]).slice(0, 3), ["unavailable", "not_attempted", [{ reason: "journal_withheld", count: 1 }]]);
+  assert.equal(h.searches.length, 1);
+  for (const repair of env.calls.filter((entry) => entry.stage === "repair")) assert.equal(JSON.stringify(repair.responseEvidence.view).includes("Exact synthetic journal quotation"), false);
+});
+
+test("a refresh of a turn's evidence carries no quotation over into a turn that gets no journal any more", async (t) => {
+  // The case changes while the turn's evidence is frozen, so it is frozen again before the writer is called. By then the turn gets no
+  // journal, or (the control) still does, and the refresh carries its quotation over.
+  for (const later of ["journal_withheld", null]) {
+    let withhold = null;
+    const env = await setup(t), h = hooked(env, { withheld: () => withhold });
+    const { item, found } = await publishedCorpus(env);
+    let changed = false;
+    const source = { ...h.source, async freezeResponseEvidence(...args) {
+      const frozen = await h.source.freezeResponseEvidence(...args);
+      if (!changed) {
+        changed = true;
+        withhold = later;
+        const state = await env.store.getCaseState(CASE);
+        state.updated_at = "2026-11-23T14:00:00.000Z";
+        await env.store.saveCaseState(CASE, state);
+      }
+      return frozen;
+    } };
+    await h.controller({ privateCaseSource: source, journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request());
+    const { response_evidence_snapshots: snapshots } = await assertDelivered(env.store);
+    assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), [["initial", ["src:journal:1"]], ["dependency_refresh", later ? [] : ["src:journal:1"]]], String(later));
+    const [writing] = env.calls;
+    assert.deepEqual([writing.stage, quotationIds(writing.responseEvidence.view).length], ["candidate", later ? 0 : 1], "the writer gets what the second one holds");
+    assert.equal(h.searches.length, 1);
+  }
+});
+
+// A build without the hooks, which searched before anyone had read the message, froze the turn's evidence and stopped.
+async function frozenByAnEarlierBuild(env, h, part) {
+  const unfinished = { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } };
+  const modelRuntime = { ...env.runtime, readBeforeEvidence: undefined, journalWithheld: undefined };
+  await assert.rejects(createPrivateTherapyTurnController({ privateCaseSource: unfinished, modelRuntime, responseEvidence: { enforced: true, journalTimeoutMs: 10 }, journalEvidenceProvider: h.journal(part) }).run(request()), /stop before the writer/u);
+  h.happened.splice(0); h.searches.splice(0);
+}
+
+test("a snapshot frozen before anyone had read the message isn't written from once its turn gets no journal: it is frozen again without its quotations", async (t) => {
+  for (const withheld of ["journal_withheld", null]) {
+    const env = await setup(t), h = hooked(env, { withheld: () => withheld });
+    const { item, found } = await publishedCorpus(env);
+    await frozenByAnEarlierBuild(env, h, () => found([item(1)]));
+    await h.controller({ journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request());
+    const { response_evidence_snapshots: snapshots } = await assertDelivered(env.store);
+    assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), withheld ? [["initial", ["src:journal:1"]], ["dependency_refresh", []]] : [["initial", ["src:journal:1"]]], String(withheld));
+    assert.deepEqual([h.searches.length, h.happened[0]], [0, "read"]);
+    for (const call of env.calls) assert.equal(quotationIds(call.responseEvidence.view).length, withheld ? 0 : 1, call.stage);
+  }
+});
+
+// ---- A case that has read its journal (24 Nov 2026) --------------------------------------------------------------------------------
+
+const second = () => ({ ...request(), runtimeTurnId: "runtime:two", exchangeId: "exchange:two", userTurnId: "turn:user-two", assistantTurnId: "turn:assistant-two", userMessage: "I can't do this any more." });
+const ofSecond = (record) => record.response_evidence_snapshots.filter((snapshot) => snapshot.owner.runtime_turn_id === "runtime:two");
+const digest = (value) => sha256Text(JSON.stringify(value));
+// Every source's kind and every listed entry, of a snapshot or a view: what a snapshot of the conversation alone has none of.
+const besidesTheConversation = ({ source_items, communication_projection: { omitted: _omitted, ...lists } }) => [...source_items.map((item) => item.kind).filter((kind) => !["exact_client_turn", "app_committed_client_outbound", "journal_retrieval_record"].includes(kind)), ...Object.values(lists).flat().map((entry) => entry.state)].sort();
+// Words that only what is written in the case besides its conversation holds, as any of it may hold the journal's.
+const WRITTEN = ["silver lantern", "silver-lantern"];
+const holdsWritten = (value) => WRITTEN.filter((words) => JSON.stringify(value).includes(words));
+// The second turn's evidence is frozen, and the process stops before its writer.
+async function stoppedBeforeItsWriter(h, extra = {}) {
+  await assert.rejects(h.controller({ privateCaseSource: { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } }, ...extra }).run(second()), /stop before the writer/u);
+  h.happened.splice(0);
+}
+// A case whose first turn had a draft stopped and its repair sent (with `read`, the draft was written with a quotation of its journal), and where
+// everything else a snapshot can be made from was then written: an export, an agent's report, one that can't be placed and the owner's, each with
+// a reference, and a supervisor's inputs.
+async function writtenIn(t, { read, attached = true, withheld }) {
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld });
+  const { item, found } = read ? await publishedCorpus(env) : {};
+  const produce = env.runtime.produceCandidate;
+  env.runtime.produceCandidate = async (input) => ({ ...await produce(input), ...(input.runtimeTurn.id === "runtime:one" ? { exactText: "You wrote of a silver lantern." } : { contextId: "context:writer-two" }) });
+  const reader = attached ? { journalEvidenceProvider: h.journal(({ addsTo }) => read ? found(addsTo ? addsTo.source_items : [item(1)]) : { availability: "available", retrieval_status: "no_match" }) } : {};
+  await h.controller(reader).run(request());
+  const [stopped, sent] = (await assertDelivered(env.store)).candidate_responses;
+  assert.deepEqual([stopped.status, sent.status], ["superseded", "sent"]);
+  const draft = { kind: "candidate", candidateId: stopped.id, candidateVersion: stopped.version };
+  for (const [eventId, kind, audience, subject, origin] of [
+    ["event:export", "exported", "client", draft, "owner_action"], ["event:agent", "reported_sent", "client", draft, "agent_relayed"],
+    ["event:ambiguous", "reported_sent", "client", { kind: "unresolved", candidateRefs: [{ candidateId: stopped.id, candidateVersion: stopped.version }] }, "agent_relayed"],
+    ["event:owner", "reported_sent", "client", { kind: "transcript_turn", assistantTurnId: "turn:assistant", inReplyToTurnId: "turn:user" }, "owner_action"]
+  ]) await env.store.recordCommunicationEvent(CASE, { eventId, kind, audience, subject, provenance: { origin, sourceRef: "silver-lantern-entry" } });
+  await env.store.recordSupervisorInputs(CASE, { channel: "owner_ui", inputs: [["input:message", "client_message"], ["input:revision", "supervisor_revision"]].map(([inputId, inputType]) => ({ inputId, inputType, text: `The ${inputType} of a silver lantern.` })) });
+  h.happened.splice(0);
+  return { env, h, reader };
+}
+const ALL_OF_IT = ["agent_relayed_report", "app_committed", "owner_reported_client_outbound", "relayed_client_message", "reported_sent", "reported_sent", "supervisor_instruction"];
+// The second turn's first snapshot as an earlier build froze it, with all of that: written into the vault as it would have stored it.
+async function frozenWithAllOfIt(env) {
+  const record = await env.store.load(CASE), [first] = ofSecond(record);
+  const { id, owner, revision, parent_snapshot_id, revision_reason, candidate_origin, inbound, journal } = first;
+  const older = buildResponseEvidenceSnapshot(asIfNoJournalWasRead(record), { snapshotId: id, owner, revision, parentSnapshotId: parent_snapshot_id, revisionReason: revision_reason, candidateOrigin: candidate_origin, inbound, journal }, { createdAt: first.created_at });
+  assert.deepEqual([besidesTheConversation(older), holdsWritten(older)], [ALL_OF_IT, WRITTEN]);
+  record.response_evidence_snapshots[record.response_evidence_snapshots.indexOf(first)] = older;
+  const { routineKek, recoverySecretBytes } = env.storeOptions;
+  const envelope = await createVaultEnvelope({ plaintextBytes: Buffer.from(JSON.stringify(record)), routineKek, recoverySecretBytes });
+  await fs.writeFile(path.join(env.rootDir, `${CASE}.vault.json`), JSON.stringify(serializeVaultEnvelope(envelope)), { mode: 0o600 });
+  return older;
+}
+
+test("in a case that has read its journal, nothing an earlier build froze besides the conversation reaches a call of a turn that gets no journal; a turn that may have it, and a case that has read none, write from it as it is", async (t) => {
+  for (const [read, withheld, attached] of [[true, "journal_withheld", true], [true, "journal_withheld", false], [true, null, true], [false, "journal_withheld", true], [false, "journal_withheld", false]]) {
+    const name = JSON.stringify({ read, withheld, attached });
+    let answer = null;
+    const { env, h, reader } = await writtenIn(t, { read, withheld: () => answer });
+    answer = withheld;
+    const extra = attached ? reader : {};
+    await stoppedBeforeItsWriter(h, extra);
+    const [first] = ofSecond(await env.store.load(CASE));
+    assert.deepEqual([besidesTheConversation(first), holdsWritten(first)], read ? [withheld ? [] : ["journal_quotation"], []] : [ALL_OF_IT, WRITTEN], `${name}: as this build freezes it`);
+    const older = await frozenWithAllOfIt(env);
+    if (!read) assert.equal(digest(first), digest(older), `${name}: no different from what it was`);
+    const before = env.calls.length;
+    await h.controller(extra).run(second());
+    const record = await env.store.load(CASE), again = read && withheld !== null;
+    assert.equal(record.runtime_turns.at(-1).state, "DELIVERED", name);
+    assert.deepEqual(ofSecond(record).map((snapshot) => snapshot.revision_reason), again ? ["initial", "dependency_refresh"] : ["initial"], name);
+    assert.equal(digest(ofSecond(record)[0]), digest(older), name);
+    const calls = env.calls.slice(before);
+    assert.deepEqual(calls.map((call) => call.stage), ["candidate", "audit"], name);
+    for (const { stage, responseEvidence: { view } } of calls) assert.deepEqual([besidesTheConversation(view), holdsWritten(view)], again ? [[], []] : [ALL_OF_IT, WRITTEN], `${name}: ${stage}`);
+    // Only a journal case is asked about where no reader is attached, and only where its snapshot isn't of the conversation alone.
+    assert.equal(h.happened.filter((step) => step === "withheld?").length, again ? 2 : read ? 4 : 0, `${name}: ${h.happened}`);
+  }
+});
+
+test("nor is a check made of a draft written from such a snapshot, once its turn gets no journal: the turn ends", async (t) => {
+  for (const withheld of ["journal_withheld", null]) {
+    let answer = null;
+    const { env, h, reader } = await writtenIn(t, { read: true, withheld: () => answer });
+    await stoppedBeforeItsWriter(h, reader);
+    await frozenWithAllOfIt(env);
+    const before = env.calls.length, produce = env.runtime.produceCandidate;
+    env.runtime.produceCandidate = async (input) => { const written = await produce(input); answer = withheld; return written; };
+    const run = h.controller(reader).run(second());
+    if (withheld) await assert.rejects(run, (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE" && error.details.response_evidence_revisions_exhausted === true);
+    else await run;
+    assert.deepEqual(env.calls.slice(before).map((call) => call.stage), withheld ? ["candidate"] : ["candidate", "audit"], String(withheld));
+  }
+});
+
+test("a writer's finished call keeps the evidence it was made with: its draft is stored, and its check isn't made once its turn gets no journal", async (t) => {
+  let answer = null;
+  const { env, h, reader } = await writtenIn(t, { read: true, withheld: () => answer });
+  await assert.rejects(h.controller({ privateCaseSource: { ...h.source, async commitPrivateRuntimeCandidate() { throw new Error("Synthetic stop after the writer."); } }, ...reader }).run(second()), /stop after the writer/u);
+  answer = "journal_withheld";
+  const before = env.calls.length;
+  await assert.rejects(h.controller(reader).run(second()), (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE" && error.details.response_evidence_revisions_exhausted === true);
+  const record = await env.store.load(CASE);
+  assert.deepEqual([ofSecond(record).map(quotationIds), env.calls.length - before, record.runtime_turns.at(-1).state], [[["src:journal:1"]], 0, "AUDITING"]);
+});
+
+test("a turn that has no evidence yet, in a case that has read its journal, has its first frozen of the conversation alone once it gets no journal", async (t) => {
+  // Its two repairs failed with response evidence off; it goes on, to its question, with it on.
+  const env = await setup(t, { policy: "advisory", alwaysFail: true }), h = hooked(env, { withheld: () => "journal_withheld" });
+  const unasked = { ...h.source, async recordPrivateRuntimeInvocationEvent(...args) { if (args[2].stage === "discriminator") throw new Error("Synthetic stop before the question."); return env.store.recordPrivateRuntimeInvocationEvent(...args); } };
+  await assert.rejects(h.controller({ privateCaseSource: unasked, responseEvidence: { enforced: false } }).run(request()), /stop before the question/u);
+  const { item, found } = await publishedCorpus(env);
+  await env.store.freezeResponseEvidence(CASE, { snapshotId: "snapshot:supervisor", owner: { kind: "supervisor_draft", operation_key: "a".repeat(24) }, candidateOrigin: "external_draft", historyRequirements: [], journal: found([item(1)]),
+    inbound: { turn_id: request().userTurnId, exact_text_sha256: sha256Text(request().userMessage), audience: "client", source_kind: "exact_client_turn" } });
+  await h.controller().run(request());
+  const { runtime_turns: [turn], response_evidence_snapshots: [, ...frozen] } = await env.store.load(CASE);
+  assert.deepEqual([turn.state, frozen.map(besidesTheConversation)], ["DELIVERED", [[]]]);
+});
+
+test("a turn that gets no journal, in a case that has read none, is what main 86c6d3971 makes of it, byte for byte: every snapshot, and every view a call gets", async (t) => {
+  const { env, h } = await writtenIn(t, { read: false, attached: false, withheld: () => "journal_withheld" });
+  await h.controller().run(second());
+  const record = await env.store.load(CASE);
+  assert.deepEqual([record.runtime_turns.at(-1).state, ofSecond(record).map(besidesTheConversation)], ["DELIVERED", [ALL_OF_IT]]);
+  // Taken from main 86c6d3971's own code (`git archive 86c6d3971`), where the same turns were run; it asks nothing of the hooks.
+  assert.deepEqual([digest(env.calls.map((call) => call.responseEvidence.view)), digest(record.response_evidence_snapshots)],
+    ["83f533cfe7cfa6675972d7a768767da4b53b8c43a5bef6337b682bd80f04ebab", "1b52f8d8e4ffd2fd04f90b59a38cd11670eeea69af584fb225015ef073a2670c"]);
+});
+
+test("a check isn't made again with quotations in view once its conversation was read as one that gets no journal: the turn ends", async (t) => {
+  // The first check stores its reading and stops; a second attempt would get its draft's snapshot, which holds the quotation. A decision
+  // that can't be made stops no check.
+  for (const [withheld, calls] of [["journal_withheld", 1], [null, 2], [new Error("Synthetic store failure."), 2]]) {
+    let reason = null;
+    const env = await setup(t, { async onAudit({ n }) { if (n === 0) { reason = withheld; throw new Error("Synthetic stop after the reading."); } } });
+    const h = hooked(env, { withheld: () => { if (reason instanceof Error) throw reason; return reason; } });
+    const { item, found } = await publishedCorpus(env);
+    const run = h.controller({ journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request());
+    if (calls === 1) await assert.rejects(run, (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE" && error.details.response_evidence_revisions_exhausted === true);
+    else { await run; await assertDelivered(env.store); }
+    assert.deepEqual(env.calls.map((call) => [call.stage, quotationIds(call.responseEvidence.view).length]), [["candidate", 1], ...Array.from({ length: calls }, () => ["audit", 1])], String(withheld));
+    assert.equal((await env.store.load(CASE)).response_evidence_snapshots.length, 1);
+  }
+});
+
+test("a decision that can't be made for a repair is a failed retrieval: it goes on without the quotations, or with them once it can be made", async (t) => {
+  for (const [failures, kept] of [[1, true], [Infinity, false]]) {
+    let failing = 0;
+    const env = await setup(t, { alwaysFail: true, onAudit: async ({ n }) => { if (n === 0) failing = failures; } });
+    const h = hooked(env, { withheld: () => { if (failing > 0) { failing -= 1; throw new Error("Synthetic store failure."); } return null; } });
+    const { item, found } = await publishedCorpus(env);
+    await h.controller({ journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request());
+    const repair = env.calls.find((call) => call.stage === "repair");
+    assert.deepEqual(quotationIds(repair.responseEvidence.view), kept ? ["src:journal:1"] : [], String(failures));
+    const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
+    assert.deepEqual([snapshots[1].revision_reason, snapshots[1].journal.retrieval_status], ["dependency_refresh", kept ? "returned" : "failed"]);
+    assert.equal(h.searches.length, 1);
+  }
+});
+
+test("a quotation isn't carried over into a turn that gets no journal any more where the reader is no longer attached either", async (t) => {
+  for (const later of ["journal_withheld", null]) {
+    const env = await setup(t), h = hooked(env, { withheld: () => later });
+    const { item, found } = await publishedCorpus(env);
+    // Frozen with its quotation, then stopped; started again without the reader, the case changed meanwhile.
+    const unfinished = { ...h.source, async recordPrivateRuntimeInvocationEvent() { throw new Error("Synthetic stop before the writer."); } };
+    await assert.rejects(createPrivateTherapyTurnController({ privateCaseSource: unfinished, modelRuntime: { ...env.runtime, journalWithheld: undefined }, responseEvidence: { enforced: true, journalTimeoutMs: 10 }, journalEvidenceProvider: h.journal(() => found([item(1)])) }).run(request()), /stop before the writer/u);
+    const state = await env.store.getCaseState(CASE);
+    state.updated_at = "2026-11-23T14:00:00.000Z";
+    await env.store.saveCaseState(CASE, state);
+    await h.controller().run(request());
+    const { response_evidence_snapshots: snapshots } = await assertDelivered(env.store);
+    assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), [["initial", ["src:journal:1"]], ["dependency_refresh", later ? [] : ["src:journal:1"]]], String(later));
+    if (later) assert.deepEqual(withheldPart(snapshots[1]).slice(0, 3), ["unavailable", "not_attempted", [{ reason: later, count: 1 }]]);
+  }
+});
+
+test("a repair that may have no journal and no further snapshot isn't made: the turn ends as one without a checked reply", async (t) => {
+  let withhold = null;
+  const env = await setup(t, { alwaysFail: true, auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => withhold });
+  const { item, found } = await publishedCorpus(env);
+  // A third snapshot before the second repair: the case changes right after the expansion is frozen.
+  const source = { ...h.source, async freezeResponseEvidence(...args) {
+    const frozen = await h.source.freezeResponseEvidence(...args);
+    if (frozen.revision_reason === "evidence_expansion") {
+      const state = await env.store.getCaseState(CASE);
+      await env.store.saveCaseState(CASE, { ...state, current_episode: { ...state.current_episode, target: "A synthetic changed target." } });
+    }
+    return frozen;
+  } };
+  env.runtime.auditCandidate = ((original) => async (input) => {
+    if ((await env.store.load(CASE)).response_evidence_snapshots.length === 3) withhold = "journal_withheld";
+    return original(input);
+  })(env.runtime.auditCandidate);
+  const run = h.controller({ privateCaseSource: source, journalEvidenceProvider: h.journal(({ addsTo }) => found(addsTo ? [...addsTo.source_items, item(3)] : [item(1), item(2)])) }).run(request());
+  await assert.rejects(run, (error) => error.code === "THERAPY_RUNTIME_UNAVAILABLE" && error.details.response_evidence_revisions_exhausted === true);
+  const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
+  assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot).length > 0]), [["initial", true], ["evidence_expansion", true], ["dependency_refresh", true]]);
+  assert.equal(env.calls.filter((entry) => entry.stage === "repair").length, 1, "the second repair, which could only have had the quotations, isn't made");
 });

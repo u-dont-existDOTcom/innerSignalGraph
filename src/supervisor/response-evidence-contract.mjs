@@ -51,13 +51,25 @@ const locatorSchema = { anyOf: [
   shape({ kind: { const: "supervisor_input" }, entry_id: id }),
   shape({ kind: { const: "journal" }, corpus_id: id, generation: id, visibility_epoch: integer(), record_id: id, start_byte: integer(), end_byte: integer(1) })
 ] };
+// A journal quotation's note, beside its words: when the entry says it was written (never when something happened; a range's open end is
+// null), the wording cues found in the words, and the lifecycle the published journal gives it. A builder may leave it out; no other kind
+// of source holds one. The cue kinds are quote-index.mjs's, named here because that module needs an installed package.
+export const JOURNAL_NOTE_CUE_KINDS = Object.freeze(["dream", "wish", "plan", "hypothetical", "negation", "hedge", "reported_speech"]);
+const flag = { type: "boolean" };
+const writtenBound = nullable({ type: "string", pattern: "^[0-9]{4}(?:-[0-9]{2}){0,2}$" });
+const journalNoteSchema = shape({
+  written: nullable(shape({ from: writtenBound, to: writtenBound, precision: enumeration(["day", "month", "year", "interval"]), between: flag, ambiguous: flag, year_inferred: flag })),
+  cues: array(shape({ kind: enumeration(JOURNAL_NOTE_CUE_KINDS), words: text(80) })),
+  lifecycle: enumeration(["active", "candidate", "superseded"])
+});
 export const responseEvidenceSourceItemSchema = shape({
   id: text(340), kind: enumeration(RESPONSE_EVIDENCE_SOURCE_KINDS), actor: enumeration(["client", "assistant", "supervisor", "owner", "unknown"]),
   audience: enumeration(["client", "supervisor", "private_journal", "unknown"]), time: timeSchema,
   epistemic_status: enumeration(["exact_client_words", "app_committed_text", "owner_reported", "agent_relayed_report", "client_written_account", "unsent_draft", "unknown_delivery"]),
   excerpt_sha256: sha, excerpt_bytes: integer(), exact_excerpt: nullable({ type: "string", minLength: 1 }), locator: locatorSchema,
-  supplied_by: shape({ channel: enumeration(["owner_ui", "authenticated_agent"]), actor_resolution: enumeration(["owner_verified", "unresolved"]) })
-}, ["supplied_by"]);
+  supplied_by: shape({ channel: enumeration(["owner_ui", "authenticated_agent"]), actor_resolution: enumeration(["owner_verified", "unresolved"]) }),
+  journal_note: journalNoteSchema
+}, ["supplied_by", "journal_note"]);
 const omissionSchema = shape({ reason: text(80), count: integer(1) });
 const receiptSchema = shape({
   operation_id: id, corpus_id: id, generation: id, visibility_epoch: integer(), manifest_object_id: id,
@@ -218,6 +230,7 @@ function checkSourceItem(item) {
   else if (typeof item.exact_excerpt !== "string" || item.excerpt_sha256 !== sha256Text(item.exact_excerpt) || item.excerpt_bytes !== Buffer.byteLength(item.exact_excerpt)) invalid("excerpt_mismatch");
   if ((item.kind === "journal_retrieval_record") !== (item.locator.kind === "journal_record")) invalid("source_provenance");
   if ((item.kind === "journal_quotation") !== (item.locator.kind === "journal")) invalid();
+  if (Object.hasOwn(item, "journal_note") && item.kind !== "journal_quotation") invalid("source_provenance");
   if (item.locator.kind === "journal" && item.locator.end_byte - item.locator.start_byte !== item.excerpt_bytes) invalid("excerpt_mismatch");
 }
 export function validateResponseEvidenceSnapshot(snapshot) {
@@ -254,6 +267,34 @@ const makeItem = (id, kind, actor, audience, exactText, locator, at = null, supp
   excerpt_sha256: sha256Text(exactText), excerpt_bytes: Buffer.byteLength(exactText), exact_excerpt: locator.kind === "transcript_turn" ? null : exactText, locator,
   ...(suppliedBy ? { supplied_by: structuredClone(suppliedBy) } : {})
 });
+const list = (value) => (Array.isArray(value) ? value : []);
+// Whether a case has read its client's journal: some evidence snapshot of it holds a quotation (a missing or malformed one holds none). From
+// then on whatever is written in the case besides its conversation (a draft, a report of one, an instruction, what a projection lists of
+// them) may hold the journal's words, and nothing in the record tells which does: so what follows goes by the case, never by one draft.
+export const caseHasReadJournal = (record) => list(record?.response_evidence_snapshots).some((snapshot) => list(snapshot?.source_items).some((item) => item?.kind === "journal_quotation"));
+// A turn of the conversation as a source: one of its kinds, and its words are the transcript's, never a copy of its own.
+const CONVERSATION_KINDS = Object.freeze(["exact_client_turn", "app_committed_client_outbound", "unattributed_assistant_turn"]);
+const isConversationTurn = (item) => CONVERSATION_KINDS.includes(item?.kind) && item.locator?.kind === "transcript_turn";
+// Whether a snapshot is of the conversation alone: its turns and the record of the journal's retrieval, and nothing else of any kind, listed
+// or required. A missing or malformed one is not.
+export function snapshotOfConversationAlone(snapshot) {
+  const { confirmed_or_reported_client_outbound: outbound, supervisor_only_artifacts: artifacts, unresolved_delivery: unresolved } = snapshot?.communication_projection ?? {};
+  return [outbound, artifacts, unresolved, snapshot?.history_requirements].every((entries) => Array.isArray(entries) && entries.length === 0)
+    && Array.isArray(snapshot.source_items) && snapshot.source_items.every((item) => isConversationTurn(item) || item?.kind === "journal_retrieval_record");
+}
+// Whether a draft of a turn was written from the conversation alone: its snapshot is of it, and so was the draft it was written from, if any
+// (a repair is given the one it corrects, unless the stored result of the call that wrote it, its producer's, says that one was hidden).
+// Evidence that isn't there says it wasn't.
+export function writtenFromConversationAlone(record, runtimeTurn, candidate) {
+  for (let draft = candidate; draft; draft = list(record.candidate_responses).find((entry) => entry.id === draft.parent_candidate_id)) {
+    const boundTo = draft.metadata?.response_evidence?.snapshot_id;
+    if (!boundTo || !snapshotOfConversationAlone(list(record.response_evidence_snapshots).find((entry) => entry?.id === boundTo))) return false;
+    if (draft.parent_candidate_id == null) return true;
+    const call = list(runtimeTurn?.events).find((event) => event.event_type === "INVOCATION_COMPLETED" && event.details?.actual_context_id === draft.producer_context_id);
+    if (call?.details?.output?.result?.draftHidden === true) return true;
+  }
+  return false;
+}
 export function buildResponseEvidenceSourceItems(record, { journalItems = [], inbound = null, lineageRootId = null } = {}) {
   const projection = projectCommunicationState(record);
   // The normal context projection lists 25 entries. Source classification must also resolve older referenced turns.
@@ -308,6 +349,17 @@ export function buildResponseEvidenceSourceItems(record, { journalItems = [], in
   for (const entry of record.supervisor_artifacts ?? []) {
     if (entry.kind !== "input") continue;
     items.push(makeItem(`src:input:${entry.id}`, entry.input_type === "client_message" ? "relayed_client_message" : "supervisor_instruction", "supervisor", "supervisor", entry.text, { kind: "supervisor_input", entry_id: entry.id }, entry.recorded_at, entry.supplied_by));
+  }
+  // In a case that has read its journal, or whose snapshot gets quotations of it now, the conversation's own turns and those quotations are
+  // the sources and the projection lists nothing: whatever else was collected above is left out, and counted. Any other case is as it was.
+  if (journalItems.length || caseHasReadJournal(record)) {
+    const others = items.filter((item) => !isConversationTurn(item));
+    for (const item of others) items.splice(items.indexOf(item), 1);
+    recordOmission(sourceOmissions, "journal_case_conversation_alone", others.length);
+    for (const name of Object.keys(projection.omitted)) {
+      projection.omitted[name] += projection[name].length;
+      projection[name] = [];
+    }
   }
   items.push(...structuredClone(journalItems));
   // Known event times order the shared inventory; an unavailable time cannot attest that an item is newer.
