@@ -15,12 +15,12 @@ import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { buildQuoteGeneration } from "../src/journal-import/quote-index.mjs";
 import { buildQuoteTermsFromGraph } from "../src/journal-import/quote-terms.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
-import { journalRoleInstruction } from "../src/journal-import/provider-port.mjs";
+import { SESSION_USE_READER_VERSION } from "../src/journal-import/response-evidence-journal.mjs";
 import { createJournalCopyKeyPair, exportJournalCopy, importJournalCopy, journalCopyCorpusId, openJournalCopy, sealJournalCopy, writeSealedJournalCopy } from "../src/journal-import/journal-copy.mjs";
 import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
 import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, RUNNER_CLIENTS_FILE, clientJournalFolder, readColdTestAttempt, readColdTestReceipt, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { acquireTrialFolderLock as acquireFolderLock, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
-import { COLD_JUDGE_INSTRUCTION, COLD_JUDGE_SCHEMA, createSealedColdConsumerPort, runJournalColdTest } from "../src/runner-trial/journal-cold-test.mjs";
+import { COLD_TEST_RULE, createSealedColdTestPort, runJournalColdTest } from "../src/runner-trial/journal-cold-test.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
@@ -28,11 +28,13 @@ import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordin
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { StartError, acquireTrialFolderLock, addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
 import { CLIENT_COPY_KEY_FILE, IMPORT_PURPOSES, USAGE, ensureJournalCopyKey, importClientJournal, oneTimeGrant, parseJournalArguments, runClientColdTest, runMain } from "../scripts/runner-trial-journal.mjs";
+import { ANSWER, JUDGE_REASON, RECEIPTS, coldWorkers, questionsFile } from "./helpers/cold-test.mjs";
 import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
-// The copy step for a client's journal (design for clients, point 4) and its cold test (point 5c): exported where the journal lives,
-// sealed for one client's key alone, imported into that client's runner case and checked. The "server" here is a synthetic local
-// vault with the journal import's synthetic fixture or a generated synthetic journal, and every worker is a stand-in: no server is
+// The copy step for a client's journal (design for clients, point 4) and the command of its cold test (point 5c): exported where the journal
+// lives, sealed for one client's key alone, imported into that client's runner case and checked; then tested, under the folder's lock and the
+// client's consent (what the test itself asks, scores and passes by is in tests/runner-cold-test.test.mjs). The "server" here is a synthetic
+// local vault with the journal import's synthetic fixture or a generated synthetic journal, and every worker is a stand-in: no server is
 // contacted, no model is called and no real journal is read.
 
 // A case id of the runner form, since the cold test below runs on it as on a client's runner case, and another person's.
@@ -176,8 +178,9 @@ test("a client's journal is exported sealed for one key, imported into the clien
   await writeRunnerClients(trial.home, list);
   const folder = clientJournalFolder(trial.home, clientCase);
   await fs.mkdir(folder, { recursive: true, mode: 0o700 });
-  await fs.writeFile(path.join(folder, COLD_TEST_RECEIPT_FILE), JSON.stringify({ schema_version: 1, kind: "journal_cold_test", result: "pass", case_id: clientCase, corpus_id: corpusId,
-    generation: result.generation, manifest_object_id: result.manifest_object_id, visibility_epoch: result.visibility_epoch, tested_at: "2026-11-24T08:00:00.000Z" }), { mode: 0o600 });
+  await fs.writeFile(path.join(folder, COLD_TEST_RECEIPT_FILE), JSON.stringify({ schema_version: 2, kind: "journal_cold_test", result: "pass", case_id: clientCase, corpus_id: corpusId,
+    generation: result.generation, manifest_object_id: result.manifest_object_id, visibility_epoch: result.visibility_epoch, tested_at: "2026-11-24T08:00:00.000Z",
+    reader_version: SESSION_USE_READER_VERSION, rule: COLD_TEST_RULE.version, questions: { answerable: 40, unanswerable: 20 }, consumer: RECEIPTS.W, judge: RECEIPTS.CW }), { mode: 0o600 });
   const gate = createRunnerJournalGate({ trialDir: trial.home, caseAccessService: service });
   const part = await gate.freezeResponseEvidenceJournal({ caseId: clientCase, query: "help", authContext: { bearerToken: trial.prepared.clientTokens[clientCase] } });
   assert.equal(part.availability, "available");
@@ -292,9 +295,9 @@ test("a generation with revoked and deleted passages is copied whole: they are s
   await assert.rejects(importing(changed((value) => { if (value.representation_id === "repr-2") value.text = value.text.replace("deleted", "removed"); })), { code: "JOURNAL_COPY_SOURCE_MISMATCH" });
   // The session-use reader finds the usable ones only, and the cold test's key can't rest on the others.
   assert.deepEqual(await searchIds(copier, authContext, clientCase, corpusId, "line"), ["repr-1-p000", "repr-1-p002"]);
-  const asking = (quote) => runJournalColdTest({ service: copier, auth: authContext, caseId: clientCase, corpusId, port: consumer(), questions: { schema_version: 1, kind: "journal_cold_questions",
-    questions: [{ id: "q-garden", question: "garden", answerable: true, evidence_quotes: ["One line about the garden.", quote] }, { id: "q-absent", question: "zebra", answerable: false }] } });
-  assert.equal((await asking("Another line about the garden.")).passed, true);
+  const asking = (quote) => runJournalColdTest({ service: copier, auth: authContext, caseId: clientCase, corpusId, port: createSealedColdTestPort({ consumer: standIns().workerFor("W"), judge: standIns().workerFor("CW") }),
+    questions: questionsFile([{ id: "q-garden", question: "What about the garden?", answerable: true, evidence_quotes: ["One line about the garden.", quote] }, { id: "q-absent", question: "And the zebra?", answerable: false }]) });
+  assert.deepEqual((await asking("Another line about the garden.")).report.by_question.map(({ found, result: scored }) => [found, scored]), [[true, "right"], [null, "right"]]);
   for (const unusable of ["A line the writer took back.", "A deleted line about the garden."]) {
     await assert.rejects(asking(unusable), (error) => error.code === "COLD_KEY_QUOTE_NOT_IN_JOURNAL" && error.details?.question_number === 1);
   }
@@ -349,221 +352,27 @@ test("a quote generation, as the journal import builds and publishes it, finds t
   }
 });
 
-// ---- The cold test ------------------------------------------------------------------------------------------------------------
+// ---- The cold test's stand-ins and questions -----------------------------------------------------------------------------------
 
-// A scripted stand-in for the fresh consumer and the judge. The consumer sees only the packet (the frozen question and what the session-use
-// reader retrieved). It answers "supported" citing the passages it retrieved, or "not found" when it retrieved none, except for the
-// questions `script` answers otherwise, by their words (a model judges a false premise itself); `words` gives the answer to a question, by
-// its words. `miss` makes it answer every question as not found; `overclaim` makes it ignore the script; `citeFirst` makes it cite only the
-// first passage it retrieved; `invent` makes it cite a passage it wasn't given; `blank` makes it answer with no words. The judge finds what
-// `judge` says (of each question, when it's a function), and what it was asked is kept.
-const PREMISE = "When did the colleague refuse to help?";
-const consumer = ({ miss = false, overclaim = false, citeFirst = false, invent = false, blank = false, judge = true, script = { [PREMISE]: "false_premise" }, words = {} } = {}) => {
-  const asked = [], judged = [];
-  return {
-    asked, judged,
-    async invoke({ packet }) {
-      asked.push(packet);
-      const passages = (packet.retrieved_evidence?.records ?? []).filter((record) => record.kind === "passage").map((record) => record.id);
-      const scripted = overclaim ? undefined : script[packet.frozen_question.question];
-      const answerability = miss ? "not_found" : scripted ?? (passages.length ? "supported" : "not_found");
-      const output = { schema_version: "1.0", question_id: packet.frozen_question.id, answer: blank ? "  \n" : words[packet.frozen_question.question] ?? "A synthetic answer.",
-        answerability, evidence_ids: invent ? ["passage-never-given"] : answerability === "not_found" ? [] : citeFirst ? passages.slice(0, 1) : passages,
-        qualifier_ids: [], snapshot_generation: packet.expected_generation, coverage_note: "Synthetic.", more_available: false };
-      return { output, receipt: { provider: "stand-in", model: "stand-in" } };
-    },
-    async judge(question) {
-      judged.push(question);
-      return typeof judge === "function" ? judge(question) : judge;
-    }
-  };
-};
-
-// A stand-in for the trial's signed-in worker, called through the real port: like the sealed workers, it makes its preparation, asks
-// `beforeSend`, and only then sends the packet (kept in `sent`). `prepare(count, request)` is the preparation; `reply(count, request, usual)`
-// is the answer (`usual()` gives the stand-in consumer's, and for the judge a supported verdict with a reason).
-const JUDGE_REASON = "A synthetic reason that stays with the judge.";
-function fakeWorker({ answers = consumer(), prepare = null, reply = null } = {}) {
-  const sent = [];
-  let count = 0;
-  return {
-    sent,
-    async call(request) {
-      const index = count += 1;
-      if (prepare) await prepare(index, request);
-      if (request.beforeSend) await request.beforeSend();
-      sent.push(request);
-      const packet = JSON.parse(request.user);
-      const usual = async () => (request.stage === "cold_judge" ? { question_id: packet.question_id, verdict: "supported", reason: JUDGE_REASON } : (await answers.invoke({ packet })).output);
-      return { value: reply ? await reply(index, request, usual) : await usual(), receipt: { provider: "stand-in", model: "stand-in" } };
-    }
-  };
-}
-const timedOut = () => new ProviderError("A synthetic call that timed out.", { code: "TIMEOUT" });
-
-// Questions on the synthetic fixture, with the key naming its evidence by exact words of the journal.
-const QUESTIONS = Object.freeze({ schema_version: 1, kind: "journal_cold_questions", questions: [
-  { id: "q-colleague", question: "colleague", answerable: true, evidence_quotes: ["ask a colleague for help", "asked a  colleague\nfor help"] },
-  { id: "q-premise", question: PREMISE, answerable: false },
-  { id: "q-absent", question: "zebra", answerable: false }
-] });
+// Questions on the synthetic fixture, as many as the rule asks for: forty it answers, with the key naming its evidence by exact words of the
+// journal, ten that take a false premise and ten about an absent thing. One test makes 120 calls when the judge finds nothing wrong: the
+// consumer's and the judge's for each question in turn, so a question's are the calls 2n - 1 and 2n.
+const PREMISE = "refuse to help";
+const QUESTIONS = Object.freeze(questionsFile([
+  ...Array.from({ length: 40 }, (_, place) => ({ id: `q-colleague-${place}`, question: `Synthetic question ${place}: what did I do about my colleague?`, answerable: true, evidence_quotes: ["ask a colleague for help", "asked a  colleague\nfor help"] })),
+  ...Array.from({ length: 10 }, (_, place) => ({ id: `q-premise-${place}`, question: `Synthetic question ${40 + place}: when did the colleague ${PREMISE}?`, answerable: false })),
+  ...Array.from({ length: 10 }, (_, place) => ({ id: `q-absent-${place}`, question: `Synthetic question ${50 + place}: and the zebra?`, answerable: false }))
+]));
+const CALLS = 120;
 const withQuestions = (questions) => ({ ...QUESTIONS, questions });
 const snapshotOf = (reference) => sha256(`${reference.active_generation}|${reference.manifest_object_id}|${reference.visibility_epoch}`).slice(0, 16);
-
-async function coldTestOn(t) {
-  const server = await serverJournal(t);
-  const run = (port, questions = QUESTIONS) => runJournalColdTest({ service: server.service, auth: server.auth, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, questions, port, now: () => new Date("2026-11-24T09:00:00.000Z") });
-  const { reference } = await server.service.inspectJournalCorpus(SERVER_CASE, SERVER_CORPUS, { requiredScope: "case:read", requiredPurpose: "session_use" }, server.auth);
-  return { run, reference, sources: server.sources };
-}
-
-test("the cold test: a fresh consumer answers frozen questions from the copy alone; a strict pass gives the receipt for exactly that snapshot, anything less gives none", async (t) => {
-  const { run, reference } = await coldTestOn(t);
-  const passed = await run(consumer());
-  assert.equal(passed.passed, true, JSON.stringify(passed.report));
-  assert.deepEqual(passed.receipt, { schema_version: 1, kind: "journal_cold_test", result: "pass", case_id: SERVER_CASE, corpus_id: SERVER_CORPUS,
-    generation: reference.active_generation, manifest_object_id: reference.manifest_object_id, visibility_epoch: reference.visibility_epoch, tested_at: "2026-11-24T09:00:00.000Z" });
-  // The report names questions by their place in the file and the snapshot by an opaque name: no id, question or journal text.
-  const right = { retrieved_all: true, right: true }, rightNone = { retrieved_all: null, right: true };
-  assert.deepEqual(passed.report, { snapshot: snapshotOf(reference), questions: 3, graph_right: 3, raw_right: 3, same_snapshot: true, by_question: [
-    { n: 1, answerable: true, graph: right, raw: right, judged: true },
-    { n: 2, answerable: false, graph: rightNone, raw: rightNone, judged: true },
-    { n: 3, answerable: false, graph: rightNone, raw: rightNone, judged: true }
-  ], passed: true });
-  for (const hidden of ["colleague", "zebra", "q-colleague", "q-premise", "q-absent", reference.active_generation, reference.manifest_object_id]) {
-    assert.equal(JSON.stringify(passed.report).includes(hidden), false, hidden);
-  }
-  // A consumer that misses what the journal holds, claims support for a false premise, cites the evidence for one key quote only, or
-  // answers with no words, doesn't pass: no receipt.
-  for (const [failing, wrong] of [[consumer({ miss: true }), 1], [consumer({ overclaim: true }), 2], [consumer({ citeFirst: true }), 1], [consumer({ blank: true }), 1]]) {
-    const failed = await run(failing);
-    assert.equal(failed.passed, false);
-    assert.equal(failed.receipt, null);
-    assert.deepEqual(failed.report.by_question.filter((entry) => !entry.graph.right).map((entry) => entry.n), [wrong]);
-    // The judge is asked about every answer that passed the exact checks, and about no other.
-    assert.deepEqual(failing.judged.map((question) => question.question_id), [1, 2, 3].filter((n) => n !== wrong).map((n) => `question-${n}`));
-    assert.deepEqual(failed.report.by_question.map((entry) => entry.judged), [1, 2, 3].map((n) => (n === wrong ? null : true)));
-  }
-  // An answer outside the answer's rules (a passage it wasn't given) is a test not passed, never one that stopped on an error.
-  const broken = await run(consumer({ invent: true }));
-  assert.deepEqual(broken, { passed: false, report: { snapshot: snapshotOf(reference), questions: 3, broken_answer: "COLD_ANSWER_UNRETRIEVED_EVIDENCE", passed: false }, receipt: null });
-  await assert.rejects(run(consumer(), withQuestions(QUESTIONS.questions.slice(0, 1))), { code: "COLD_QUESTIONS_NEED_BOTH_KINDS" });
-  // A key quote must name its evidence: found in no passage, or in more than three, it stops the test, naming the question by its place
-  // in the file only.
-  const numbered = (code, number) => (error) => error.code === code && JSON.stringify(error.details) === JSON.stringify({ question_number: number }) && !String(error.message).includes("q-");
-  await assert.rejects(run(consumer(), withQuestions([QUESTIONS.questions[1], { ...QUESTIONS.questions[0], evidence_quotes: ["a sentence the journal never had"] }])), numbered("COLD_KEY_QUOTE_NOT_IN_JOURNAL", 2));
-  await assert.rejects(run(consumer(), withQuestions([{ ...QUESTIONS.questions[0], evidence_quotes: ["I"] }, QUESTIONS.questions[1]])), numbered("COLD_KEY_QUOTE_NOT_SPECIFIC", 1));
-  await assert.rejects(run(consumer(), withQuestions([{ ...QUESTIONS.questions[0], extra: "no" }, QUESTIONS.questions[1]])), numbered("COLD_QUESTIONS_INVALID", 1));
-  await assert.rejects(run(consumer(), withQuestions([QUESTIONS.questions[1], { ...QUESTIONS.questions[0], evidence_quotes: [] }])), numbered("COLD_QUESTIONS_INVALID", 2));
-});
-
-// What the judge is asked of the three questions: the first has key quotes, the others (a false premise, an absent thing) have none.
-const JUDGED = Object.freeze([
-  { question_id: "question-1", question: "colleague", answerable: true, key_quotes: ["ask a colleague for help", "asked a  colleague\nfor help"], answer: "A synthetic answer." },
-  { question_id: "question-2", question: PREMISE, answerable: false, key_quotes: [], answer: "A synthetic answer." },
-  { question_id: "question-3", question: "zebra", answerable: false, key_quotes: [], answer: "A synthetic answer." }
-]);
-
-test("the cold test's judge: an answer that passes the exact checks must also say what its key quotes say, or, to a question the journal doesn't answer, that it doesn't; without a judge there is no test", async (t) => {
-  const { run } = await coldTestOn(t);
-  // The judge sees the question, whether the journal answers it, its key quotes as the file has them and the answer, and nothing else.
-  const passing = consumer();
-  assert.equal((await run(passing)).passed, true);
-  assert.deepEqual(passing.judged, JUDGED);
-  const refusing = consumer({ judge: false });
-  const failed = await run(refusing);
-  assert.equal(failed.passed, false);
-  assert.equal(failed.receipt, null);
-  assert.equal(refusing.judged.length, 3);
-  assert.deepEqual([failed.report.by_question[0].graph, failed.report.by_question[0].judged], [{ retrieved_all: true, right: true }, false]);
-  assert.deepEqual(failed.report.by_question.map((entry) => entry.graph.right), [true, true, true], "only the judge held it back");
-  // A no to any one of them holds it back, the questions the journal doesn't answer included: here an invented answer, declared as one the
-  // journal doesn't give.
-  for (const n of [1, 2, 3]) {
-    const one = await run(consumer({ judge: (question) => question.question_id !== `question-${n}` }));
-    assert.deepEqual([one.passed, one.receipt, one.report.graph_right], [false, null, 3], `question ${n}`);
-    assert.deepEqual(one.report.by_question.map((entry) => entry.judged), [1, 2, 3].map((other) => other !== n), `question ${n}`);
-  }
-  for (const [question, answer, declared] of [
-    [PREMISE, "The colleague refused on 3 March.", "false_premise"], ["zebra", "The zebra was seen on a Sunday, and it was a relief.", "not_found"], ["zebra", "It was a synthetic zebra.", "insufficient_context"]
-  ]) {
-    const inventing = consumer({ words: { [question]: answer }, script: { [PREMISE]: "false_premise", [question]: declared }, judge: (asked) => asked.answerable || asked.answer !== answer });
-    const invented = await run(inventing);
-    assert.deepEqual([invented.passed, invented.receipt, invented.report.graph_right], [false, null, 3], answer);
-    assert.deepEqual(inventing.judged.find((asked) => asked.question === question), { ...JUDGED.find((asked) => asked.question === question), answer });
-    assert.deepEqual(invented.report.by_question.filter((entry) => entry.judged !== true).map((entry) => [entry.n, entry.judged]), [[question === PREMISE ? 2 : 3, false]]);
-    assert.equal(JSON.stringify(invented).includes(answer), false);
-  }
-  // Anything a judge returns but true holds it back, of either kind of question.
-  for (const unclear of [null, "supported", 1, { verdict: "supported" }]) {
-    for (const answerable of [true, false]) assert.equal((await run(consumer({ judge: (question) => (question.answerable === answerable ? unclear : true) }))).passed, false);
-  }
-  const unjudged = consumer();
-  await assert.rejects(run({ invoke: unjudged.invoke }), { code: "COLD_JUDGE_UNAVAILABLE" });
-  assert.equal(unjudged.asked.length, 0, "refused before anything is asked");
-  // What the judge is told of each kind.
-  for (const words of ["When answerable is true, judge by the key quotes alone.", "When answerable is false, verdict is \"supported\" only when the answer says that the journal doesn't answer the question",
-    "or that the question's premise is wrong, and states nothing as if the journal said it", "an event, a date, a name, a feeling or any other detail", "When you can't tell, the verdict is \"not_supported\"."]) {
-    assert.ok(COLD_JUDGE_INSTRUCTION.includes(words), words);
-  }
-});
-
-test("the cold test through the real port: what leaves for the consumer and the judge, and what comes back", async (t) => {
-  const { run, sources } = await coldTestOn(t);
-  const through = (worker, beforeSend = null) => createSealedColdConsumerPort({ worker, beforeSend, timeoutMs: 1234 });
-  const worker = fakeWorker();
-  let checks = 0;
-  const beforeSend = async () => { checks += 1; };
-  assert.equal((await run(through(worker, beforeSend))).passed, true);
-  // The graph on and off for each question, then one judge call for each; each asked right before it left.
-  assert.deepEqual(worker.sent.map((request) => request.stage), [...Array(6).fill("cold_consumer"), ...Array(3).fill("cold_judge")]);
-  assert.equal(checks, 9);
-  assert.ok(worker.sent.every((request) => request.beforeSend === beforeSend && request.timeoutMs === 1234));
-  for (const request of worker.sent.slice(0, 6)) {
-    assert.equal(request.system, journalRoleInstruction("cold_consumer"));
-    const packet = JSON.parse(request.user);
-    assert.deepEqual(Object.keys(packet).sort(), ["assigned_core_ids", "controller_provenance_tag", "current_locator", "expected_generation", "frozen_question", "grant_purpose", "output_schema_id", "protocol_version", "retrieved_evidence", "source_locators"]);
-    assert.deepEqual(Object.keys(packet.frozen_question).sort(), ["id", "question"]);
-    assert.match(packet.frozen_question.id, /^question-[123]$/u);
-  }
-  // The key and the file's own question ids stay with the controller: the key goes to the judge alone, the ids to nobody.
-  for (const request of worker.sent) for (const { id } of QUESTIONS.questions) assert.equal(request.user.includes(id), false, id);
-  const judges = worker.sent.slice(6);
-  assert.deepEqual(judges.map((request) => request.user), JUDGED.map((question) => JSON.stringify(question)));
-  for (const judge of judges) {
-    assert.equal(judge.system, COLD_JUDGE_INSTRUCTION);
-    assert.deepEqual(judge.schema, { type: "object", additionalProperties: false, required: ["question_id", "verdict", "reason"],
-      properties: { question_id: { type: "string" }, verdict: { type: "string", enum: ["supported", "not_supported"] }, reason: { type: "string", maxLength: 500 } } });
-    assert.deepEqual(judge.schema, COLD_JUDGE_SCHEMA);
-  }
-  // Of the journal, the judge gets the key quotes alone: nothing of it for a question it doesn't answer.
-  for (const { user } of judges) for (const line of sources.repr.split("\n").filter((text) => text.length > 8)) assert.equal(user.includes(line), false, line);
-  assert.equal(judges.slice(1).some(({ user }) => user.includes("ask a colleague for help")), false);
-  // Of the judge's answer only the verdict counts: its reason is in nothing that comes back.
-  const judging = (value) => fakeWorker({ reply: async (count, request, usual) => (request.stage === "cold_judge" ? value(await usual()) : usual()) });
-  const unsupported = await run(through(judging((usual) => ({ ...usual, verdict: "not_supported" }))));
-  assert.deepEqual([unsupported.passed, unsupported.receipt, unsupported.report.by_question.map((entry) => entry.judged)], [false, null, [false, false, false]]);
-  assert.equal(JSON.stringify(unsupported).includes(JUDGE_REASON), false);
-  // Its no to a question the journal doesn't answer is enough.
-  const invented = await run(through(judging((usual) => ({ ...usual, verdict: usual.question_id === "question-2" ? "not_supported" : "supported" }))));
-  assert.deepEqual([invented.passed, invented.receipt, invented.report.by_question.map((entry) => entry.judged)], [false, null, [true, false, true]]);
-  assert.equal(await through(judging((usual) => usual)).judge(JUDGED[2]), true);
-  // An answer of the judge outside its schema stops the test, repeating nothing of it.
-  for (const malformed of [
-    (usual) => ({ ...usual, reason: "x".repeat(501) }), (usual) => ({ ...usual, verdict: "maybe" }), (usual) => ({ ...usual, extra: "more" }), (usual) => ({ ...usual, question_id: "question-2" }),
-    ({ question_id, verdict }) => ({ question_id, verdict }), () => "supported", () => null
-  ]) {
-    await assert.rejects(run(through(judging(malformed))), (error) => error.code === "COLD_JUDGE_ANSWER_INVALID" && !JSON.stringify({ message: error.message, details: error.details ?? null }).includes("x".repeat(20)));
-    // Of a question the journal doesn't answer too (the last one's here).
-    const atLast = fakeWorker({ reply: async (count, request, usual) => (count === 9 ? malformed(await usual()) : usual()) });
-    await assert.rejects(run(through(atLast)), { code: "COLD_JUDGE_ANSWER_INVALID" });
-  }
-  assert.equal((await run(through(judging((usual) => ({ ...usual, reason: "x".repeat(500) }))))).passed, true, "a reason of 500 characters is within it");
-  // A consumer's answer outside the answer schema is a test not passed; a call that failed stops it.
-  const shapeless = fakeWorker({ reply: async (count, request, usual) => (count === 2 ? { answer: "A synthetic answer." } : usual()) });
-  assert.equal((await run(through(shapeless))).report.broken_answer, "JOURNAL_SCHEMA_INVALID");
-  await assert.rejects(run(through(fakeWorker({ reply: async (count, request, usual) => { if (count === 2) throw timedOut(); return usual(); } }))), { code: "TIMEOUT" });
-});
+const SCRIPT = Object.freeze(Object.fromEntries(QUESTIONS.questions.filter(({ question }) => question.includes(PREMISE)).map(({ question }) => [question, "false_premise"])));
+const standIns = (options = {}) => coldWorkers({ script: SCRIPT, ...options });
+// What a cold test run with these stand-ins takes.
+const using = (workers = standIns()) => ({ workerFor: workers.workerFor });
+const isJudge = (request) => request.stage === "cold_judge";
+const judged = (verdict) => async (count, request, usual) => (isJudge(request) ? { ...(await usual()), verdict } : usual());
+const timedOut = () => new ProviderError("A synthetic call that timed out.", { code: "TIMEOUT" });
 
 // ---- The commands ------------------------------------------------------------------------------------------------------------
 
@@ -698,7 +507,8 @@ test("the laptop commands: each client's key, an import that leaves every file w
   const trial = await trialWith(t, 2);
   const { home } = trial;
   const [clientOne, clientTwo] = trial.cases;
-  assert.deepEqual(parseJournalArguments(["--cold-test", path.join(home, "q.json"), "--provider", "claude"]), { command: "cold-test", file: path.join(home, "q.json"), provider: "claude", dir: null });
+  for (const provider of ["mixed", "claude", "codex"]) assert.deepEqual(parseJournalArguments(["--cold-test", path.join(home, "q.json"), "--provider", provider]), { command: "cold-test", file: path.join(home, "q.json"), provider, dir: null });
+  for (const provider of [[], ["--provider", "gpt"]]) assert.throws(() => parseJournalArguments(["--cold-test", path.join(home, "q.json"), ...provider]), /--cold-test needs --provider mixed, claude or codex/u);
   assert.throws(() => parseJournalArguments(["--import", path.join(home, "f"), "--provider", "claude"]), /--provider goes with --cold-test only/u);
   assert.throws(() => parseJournalArguments(["--import"]), /--import needs its file/u);
   // The import's grant: that one case, its own token, and the three purposes the store asks.
@@ -778,41 +588,58 @@ test("the laptop commands: each client's key, an import that leaves every file w
   const sealedSecond = await exportFor(keyTwo.publicKey, "two-second.sealed.json", "2026-11-24T08:01:30.000Z", "synthetic-second-corpus");
   await assert.rejects(importClientJournal({ home, number: 2, sealedPath: sealedSecond }), /already copied for client 1/u);
 
-  // The cold test: refused without consent; with it, a test that starts removes the copy's receipt and only a pass gives a new one.
-  await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: consumer() }), /no confirmed journal consent/u);
+  // The cold test: refused without consent, naming the companies that would get excerpts with that provider; with it, a test that starts
+  // removes the copy's receipt and only a pass gives a new one.
+  const coldTest = (workers = standIns(), options = {}) => runClientColdTest({ home, number: 1, questionsPath, provider: "mixed", ...using(workers), ...options });
+  const unasked = standIns();
+  for (const [provider, companies] of [["mixed", "Anthropic and OpenAI"], ["claude", "Anthropic"], ["codex", "OpenAI"]]) {
+    await assert.rejects(coldTest(unasked, { provider }), { message: `Client 1 has no confirmed journal consent. The cold test sends excerpts of their journal to ${companies}, so it runs only with their consent (runner-trial-start.mjs --journal-consent confirm).` });
+  }
   await setJournalConsent({ home, number: 1, action: "confirm" });
+  for (const provider of [null, "gpt"]) await assert.rejects(coldTest(unasked, { provider }), /Choose the cold test's workers: --provider mixed, claude or codex/u);
+  assert.equal(unasked.sent.length, 0);
   const receiptPath = path.join(clientJournalFolder(home, clientOne), COLD_TEST_RECEIPT_FILE);
-  assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: consumer({ miss: true }) })).passed, false);
+  const misses = standIns({ script: Object.fromEntries(QUESTIONS.questions.map(({ question }) => [question, "not_found"])), verdict: (packet) => (packet.answerable ? "incomplete" : "right") });
+  const missed = await coldTest(misses);
+  assert.deepEqual([missed.passed, missed.report.not_met, missed.report.found.same_words], [false, ["too_few_right"], { found: 40, of: 40 }], "found, and answered as if it weren't");
   await absent(receiptPath);
-  for (const failing of [consumer({ overclaim: true }), consumer({ invent: true }), consumer({ judge: false })]) {
-    assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: consumer() })).passed, true);
+  const invents = standIns({ reply: async (count, request, usual) => { const value = await usual(); return count === 1 ? { ...value, evidence_ids: [...value.evidence_ids, "src:journal:9"] } : value; } });
+  const overclaims = standIns({ script: {}, verdict: (packet) => (packet.question.includes(PREMISE) ? "wrong" : "right") });
+  for (const failing of [invents, overclaims, standIns({ reply: judged("wrong") })]) {
+    assert.equal((await coldTest()).passed, true);
     assert.equal(await modeOf(receiptPath), 0o600);
-    assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: failing })).passed, false);
+    assert.equal((await coldTest(failing)).passed, false);
     await absent(receiptPath, "a failed re-test leaves no receipt");
   }
-  // A consent withdrawn during the test: no receipt, though every answer was right.
-  const withdrawing = { ...consumer(), async invoke(input) {
-    await setJournalConsent({ home, number: 1, action: "withdraw" });
-    return consumer().invoke(input);
-  } };
-  await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: withdrawing }), /consent or copy changed during the cold test: it stopped, and gave no receipt/u);
+  // A consent withdrawn during the test's last call: no receipt, though every answer was right.
+  const withdrawing = standIns({ reply: async (count, request, usual) => {
+    if (count === CALLS) await setJournalConsent({ home, number: 1, action: "withdraw" });
+    return usual();
+  } });
+  await assert.rejects(coldTest(withdrawing), /consent or copy changed during the cold test: it stopped, and gave no receipt/u);
+  assert.equal(withdrawing.sent.length, CALLS);
   await absent(receiptPath);
   await setJournalConsent({ home, number: 1, action: "confirm" });
   // Every import, the same sealed file again included, drops the copy's receipt and its test's marker, so the cold test is run again; a test
   // that's refused before it starts changes nothing.
-  assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: consumer() })).passed, true);
+  assert.equal((await coldTest()).passed, true);
   assert.match(await fs.readFile(receiptPath, "utf8"), /"result": "pass"/u);
   assert.deepEqual(await importClientJournal({ home, number: 1, sealedPath: sealedOne }), imported);
   await absent(receiptPath);
   assert.equal(await readColdTestAttempt(home, clientOne), null);
   assert.equal(await fs.readFile(sealedOne, "utf8"), sealedOneText);
-  assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: consumer() })).passed, true);
+  assert.equal((await coldTest()).passed, true);
   const receiptText = await fs.readFile(receiptPath, "utf8");
+  // The receipt names what was tested and who answered and judged.
+  const receipt = JSON.parse(receiptText);
+  assert.deepEqual([receipt.case_id, receipt.corpus_id, receipt.reader_version, receipt.rule, receipt.questions, receipt.consumer, receipt.judge],
+    [clientOne, imported.corpus_id, SESSION_USE_READER_VERSION, COLD_TEST_RULE.version, { answerable: 40, unanswerable: 20 }, RECEIPTS.W, RECEIPTS.CW]);
   const attempt = await readColdTestAttempt(home, clientOne);
   assert.match(attempt, /^[0-9a-f-]{36}$/u);
   await fs.chmod(questionsPath, 0o644);
-  await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: consumer() }), /readable by you alone/u);
-  assert.equal(await fs.readFile(receiptPath, "utf8"), receiptText);
+  await assert.rejects(coldTest(unasked), /readable by you alone/u);
+  await assert.rejects(coldTest(unasked, { provider: "gpt" }), /Choose the cold test's workers/u);
+  assert.deepEqual([await fs.readFile(receiptPath, "utf8"), await readColdTestAttempt(home, clientOne), unasked.sent.length], [receiptText, attempt, 0]);
 
   // The gate, under the client's own grant from a start: open with the receipt; a new copy closes it until its own test passes.
   const started = await prepareTrialFolder({ home, provider: "codex" });
@@ -846,7 +673,7 @@ async function copiedClient(t, { clients = 1, server = null } = {}) {
   const questionsPath = path.join(outside, "questions.json");
   await fs.writeFile(questionsPath, JSON.stringify(QUESTIONS), { mode: 0o600 });
   const receiptPath = path.join(clientJournalFolder(home, trial.cases[0]), COLD_TEST_RECEIPT_FILE);
-  const coldTest = (options) => runClientColdTest({ home, number: 1, questionsPath, ...options });
+  const coldTest = (options) => runClientColdTest({ home, number: 1, questionsPath, provider: "mixed", ...options });
   return { ...trial, server: from, outside, sealedPath, imported, questionsPath, receiptPath, coldTest };
 }
 
@@ -964,7 +791,7 @@ test("no receipt survives an import that starts: it goes with its test's marker,
   const gate = createRunnerJournalGate({ trialDir: home, caseAccessService: createPrivateCaseAccessService({ rootDir: trial.providers.rootDir, authorizationProvider: trial.providers.authorizationProvider,
     keyProvider: trial.providers.keyProvider, allowDevelopmentFileProvider: true }) });
   const open = () => gate.openNow({ caseId: clientOne, authContext });
-  assert.equal((await coldTest({ port: consumer() })).passed, true);
+  assert.equal((await coldTest(using())).passed, true);
   const receipt = await fs.readFile(receiptPath, "utf8"), marker = await fs.readFile(markerPath, "utf8");
   const there = async () => [await fs.readFile(receiptPath, "utf8"), await fs.readFile(markerPath, "utf8")];
   const putBack = async () => { for (const [file, text] of [[receiptPath, receipt], [markerPath, marker]]) await fs.writeFile(file, text, { mode: 0o600 }); };
@@ -1084,14 +911,14 @@ test("no receipt survives an import that starts: it goes with its test's marker,
     await importingBroken();
     await closedOnThatCopy("refused before anything is written");
   }
-  const meanwhileRefused = fakeWorker({ reply: async (count, request, usual) => {
+  const meanwhileRefused = standIns({ reply: async (count, request, usual) => {
     if (count === 3) await importingBroken();
     return usual();
   } });
-  await assert.rejects(coldTest({ worker: meanwhileRefused }), { message: "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again." });
+  await assert.rejects(coldTest(using(meanwhileRefused)), { message: "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again." });
   await absent(receiptPath);
   assert.deepEqual(await tree(vault), untouched);
-  assert.equal((await coldTest({ worker: fakeWorker() })).passed, true);
+  assert.equal((await coldTest(using())).passed, true);
   assert.equal(await open(), true);
 });
 
@@ -1107,15 +934,15 @@ test("Delete this case of a client takes their copies, their key and their place
     await writeSealedJournalCopy(file, await server.exportFor((await ensureJournalCopyKey({ home, number })).publicKey));
     return file;
   };
-  assert.equal((await trial.coldTest({ port: consumer() })).passed, true);
+  assert.equal((await trial.coldTest(using())).passed, true);
   const consent = (await readRunnerClients(home)).clients[0].journal.consent;
   await assert.rejects(importClientJournal({ home, number: 1, sealedPath: await sealedFor(second, 1, "second-for-one.sealed.json") }), /delete their case first/u);
   await assert.rejects(importClientJournal({ home, number: 2, sealedPath: await sealedFor(first, 2, "first-for-two.sealed.json") }), /already copied for client 1/u);
 
   // A cold test that's running when the case is deleted stops before its next packet, and leaves no receipt.
-  const worker = fakeWorker({ prepare: async (count) => { if (count === 3) await deleteCase(clientOne); } });
-  await assert.rejects(trial.coldTest({ worker }), /consent or copy changed during the cold test/u);
-  assert.equal(worker.sent.length, 2);
+  const workers = standIns({ prepare: async (count) => { if (count === 3) await deleteCase(clientOne); } });
+  await assert.rejects(trial.coldTest(using(workers)), /consent or copy changed during the cold test/u);
+  assert.equal(workers.sent.length, 2);
   await absent(trial.receiptPath);
   await absent(path.join(clientJournalFolder(home, clientOne), CLIENT_COPY_KEY_FILE));
   assert.deepEqual((await readRunnerClients(home)).clients.map((client) => client.journal), [{ corpus_id: null, consent }, { corpus_id: null, consent: null }], "the consent stays as recorded");
@@ -1185,7 +1012,7 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
   // the marker of the test that gave it) and the run log.
   const filled = async () => {
     await importClientJournal({ home, number: 1, sealedPath: await sealedFor(1) });
-    assert.equal((await trial.coldTest({ port: consumer() })).passed, true);
+    assert.equal((await trial.coldTest(using())).passed, true);
     await fs.writeFile(logOf(clientOne), "{}\n", { mode: 0o600 });
     assert.deepEqual((await fs.readdir(folder)).sort(), [COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, CLIENT_COPY_KEY_FILE].sort());
     const listed = await journalOf();
@@ -1270,12 +1097,12 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
   }
   // A cold test in its last call meanwhile, with a list that can't be written: it gives no receipt and makes no folder again.
   await filled();
-  const worker = fakeWorker({ reply: async (count, request, usual) => {
-    if (count === 9) assert.deepEqual((await deletingWith(["JOURNAL_LIST"])).cleanup_left, ["JOURNAL_LIST"]);
+  const workers = standIns({ reply: async (count, request, usual) => {
+    if (count === CALLS) assert.deepEqual((await deletingWith(["JOURNAL_LIST"])).cleanup_left, ["JOURNAL_LIST"]);
     return usual();
   } });
-  await assert.rejects(trial.coldTest({ worker }), { code: "PRIVATE_CASE_NOT_FOUND" });
-  assert.equal(worker.sent.length, 9);
+  await assert.rejects(trial.coldTest(using(workers)), { code: "PRIVATE_CASE_NOT_FOUND" });
+  assert.equal(workers.sent.length, CALLS);
   await absent(folder);
   assert.equal(Object.hasOwn(await deleteCase(clientOne), "cleanup_left"), false);
   // The owner's own case: the vault's part and its run log alone; in a trial without clients too.
@@ -1597,50 +1424,55 @@ test("a start that can't let go of the trial folder's lock once its server answe
   }
 });
 
-test("a cold test that starts removes the copy's receipt and only a pass gives a new one: an error, a wrong or malformed answer, a judge's no, a failed judge leave none", async (t) => {
-  const { home, cases: [clientOne], imported, receiptPath, coldTest } = await copiedClient(t);
+test("a cold test that starts removes the copy's receipt and only a pass gives a new one: an error, a wrong or malformed answer, a file too small to pass, a judge's no, a failed judge leave none", async (t) => {
+  const { home, cases: [clientOne], imported, outside, receiptPath, coldTest } = await copiedClient(t);
   const pass = async () => {
-    assert.equal((await coldTest({ worker: fakeWorker() })).passed, true);
+    assert.equal((await coldTest(using())).passed, true);
     assert.equal((await readColdTestReceipt(home, clientOne)).corpus_id, imported.corpus_id);
   };
-  // Through the real port and a stand-in worker (six consumer calls, then the judge's three), or a stand-in consumer.
-  const replying = (reply) => ({ worker: fakeWorker({ reply }) });
+  // Through the real port and the stand-in workers: the consumer's call and the judge's for each question in turn.
+  const replying = (reply, options = {}) => using(standIns({ reply, ...options }));
   const failingAt = (at, error) => replying(async (count, request, usual) => { if (count === at) throw error; return usual(); });
   const answeringAt = (at, change) => replying(async (count, request, usual) => (count === at ? change(await usual()) : usual()));
-  const wrong = (usual) => ({ ...usual, answerability: "not_found", evidence_ids: [] });
-  const portThat = (change) => { const usual = consumer(); return { port: { ...usual, ...change(usual) } }; };
+  const miss = (usual) => ({ ...usual, answerability: "not_found", evidence_ids: [] });
   const stopped = (code) => (error) => error.code === code;
   for (const [what, options, code] of [
-    ["a later call that timed out", failingAt(4, timedOut()), "TIMEOUT"],
-    ["a wrong first answer, then a call that timed out", replying(async (count, request, usual) => { if (count > 1) throw timedOut(); return wrong(await usual()); }), "TIMEOUT"],
-    ["a malformed answer, as the worker reports it", failingAt(2, new ProviderError("A synthetic malformed answer.", { code: "PROVIDER_MALFORMED" })), "PROVIDER_MALFORMED"],
-    ["a judge's call that timed out", failingAt(7, timedOut()), "TIMEOUT"],
-    ["a judge's call that timed out, of a question the journal doesn't answer", failingAt(9, timedOut()), "TIMEOUT"],
-    ["a judge's answer outside its schema", answeringAt(7, (usual) => ({ ...usual, verdict: "maybe" })), "COLD_JUDGE_ANSWER_INVALID"],
-    ["a stand-in consumer whose second call fails", portThat((usual) => { let count = 0; return { async invoke(input) { count += 1; if (count === 2) throw timedOut(); return usual.invoke(input); } }; }), "TIMEOUT"],
-    ["a stand-in judge that fails", portThat(() => ({ async judge() { throw timedOut(); } })), "TIMEOUT"],
-    ["no judge", { port: { invoke: consumer().invoke } }, "COLD_JUDGE_UNAVAILABLE"]
+    ["a later call that timed out", failingAt(5, timedOut()), "TIMEOUT"],
+    ["a missed first answer, then a call that timed out", replying(async (count, request, usual) => { if (count > 1) throw timedOut(); return miss(await usual()); }), "TIMEOUT"],
+    ["a malformed answer, as the worker reports it", failingAt(3, new ProviderError("A synthetic malformed answer.", { code: "PROVIDER_MALFORMED" })), "PROVIDER_MALFORMED"],
+    ["an answer outside its schema", answeringAt(5, () => ({ answer: ANSWER })), "COLD_CONSUMER_ANSWER_INVALID"],
+    ["an answer to another question", answeringAt(5, (usual) => ({ ...usual, question_id: "question-1" })), "COLD_CONSUMER_ANSWER_INVALID"],
+    ["a judge's call that timed out", failingAt(2, timedOut()), "TIMEOUT"],
+    ["a judge's call that timed out, of a question the journal doesn't answer", failingAt(CALLS, timedOut()), "TIMEOUT"],
+    ["a judge's second call that timed out", replying(async (count, request, usual) => { if (count === 3) throw timedOut(); return { ...(await usual()), ...(count === 2 ? { verdict: "wrong" } : {}) }; }), "TIMEOUT"],
+    ["a judge's answer outside its schema", answeringAt(2, (usual) => ({ ...usual, verdict: "maybe" })), "COLD_JUDGE_ANSWER_INVALID"],
+    ["no judge", { workerFor: (role) => (role === "W" ? standIns().workerFor(role) : null) }, "COLD_PORT_INVALID"]
   ]) {
     await pass();
     await assert.rejects(coldTest(options), stopped(code), what);
     await absent(receiptPath, what);
   }
-  for (const [what, options] of [
-    ["a wrong answer", answeringAt(1, wrong)],
-    ["an answer outside the answer schema", answeringAt(5, () => ({ answer: "A synthetic answer." }))],
-    ["a judge that finds the answer unsupported", answeringAt(7, (usual) => ({ ...usual, verdict: "not_supported" }))],
-    ["a judge that finds an answer invented, to a false premise", answeringAt(8, (usual) => ({ ...usual, verdict: "not_supported" }))],
-    ["a judge that finds an answer invented, about an absent thing", answeringAt(9, (usual) => ({ ...usual, verdict: "not_supported" }))]
+  const small = path.join(outside, "small-questions.json");
+  await fs.writeFile(small, JSON.stringify(withQuestions(QUESTIONS.questions.slice(1))), { mode: 0o600 });
+  for (const [what, options, notMet] of [
+    ["an answer that cites what it wasn't given", answeringAt(1, (usual) => ({ ...usual, evidence_ids: ["src:journal:9"] })), ["wrong_answer"]],
+    ["an answer declared supported that cites nothing", answeringAt(1, (usual) => ({ ...usual, evidence_ids: [] })), ["wrong_answer"]],
+    ["a judge that finds an answer wrong, twice", replying(async (count, request, usual) => ({ ...(await usual()), ...(count === 2 || count === 3 ? { verdict: "wrong" } : {}) })), ["wrong_answer"]],
+    ["a judge that finds an answer invented, to a false premise", using(standIns({ verdict: (packet) => (packet.question_id === "question-41" ? "wrong" : "right") })), ["wrong_answer"]],
+    ["a judge that finds an answer invented, about an absent thing", using(standIns({ verdict: (packet) => (packet.question_id === "question-60" ? "wrong" : "right") })), ["wrong_answer"]],
+    ["too few right", using(standIns({ verdict: (packet) => (Number(packet.question_id.slice("question-".length)) <= 14 ? "incomplete" : "right") })), ["too_few_right"]],
+    ["a file too small to pass, every answer right", { ...using(), questionsPath: small }, ["too_few_questions"]]
   ]) {
     await pass();
-    assert.equal((await coldTest(options)).passed, false, what);
+    const result = await coldTest(options);
+    assert.deepEqual([result.passed, result.newerStarted, result.report.not_met], [false, false, notMet], what);
     await absent(receiptPath, what);
   }
   // Gone before the first packet leaves, whatever copy it names.
   await pass();
   let checked = 0;
-  assert.equal((await coldTest({ worker: fakeWorker({ prepare: async () => { checked += 1; await absent(receiptPath, "before any packet leaves"); } }) })).passed, true);
-  assert.equal(checked, 9);
+  assert.equal((await coldTest(using(standIns({ prepare: async () => { checked += 1; await absent(receiptPath, "before any packet leaves"); } })))).passed, true);
+  assert.equal(checked, CALLS);
   await fs.writeFile(receiptPath, JSON.stringify({ ...(await readColdTestReceipt(home, clientOne)), corpus_id: "another-copy" }), { mode: 0o600 });
   await assert.rejects(coldTest(failingAt(1, timedOut())), { code: "TIMEOUT" });
   await absent(receiptPath, "a receipt of another copy too");
@@ -1650,8 +1482,8 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   for (const planted of [earlier, { ...earlier, corpus_id: "another-copy" }]) {
     const plant = () => fs.writeFile(receiptPath, JSON.stringify(planted), { mode: 0o600 });
     for (const options of [
-      { worker: fakeWorker({ reply: async (count, request, usual) => { if (count !== 3) return usual(); await plant(); throw timedOut(); } }) },
-      { worker: fakeWorker({ reply: async (count, request, usual) => { if (count === 3) await plant(); return count === 1 ? wrong(await usual()) : usual(); } }) }
+      replying(async (count, request, usual) => { if (count !== 3) return usual(); await plant(); throw timedOut(); }),
+      replying(async (count, request, usual) => { if (count === 3) await plant(); return usual(); }, { verdict: (packet) => (packet.question_id === "question-1" ? "wrong" : "right") })
     ]) {
       await coldTest(options).then((result) => assert.deepEqual([result.passed, result.newerStarted], [false, false]), (error) => assert.equal(error.code, "TIMEOUT"));
       await absent(receiptPath, "a receipt put there meanwhile");
@@ -1661,12 +1493,57 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   await pass();
   const receipt = await fs.readFile(receiptPath, "utf8");
   await setJournalConsent({ home, number: 1, action: "withdraw" });
-  const unused = fakeWorker();
-  await assert.rejects(coldTest({ worker: unused }), /no confirmed journal consent/u);
+  const unused = standIns();
+  await assert.rejects(coldTest(using(unused)), /no confirmed journal consent/u);
   assert.equal(await fs.readFile(receiptPath, "utf8"), receipt);
   assert.equal(unused.sent.length, 0);
   assert.equal(/decides nothing/u.test(USAGE), false);
   assert.match(USAGE, /A test that starts removes the copy's receipt; only a pass gives a new one/u);
+  assert.match(USAGE, /--cold-test FILE --provider mixed\|claude\|codex/u);
+  assert.match(USAGE, /excerpts of the client's journal to the companies running those workers \(with --provider mixed,\s+Anthropic and OpenAI; claude, Anthropic; codex, OpenAI\)/u);
+  assert.match(USAGE, /at least 40 questions the\s+journal answers and 20 it doesn't, no answer is wrong, at least 2 of every 3 questions that share a search word/u);
+});
+
+test("the cold test's workers are the trial's writer's for the consumer and its checker's for the judge, with each provider choice: GPT's answers judged by Claude with mixed, both one company's otherwise", async (t) => {
+  const { outside, coldTest } = await copiedClient(t);
+  const small = path.join(outside, "two-questions.json");
+  await fs.writeFile(small, JSON.stringify(withQuestions([QUESTIONS.questions[0], QUESTIONS.questions.at(-1)])), { mode: 0o600 });
+  // Stand-ins for the two companies' command lines: each writes down how it was called and answers as a consumer or a judge, by its packet.
+  const calls = path.join(outside, "calls.jsonl");
+  const program = async (name, body) => {
+    const file = path.join(outside, name);
+    await fs.writeFile(file, `#!${process.execPath}
+const fs = require("node:fs");
+const args = process.argv.slice(2);
+if (args.includes("--help")) { process.stdout.write("--print --model --effort --output-format --json-schema --tools --max-turns --no-session-persistence --permission-mode --no-chrome --safe-mode --strict-mcp-config --system-prompt-file --ephemeral --json --sandbox --skip-git-repo-check --config --output-schema --ignore-user-config --ignore-rules\\n"); process.exit(0); }
+const packet = JSON.parse(fs.readFileSync(0, "utf8"));
+const after = (flag) => (args.includes(flag) ? args[args.indexOf(flag) + 1] : null);
+const judge = Object.hasOwn(packet, "answerable");
+fs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify({ name: ${JSON.stringify(name)}, judge, model: after("--model"), effort: after("--effort") ?? args.find((arg) => arg.startsWith("model_reasoning_effort=")) ?? null, config: process.env.CLAUDE_CONFIG_DIR ?? null }) + "\\n");
+const answer = judge ? { question_id: packet.question_id, verdict: "right", reason: "Synthetic." } : { question_id: packet.question_id, answerability: packet.passages.length ? "supported" : "not_found", answer: "A synthetic answer.", evidence_ids: packet.passages.map(({ id }) => id) };
+${body}
+`, { mode: 0o700 });
+    return file;
+  };
+  const environment = { PATH: process.env.PATH, HOME: outside, CODEX_HOME: path.join(outside, "codex-home"), INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR: path.join(outside, "claude-sign-in"),
+    CLAUDE_COMMAND: await program("claude", `process.stdout.write(JSON.stringify({ result: "", structured_output: answer, session_id: "synthetic" }));`),
+    CODEX_COMMAND: await program("codex", `for (const event of [{ type: "thread.started", thread_id: "synthetic" }, { type: "item.completed", item: { id: "item-1", type: "agent_message", text: JSON.stringify(answer) } }, { type: "turn.completed" }]) process.stdout.write(JSON.stringify(event) + "\\n");`) };
+  const claude = { name: "claude", model: "claude-opus-5-5", config: environment.INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR }, codex = { name: "codex", model: null, config: null };
+  const writer = { judge: false }, checker = { judge: true };
+  for (const [provider, consumer, judge] of [["mixed", codex, claude], ["claude", claude, claude], ["codex", codex, codex]]) {
+    await fs.rm(calls, { force: true });
+    const { report } = await coldTest({ questionsPath: small, provider, environment });
+    assert.deepEqual([report.not_met, report.by_question.map(({ result }) => result)], [["too_few_questions"], ["right", "right"]], provider);
+    // The writer's effort for the consumer, the checker's for the judge, as the trial's settings have them.
+    const effort = ({ name }, level) => (name === "claude" ? level : `model_reasoning_effort="${level}"`);
+    const call = [{ ...consumer, ...writer, effort: effort(consumer, "medium") }, { ...judge, ...checker, effort: effort(judge, "low") }];
+    const made = (await fs.readFile(calls, "utf8")).trim().split("\n").map((line) => JSON.parse(line));
+    assert.deepEqual(made, [...call, ...call].map(({ name, judge: judging, model, effort: level, config }) => ({ name, judge: judging, model, effort: level, config })), provider);
+  }
+  // Claude's sign-in folder is asked for where Claude is one of the two.
+  const relative = { ...environment, INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR: "claude-sign-in" };
+  for (const provider of ["mixed", "claude"]) await assert.rejects(coldTest({ questionsPath: small, provider, environment: relative }), /INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR must be an absolute path/u);
+  await coldTest({ questionsPath: small, provider: "codex", environment: relative });
 });
 
 test("of cold tests of one copy that overlap, the one started last decides: an earlier one gives no receipt and takes none away, also when the newer one never ends", async (t) => {
@@ -1675,18 +1552,19 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
   const attempt = () => readColdTestAttempt(home, clientOne);
   const receipt = () => fs.readFile(receiptPath, "utf8");
   const pass = async () => {
-    assert.equal((await coldTest({ worker: fakeWorker() })).passed, true);
+    assert.equal((await coldTest(using())).passed, true);
     return receipt();
   };
   const newer = { message: "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again." };
   const changed = { message: "The client's consent or copy changed during the cold test: it stopped, and gave no receipt." };
   const unmarked = { message: "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again." };
   // A test whose third call waits until `during` is done; it passes unless `answer` changes an answer of the worker's, by its count.
-  const meanwhile = (during, answer = (usual) => usual) => ({ worker: fakeWorker({ reply: async (count, request, usual) => {
+  const meanwhile = (during, answer = (usual) => usual) => using(standIns({ reply: async (count, request, usual) => {
     if (count === 3) await during();
     return answer(await usual(), count, request);
-  } }) });
-  const wrong = (usual) => ({ ...usual, answerability: "not_found", evidence_ids: [] });
+  } }));
+  // The first question's answer, which cites what it wasn't given.
+  const wrong = (usual, count) => (count === 1 ? { ...usual, evidence_ids: ["src:journal:9"] } : usual);
 
   // One after the other: each marks its own start, and the second gives a receipt as the first did.
   await pass();
@@ -1701,7 +1579,7 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
   let b = null, marked = null;
   const a = coldTest(meanwhile(async () => {
     await absent(receiptPath, "A's start removed it");
-    b = coldTest({ worker: fakeWorker({ prepare: async (count) => { if (count === 1) { bStarted.resolve(); await bGoesOn.promise; } } }) });
+    b = coldTest(using(standIns({ prepare: async (count) => { if (count === 1) { bStarted.resolve(); await bGoesOn.promise; } } })));
     await bStarted.promise;
     marked = await attempt();
   }));
@@ -1716,11 +1594,11 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
   // B passes while A runs: however A then ends, B's receipt stays as it is.
   for (const [what, answer, ended] of [
     ["a pass", (usual) => usual, newer],
-    ["a call that timed out", (usual, count) => { if (count === 4) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
-    ["a judge's call that timed out", (usual, count) => { if (count === 9) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
-    ["a wrong answer", (usual, count) => (count === 1 ? wrong(usual) : usual), null],
-    ["an answer outside the answer schema", (usual, count) => (count === 5 ? { answer: "A synthetic answer." } : usual), null],
-    ["a judge's no", (usual, count, request) => (request.stage === "cold_judge" ? { ...usual, verdict: "not_supported" } : usual), null]
+    ["a call that timed out", (usual, count) => { if (count === 5) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
+    ["a judge's call that timed out", (usual, count) => { if (count === CALLS) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
+    ["an answer outside its schema", (usual, count) => (count === 5 ? { answer: ANSWER } : usual), { code: "COLD_CONSUMER_ANSWER_INVALID" }],
+    ["a wrong answer", wrong, null],
+    ["a judge's no", (usual, count, request) => (isJudge(request) ? { ...usual, verdict: "incomplete" } : usual), null]
   ]) {
     let given = null;
     const ending = coldTest(meanwhile(async () => { given = await pass(); }, answer));
@@ -1738,18 +1616,18 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
   await setJournalConsent({ home, number: 1, action: "confirm" });
 
   // B starts and fails, or is killed, while A runs: A passes and gives none, though B never will.
-  await assert.rejects(coldTest(meanwhile(() => assert.rejects(coldTest({ worker: fakeWorker({ reply: async () => { throw timedOut(); } }) }), { code: "TIMEOUT" }))), newer);
+  await assert.rejects(coldTest(meanwhile(() => assert.rejects(coldTest(using(standIns({ reply: async () => { throw timedOut(); } }))), { code: "TIMEOUT" }))), newer);
   await absent(receiptPath);
   const killed = () => {
     const { signal, stdout, stderr } = spawnSync(process.execPath, ["--input-type=module", "--eval", `
       import { runClientColdTest } from ${JSON.stringify(new URL("../scripts/runner-trial-journal.mjs", import.meta.url).href)};
       const [home, questionsPath] = process.argv.slice(1);
-      await runClientColdTest({ home, number: 1, questionsPath, worker: { async call(request) {
+      await runClientColdTest({ home, number: 1, questionsPath, provider: "mixed", workerFor: () => ({ async call(request) {
         await request.beforeSend();
         process.stdout.write("started");
         process.kill(process.pid, "SIGKILL");
         await new Promise(() => {});
-      } } });`, home, questionsPath], { encoding: "utf8", timeout: 60_000, killSignal: "SIGKILL" });
+      } }) });`, home, questionsPath], { encoding: "utf8", timeout: 60_000, killSignal: "SIGKILL" });
     assert.deepEqual([signal, stdout], ["SIGKILL", "started"], stderr);
   };
   await pass();
@@ -1764,7 +1642,7 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
   // A test refused before it starts hasn't started: the running one's pass counts.
   const loose = path.join(outside, "loose-questions.json");
   await fs.writeFile(loose, JSON.stringify(QUESTIONS), { mode: 0o644 });
-  assert.equal((await coldTest(meanwhile(() => assert.rejects(coldTest({ questionsPath: loose, worker: fakeWorker() }), /readable by you alone/u)))).passed, true);
+  assert.equal((await coldTest(meanwhile(() => assert.rejects(coldTest({ ...using(), questionsPath: loose }), /readable by you alone/u)))).passed, true);
   await receipt();
   // Nor has one whose start can't be marked: it sends nothing. The receipt is gone by then.
   const rename = fs.rename;
@@ -1772,8 +1650,8 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
     if (to === markerPath) throw Object.assign(new Error("Synthetic words."), { code: "EIO" });
     return rename.call(fs, from, to);
   });
-  const unsent = fakeWorker();
-  await assert.rejects(coldTest({ worker: unsent }), { code: "EIO" });
+  const unsent = standIns();
+  await assert.rejects(coldTest(using(unsent)), { code: "EIO" });
   unwritable.mock.restore();
   assert.equal(unsent.sent.length, 0);
   await absent(receiptPath);
@@ -1788,11 +1666,11 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
     const text = await readFile.apply(this, args);
     if (armed && typeof text === "string" && text.includes('"attempt"')) {
       armed = false;
-      between = await coldTest({ worker: fakeWorker(), lockWaitMs: 0 }).then(() => "started", (error) => error.message);
+      between = await coldTest({ ...using(), lockWaitMs: 0 }).then(() => "started", (error) => error.message);
     }
     return text;
   });
-  assert.equal((await coldTest({ worker: fakeWorker({ reply: async (count, request, usual) => { armed = count === 9; return usual(); } }) })).passed, true);
+  assert.equal((await coldTest(using(standIns({ reply: async (count, request, usual) => { armed = count === CALLS; return usual(); } })))).passed, true);
   reading.mock.restore();
   assert.match(between, /Another runner-trial command is changing the trial folder/u);
   await receipt();
@@ -1819,18 +1697,20 @@ test("the consent is read under the trial folder's lock right before each packet
   const withdraw = (options = {}) => setJournalConsent({ home, number: 1, action: "withdraw", ...options });
   const confirm = () => setJournalConsent({ home, number: 1, action: "confirm" });
   const changed = /consent or copy changed during the cold test: it stopped, and gave no receipt/u;
-  // Withdrawn while a packet is prepared, the first, a later one and the judge's (the first and the last): that packet doesn't leave.
-  for (const at of [1, 4, 7, 9]) {
-    const worker = fakeWorker({ prepare: async (count) => { if (count === at) await withdraw(); } });
-    await assert.rejects(coldTest({ worker }), changed, `packet ${at}`);
-    assert.equal(worker.sent.length, at - 1, `packet ${at}`);
+  // Withdrawn while a packet is prepared, the consumer's (the first and a later one) and the judge's (the first, its second call for a wrong,
+  // and the last): that packet doesn't leave.
+  for (const [at, verdict] of [[1], [5], [2], [3, "wrong"], [CALLS]]) {
+    const workers = standIns({ prepare: async (count) => { if (count === at) await withdraw(); }, ...(verdict ? { verdict: () => verdict } : {}) });
+    await assert.rejects(coldTest(using(workers)), changed, `packet ${at}`);
+    assert.equal(workers.sent.length, at - 1, `packet ${at}`);
+    if (verdict) assert.deepEqual(workers.sent.map(({ role }) => role), ["W", "CW"], "the judge's second call is the third packet");
     await absent(receiptPath);
     await confirm();
   }
   // The reading is made under the lock: while a command holds it, the packet doesn't leave.
   let held = null;
-  const waiting = fakeWorker({ prepare: async (count) => { if (count === 2) held = await acquireTrialFolderLock(home); } });
-  try { await assert.rejects(coldTest({ worker: waiting, lockWaitMs: 60 }), /Another runner-trial command is changing the trial folder/u); } finally { await held?.release(); }
+  const waiting = standIns({ prepare: async (count) => { if (count === 2) held = await acquireTrialFolderLock(home); } });
+  try { await assert.rejects(coldTest({ ...using(waiting), lockWaitMs: 60 }), /Another runner-trial command is changing the trial folder/u); } finally { await held?.release(); }
   assert.equal(waiting.sent.length, 1);
   await absent(receiptPath);
   // A withdrawal tried while the list is being read for a packet (its text read, not checked yet) can't come between: one that won't wait
@@ -1848,39 +1728,40 @@ test("the consent is read under the trial folder's lock right before each packet
     }
     return text;
   });
-  const between = fakeWorker({
+  const between = standIns({
     prepare: async (count) => { armed = count === 2; },
     reply: async (count, request, usual) => {
       if (count === 2) assert.deepEqual(await during.waiting, { changed: true, state: "withdrawn" });
       return usual();
     }
   });
-  await assert.rejects(coldTest({ worker: between }), changed);
+  await assert.rejects(coldTest(using(between)), changed);
   mocked.mock.restore();
   assert.match(during.refused, /Another runner-trial command is changing the trial folder/u);
   assert.equal(between.sent.length, 2);
   await absent(receiptPath);
   await confirm();
-  // The lock isn't held during a call: a withdrawal while one runs is recorded at once, and stops the test at the next packet, or, during
-  // the last call (the judge's), before the receipt is written.
-  for (const [at, sent] of [[2, 2], [9, 9]]) {
-    const worker = fakeWorker({ reply: async (count, request, usual) => {
+  // The lock isn't held during a call: a withdrawal while one runs is recorded at once, and stops the test at the next packet (the judge's
+  // after a consumer's call, its second after a wrong, the next consumer's after a judge's), or, during the last call, before the receipt
+  // is written.
+  for (const [at, verdict] of [[1], [2], [2, "wrong"], [3, "wrong"], [CALLS]]) {
+    const workers = standIns({ reply: async (count, request, usual) => {
       if (count === at) assert.deepEqual(await withdraw({ lockWaitMs: 0 }), { changed: true, state: "withdrawn" });
       return usual();
-    } });
-    await assert.rejects(coldTest({ worker }), changed, `during call ${at}`);
-    assert.equal(worker.sent.length, sent, `during call ${at}`);
+    }, ...(verdict ? { verdict: () => verdict } : {}) });
+    await assert.rejects(coldTest(using(workers)), changed, `during call ${at}`);
+    assert.equal(workers.sent.length, at, `during call ${at}`);
     await absent(receiptPath);
     await confirm();
   }
   // So does a new copy.
   const newer = path.join(outside, "newer.sealed.json");
   await writeSealedJournalCopy(newer, await server.exportFor((await ensureJournalCopyKey({ home, number: 1 })).publicKey, "2026-11-24T08:09:00.000Z"));
-  const worker = fakeWorker({ prepare: async (count) => { if (count === 3) await importClientJournal({ home, number: 1, sealedPath: newer }); } });
-  await assert.rejects(coldTest({ worker }), changed);
-  assert.equal(worker.sent.length, 2);
+  const workers = standIns({ prepare: async (count) => { if (count === 3) await importClientJournal({ home, number: 1, sealedPath: newer }); } });
+  await assert.rejects(coldTest(using(workers)), changed);
+  assert.equal(workers.sent.length, 2);
   await absent(receiptPath);
-  assert.equal((await coldTest({ worker: fakeWorker() })).passed, true, "and the new copy has its own test");
+  assert.equal((await coldTest(using())).passed, true, "and the new copy has its own test");
 });
 
 test("the commands print numbers and fixed texts only: no label, question id or journal text, and nothing that a file or an error holds", async (t) => {
@@ -1891,35 +1772,38 @@ test("the commands print numbers and fixed texts only: no label, question id or 
     const code = await runMain([...argv, "--dir", home], { log: add, logError: add, askQuestion: async (question) => { add(question); return "1"; }, ...options });
     return { code, text: lines.join("\n") };
   };
-  const coldTest = (options) => printed(["--cold-test", questionsPath, "--provider", "claude"], options);
+  const coldTest = (options) => printed(["--cold-test", questionsPath, "--provider", "mixed"], options);
   const { reference } = await trialReference(home, clientOne, imported.corpus_id);
 
   // The cold test: ids that are somebody's names, and the report's numbers in their place.
-  const named = withQuestions(QUESTIONS.questions.map((question, index) => ({ ...question, id: ["Synthetic-Alba", "Synthetic-Bruno", "Synthetic-Chloe"][index] })));
+  const named = withQuestions(QUESTIONS.questions.map((question, index) => ({ ...question, id: `Synthetic-${["Alba", "Bruno", "Chloe"][index % 3]}-${index}` })));
   await fs.writeFile(questionsPath, JSON.stringify(named), { mode: 0o600 });
-  const hidden = ["Synthetic-", "Synthetic client", "colleague", "zebra", "A synthetic answer", JUDGE_REASON, "q-", clientOne, imported.corpus_id, reference.active_generation, reference.manifest_object_id,
+  const hidden = ["Synthetic-", "Synthetic client", "Synthetic question", "colleague", "zebra", ANSWER, JUDGE_REASON, "q-", "question-", "src:journal", clientOne, imported.corpus_id, reference.active_generation, reference.manifest_object_id,
     ...server.sources.repr.split("\n").filter((line) => line.length > 8)];
-  const passed = await coldTest({ worker: fakeWorker() });
+  const passed = await coldTest(using());
   assert.equal(passed.code, 0, passed.text);
   const report = JSON.parse(passed.text.slice(passed.text.indexOf("{"), passed.text.lastIndexOf("}") + 1));
   assert.equal(report.snapshot, snapshotOf(reference));
-  assert.deepEqual(report.by_question.map(({ n, judged }) => [n, judged]), [[1, true], [2, true], [3, true]]);
-  const failed = await coldTest({ worker: fakeWorker({ reply: async (count, request, usual) => (request.stage === "cold_judge" ? { ...(await usual()), verdict: "not_supported" } : usual()) }) });
+  assert.deepEqual([report.passed, report.not_met, report.by_question.length], [true, [], 60]);
+  const failed = await coldTest(using(standIns({ reply: judged("wrong") })));
   assert.equal(failed.code, 1);
+  assert.match(failed.text, /"wrong": 60,/u);
   assert.match(failed.text, /Not passed: client 1's copy has no cold-test receipt/u);
-  const broken = await coldTest({ worker: fakeWorker({ reply: async () => ({ answer: "A synthetic answer." }) }) });
-  assert.equal(broken.code, 1);
+  const broken = await coldTest(using(standIns({ reply: async () => ({ answer: ANSWER }) })));
+  assert.deepEqual([broken.code, broken.text.split("\n").at(-1)], [1, "The journal command failed: COLD_CONSUMER_ANSWER_INVALID."]);
+  const malformedJudge = await coldTest(using(standIns({ reply: async (count, request, usual) => (isJudge(request) ? { ...(await usual()), reason: `${JUDGE_REASON}${"x".repeat(500)}` } : usual()) })));
+  assert.deepEqual([malformedJudge.code, malformedJudge.text.split("\n").at(-1)], [1, "The journal command failed: COLD_JUDGE_ANSWER_INVALID."]);
   // A newer test started meanwhile, which passed here: the earlier one, passed or not, says that the newer one decides, and nothing more.
-  const newerMeanwhile = (change) => fakeWorker({ reply: async (count, request, usual) => {
-    if (count === 2) assert.equal((await coldTest({ worker: fakeWorker() })).code, 0);
+  const newerMeanwhile = (change) => standIns({ reply: async (count, request, usual) => {
+    if (count === 2) assert.equal((await coldTest(using())).code, 0);
     return change(await usual(), request);
   } });
-  const outdone = await coldTest({ worker: newerMeanwhile((usual) => usual) });
+  const outdone = await coldTest(using(newerMeanwhile((usual) => usual)));
   assert.deepEqual([outdone.code, outdone.text.split("\n").at(-1)], [1, "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again."]);
-  const outdoneFailing = await coldTest({ worker: newerMeanwhile((usual, request) => (request.stage === "cold_judge" ? { ...usual, verdict: "not_supported" } : usual)) });
+  const outdoneFailing = await coldTest(using(newerMeanwhile((usual, request) => (isJudge(request) ? { ...usual, verdict: "incomplete" } : usual))));
   assert.deepEqual([outdoneFailing.code, outdoneFailing.text.split("\n").at(-1)], [1, "Not passed. A newer cold test of client 1's copy has started, and that one decides whether the copy has a receipt."]);
   // An unexpected error: its code when it has one of that form, never its own text.
-  const throwing = (error) => coldTest({ worker: fakeWorker({ reply: async () => { throw error; } }) });
+  const throwing = (error) => coldTest(using(standIns({ reply: async () => { throw error; } })));
   const unexpected = await throwing(new Error("Synthetic words the colleague wrote."));
   assert.deepEqual([unexpected.code, unexpected.text.split("\n").at(-1)], [1, "The journal command failed."]);
   const coded = await throwing(Object.assign(new Error("Synthetic words the colleague wrote."), { code: "PLAN_LIMIT" }));
@@ -1927,13 +1811,13 @@ test("the commands print numbers and fixed texts only: no label, question id or 
   const odd = await throwing(Object.assign(new Error("Synthetic words."), { code: "Synthetic words in a code" }));
   assert.equal(odd.text.split("\n").at(-1), "The journal command failed.");
   // A key quote that doesn't fit, a question that isn't valid: the code alone.
-  await fs.writeFile(questionsPath, JSON.stringify(withQuestions([{ ...named.questions[0], evidence_quotes: ["Synthetic words the colleague never wrote"] }, named.questions[1]])), { mode: 0o600 });
-  const unfit = await coldTest({ worker: fakeWorker() });
+  await fs.writeFile(questionsPath, JSON.stringify(withQuestions([{ ...named.questions[0], evidence_quotes: ["Synthetic words the colleague never wrote"] }, named.questions.at(-1)])), { mode: 0o600 });
+  const unfit = await coldTest(using());
   assert.equal(unfit.text.split("\n").at(-1), "The journal command failed: COLD_KEY_QUOTE_NOT_IN_JOURNAL.");
-  await fs.writeFile(questionsPath, JSON.stringify(withQuestions([{ ...named.questions[0], extra: "Synthetic-Alba" }, named.questions[1]])), { mode: 0o600 });
-  const notValid = await coldTest({ worker: fakeWorker() });
+  await fs.writeFile(questionsPath, JSON.stringify(withQuestions([{ ...named.questions[0], extra: "Synthetic-Alba" }, named.questions.at(-1)])), { mode: 0o600 });
+  const notValid = await coldTest(using());
   assert.equal(notValid.text.split("\n").at(-1), "The questions file isn't valid (COLD_QUESTIONS_INVALID).");
-  for (const { text } of [passed, failed, broken, outdone, outdoneFailing, unexpected, coded, odd, unfit, notValid]) for (const words of hidden) assert.equal(text.includes(words), false, `${words} in ${text}`);
+  for (const { text } of [passed, failed, broken, malformedJudge, outdone, outdoneFailing, unexpected, coded, odd, unfit, notValid]) for (const words of hidden) assert.equal(text.includes(words), false, `${words} in ${text}`);
 
   // The import says what it checked and that the file may go, and leaves it.
   const sealedText = await fs.readFile(sealedPath, "utf8");
@@ -1951,7 +1835,7 @@ test("the commands print numbers and fixed texts only: no label, question id or 
     const before = await fs.readFile(file, "utf8");
     await fs.writeFile(file, malformed, { mode: 0o600 });
     try {
-      const { code, text } = await printed(argv, { worker: fakeWorker() });
+      const { code, text } = await printed(argv, using());
       assert.equal(code, 1);
       assert.match(text, message);
       for (const part of [SECRET, SECRET.slice(0, 5), "KEY-LABEL", "not JSON\""]) assert.equal(text.includes(part), false, `${part} in ${text}`);
@@ -1994,7 +1878,7 @@ async function trialReference(home, caseId, corpusId) {
 
 test("the client list, the cold-test receipt and its test's marker are each opened once and checked as opened: a link, loose mode, a folder, a pipe or a socket is refused, a missing one is none", async (t) => {
   const { home, cases: [clientOne], receiptPath, coldTest } = await copiedClient(t);
-  assert.equal((await coldTest({ port: consumer(), now: () => new Date("2026-11-24T09:30:00.000Z") })).passed, true);
+  assert.equal((await coldTest({ ...using(), now: () => new Date("2026-11-24T09:30:00.000Z") })).passed, true);
   const clients = path.join(home, RUNNER_CLIENTS_FILE);
   const list = await readRunnerClients(home);
   const receipt = await readColdTestReceipt(home, clientOne);
