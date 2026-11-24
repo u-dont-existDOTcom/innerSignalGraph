@@ -16,6 +16,7 @@ import { focusedRules, rulesFrom, wholeRules } from "./rule-parts.mjs";
 import { LEVELS, emergencyNumbersIn, isCrisisLevel, provisionalProblems, runProgramChecks, undeclaredQuotedSpans } from "./program-checks.mjs";
 import { FIXED_MESSAGE_ANY_FAILURE_REASONS, FIXED_MESSAGE_FAILURE_REASONS, KEPT_PLAN_RULE } from "./notices.mjs";
 import { normalizeEvidenceReview, sha256Json } from "../supervisor/response-evidence-contract.mjs";
+import { acquireTrialFolderLock } from "./folder-lock.mjs";
 import {
   KEPT_PLAN_LIMITS,
   crisisReadingOf,
@@ -109,6 +110,9 @@ export class RunnerDeadlineError extends RuntimeError {
   constructor(stage) { super(`The turn's time ran out before ${stage}.`, { code: "TIMEOUT", details: { stage } }); }
 }
 
+// How long a journal output waits for the trial folder lock before it counts as refused (publishGated).
+const OUTPUT_LOCK_WAIT_MS = 5_000;
+
 function validLevel(value) { return LEVELS.includes(value) ? value : "unclear"; }
 
 // The refusals for which an approved reply is closed instead of delivered (the design for clients, point 6): response evidence no
@@ -186,7 +190,8 @@ export function normalizeFindings(checkerId, findings) {
 // same section), on only when exactly true, and only on top of both: then every closing reason shows his message in such a conversation.
 // `journalGate` (src/runner-trial/journal-gate.mjs), only with response evidence on: before an approved reply written with a client's
 // journal in view is delivered, it asks whether that client's consent still stands (the design for clients, point 5a).
-export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, workerSettings = {}, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, fixedMessageOnAnyFailureEnabled = false, journalGate = null, onEvent = () => {}, now = () => Date.now() } = {}) {
+// `trialDir` is the trial folder, whose lock each journal output to the person is made under (publishGated).
+export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = {}, workerFor, workerSettings = {}, ownerFallbackEnabled = false, keptPlanEnabled = false, numberNowEnabled = false, fixedMessageOnFailureEnabled = false, fixedMessageOnAnyFailureEnabled = false, journalGate = null, trialDir = null, onEvent = () => {}, now = () => Date.now() } = {}) {
   if (!privateCaseSource || !parts || typeof workerFor !== "function") throw new ValidationError("The runner trial needs its case source, rule parts and workers.");
   const config = { ...DEFAULT_RUNNER_SETTINGS, ...settings, limits: { ...DEFAULT_RUNNER_SETTINGS.limits, ...(settings.limits ?? {}) } };
   if (!["focused", "whole"].includes(config.writerMode) || !["split", "whole"].includes(config.checkerMode)) throw new ValidationError("Runner trial modes are invalid.", { code: "RUNNER_SETTINGS_INVALID" });
@@ -442,14 +447,20 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     if (allowsProvisional && !levelsNow.includes(firstWordsLevel)) return stored;
     if (allowsProvisional && typeof reading.provisional_reply === "string") {
       const problems = provisionalProblems(reading.provisional_reply, { level: firstWordsLevel });
-      // A provisional reply is shown to the person, so in a case that has read its journal it goes out only while the gate is open
-      // (Codex's review 3); otherwise the fixed emergency line is shown, as when a provisional reply can't be shown.
-      if (problems.length === 0 && !(await journalGateAllows(caseId, null, authContext))) {
-        if (firstWordsLevel === "acted_or_about_to") await showEmergencyLine(caseId, runtimeTurn, "provisional_not_shown", authContext);
-      } else if (problems.length === 0) {
+      // A provisional reply is shown to the person, so in a case that has read its journal it goes out only through the gated output
+      // (Codex's reviews 3 and 4): refused, the fixed emergency line is shown instead, as when a provisional reply can't be shown.
+      if (problems.length === 0) {
         const checks = [...(firstWordsLevel === "acted_or_about_to" ? ["a_number"] : []), "numbers_known", "shape", "links", "detox"];
-        await source("recordRunnerProvisional", [caseId, runtimeTurn.id, { exactText: reading.provisional_reply.trim(), checks }], authContext);
-        emit(caseId, runtimeTurn.id, { type: "provisional", text: reading.provisional_reply.trim() });
+        const shown = await publishGated({
+          caseId, authContext,
+          publish: async () => {
+            await source("recordRunnerProvisional", [caseId, runtimeTurn.id, { exactText: reading.provisional_reply.trim(), checks }], authContext);
+            emit(caseId, runtimeTurn.id, { type: "provisional", text: reading.provisional_reply.trim() });
+            return true;
+          },
+          refuse: () => false
+        });
+        if (!shown && firstWordsLevel === "acted_or_about_to") await showEmergencyLine(caseId, runtimeTurn, "provisional_not_shown", authContext);
       } else {
         await source("recordRunnerReading", [caseId, runtimeTurn.id, { conversationId, readers: { provisional_refused: { problems } } }], authContext);
         if (firstWordsLevel === "acted_or_about_to") await showEmergencyLine(caseId, runtimeTurn, "provisional_not_shown", authContext);
@@ -1019,6 +1030,26 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     throw new RuntimeError("This case has read its client's journal, and the journal gate is closed.", { code: "JOURNAL_GATE_CLOSED" });
   }
 
+  // An output to the person (a provisional reply, a delivered reply) in a case that has read its client's journal is checked and made
+  // under the trial folder's lock, the one --journal-consent takes to record a withdrawal (Codex's review 4): the gate check, the
+  // record of the text as shown and the output itself form one step, so a withdrawal lands wholly before it (and nothing is shown)
+  // or wholly after it. A lock not had within a few seconds, or a closed gate, is a refusal. Other cases publish as before.
+  async function publishGated({ caseId, authContext, publish, refuse }) {
+    let read = journalCases.has(caseId);
+    if (!read && journalGate) read = caseReadJournal(await loadRecord(caseId, authContext));
+    if (!read) return publish();
+    journalCases.add(caseId);
+    let held = null;
+    try { held = trialDir ? await acquireTrialFolderLock(trialDir, { waitMs: OUTPUT_LOCK_WAIT_MS }) : null; } catch { held = null; }
+    if (!held) return refuse();
+    try {
+      if (!(journalGate && await journalGate.openNow({ caseId, authContext }))) return await refuse();
+      return await publish();
+    } finally {
+      await held.release();
+    }
+  }
+
   // An approved reply on the trial's path (the design for clients, points 5a and 6): one written with a client's journal in view goes
   // out only while that client's consent stands, and one that response evidence no longer admits is closed instead of being retried
   // at every message; everything else is delivered as before. Also at a restart's reconcile.
@@ -1027,16 +1058,18 @@ export function createRunnerTrialRuntime({ privateCaseSource, parts, settings = 
     const turn = record.runtime_turns.find((entry) => entry.id === runtimeTurn.id);
     if (!turn || isFinishedRuntimeTurn(turn)) return;
     if (caseReadJournal(record)) journalCases.add(caseId);
-    if (journalCases.has(caseId) && !(journalGate && await journalGate.openNow({ caseId, authContext }))) {
-      await closeTurn({ caseId, runtimeTurn: turn, reasonCode: "checks_failed", assistantTurnId, eventId: closeEventId, authContext, journalHold: true });
-      return;
-    }
-    try {
-      await source("deliverPrivateRuntimeCandidate", [caseId, turn.id, { candidateId: turn.current_candidate_id, assistantTurnId, eventId }], authContext);
-    } catch (error) {
-      if (!EVIDENCE_REFUSALS.has(error?.code)) throw error;
-      await closeTurn({ caseId, runtimeTurn: turn, reasonCode: "checks_failed", assistantTurnId, eventId: closeEventId, authContext });
-    }
+    await publishGated({
+      caseId, authContext,
+      publish: async () => {
+        try {
+          await source("deliverPrivateRuntimeCandidate", [caseId, turn.id, { candidateId: turn.current_candidate_id, assistantTurnId, eventId }], authContext);
+        } catch (error) {
+          if (!EVIDENCE_REFUSALS.has(error?.code)) throw error;
+          await closeTurn({ caseId, runtimeTurn: turn, reasonCode: "checks_failed", assistantTurnId, eventId: closeEventId, authContext });
+        }
+      },
+      refuse: () => closeTurn({ caseId, runtimeTurn: turn, reasonCode: "checks_failed", assistantTurnId, eventId: closeEventId, authContext, journalHold: true })
+    });
   }
 
   // `journalHold`: an approved reply held back because the journal gate closed (deliverApproved); the store closes an approved turn

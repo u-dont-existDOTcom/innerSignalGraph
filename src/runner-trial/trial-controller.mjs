@@ -112,6 +112,7 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
     fixedMessageOnFailureEnabled: config.runnerFixedMessageOnFailureEnabled === true,
     fixedMessageOnAnyFailureEnabled: config.runnerFixedMessageOnAnyFailureEnabled === true,
     journalGate,
+    trialDir: trialDirectory,
     onEvent: hub.publish,
     now
   });

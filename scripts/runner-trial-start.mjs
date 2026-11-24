@@ -44,6 +44,7 @@ import { RESPONSE_EVIDENCE_SETTING } from "../src/core/on-off-setting.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { MAX_RUNNER_CLIENTS, journalConsentCurrent, journalConsentState, readRunnerClients, syncFolder, validateClientLabel, writeRunnerClients } from "../src/runner-trial/clients.mjs";
+import { TrialFolderLockError, acquireTrialFolderLock as acquireFolderLock } from "../src/runner-trial/folder-lock.mjs";
 import {
   RUNNER_RULES_ROOT,
   RUNNER_TRIAL_CLIENT_TOKENS_SETTING,
@@ -269,46 +270,18 @@ async function writePrivateFile(file, text) {
   await syncFolder(path.dirname(file));
 }
 
-// One command at a time changes the trial folder's credentials and client list (Codex's reviews 1 and 2): a start, --add-client and
-// --journal-consent each read, change and write them under this lock, so none writes over another's change (an addition can't
-// bring back a consent just withdrawn). The lock is never taken over by a command: one left by a command that ended without
-// finishing is named in the refusal, for the owner to remove by hand, so two commands can't both decide to take it over. A command
-// removes only its own lock. The running server holds it only while it starts.
-const LOCK_FILE = ".trial-folder.lock";
-export async function withTrialFolderLock(home, operation, { pid = process.pid } = {}) {
-  const held = await acquireTrialFolderLock(home, { pid });
-  try { return await operation(); } finally { await held.release(); }
+// One command at a time changes the trial folder's credentials and client list, and a withdrawal of consent lands wholly before or
+// after each journal output of the server: the folder's one lock (src/runner-trial/folder-lock.mjs; Codex's reviews 1 to 4). A
+// command waits for it up to ten seconds (the server holds it only for the moment of an output), and a lock left by a command that
+// ended without finishing is named for the owner to remove by hand, never taken over.
+export const COMMAND_LOCK_WAIT_MS = 10_000;
+const asStartError = (error) => (error instanceof TrialFolderLockError ? new StartError(error.message) : error);
+export async function acquireTrialFolderLock(home, { pid = process.pid, waitMs = COMMAND_LOCK_WAIT_MS } = {}) {
+  try { return await acquireFolderLock(home, { pid, waitMs }); } catch (error) { throw asStartError(error); }
 }
-
-// The lock itself, for a caller that holds it across more than one step (a start, until its server has read its credentials).
-export async function acquireTrialFolderLock(home, { pid = process.pid } = {}) {
-  const lock = path.join(home, LOCK_FILE);
-  const token = randomUUID();
-  let handle;
-  try { handle = await fsp.open(lock, "wx", 0o600); }
-  catch (error) {
-    if (error?.code !== "EEXIST") throw error;
-    const holder = Number((await fsp.readFile(lock, "utf8").catch(() => "")).trim().split(/\s+/u)[0]);
-    let ended = false;
-    if (Number.isSafeInteger(holder) && holder > 0) { try { process.kill(holder, 0); } catch (probe) { ended = probe?.code === "ESRCH"; } }
-    throw new StartError(ended
-      ? `A runner-trial command ended without finishing and left its lock. If no other runner-trial command is running, remove ${lock} and try again.`
-      : "Another runner-trial command is changing the trial folder (a start, --add-client or --journal-consent). Try again when it has finished.");
-  }
-  const release = async () => {
-    await handle.close().catch(() => {});
-    const current = await fsp.readFile(lock, "utf8").catch(() => "");
-    if (current.trim().split(/\s+/u)[1] === token) await fsp.rm(lock, { force: true });
-  };
-  try {
-    await handle.writeFile(`${pid} ${token}\n`, "utf8");
-    await handle.sync();
-  } catch (error) {
-    await release();
-    throw error;
-  }
-  let released = false;
-  return Object.freeze({ async release() { if (released) return; released = true; await release(); } });
+export async function withTrialFolderLock(home, operation, { pid = process.pid, waitMs = COMMAND_LOCK_WAIT_MS } = {}) {
+  const held = await acquireTrialFolderLock(home, { pid, waitMs });
+  try { return await operation(); } finally { await held.release(); }
 }
 
 const newCaseKeys = () => ({ routine_kek_base64: randomBytes(32).toString("base64"), recovery_secret_base64: randomBytes(32).toString("base64") });
@@ -391,13 +364,13 @@ async function readClientList(home) {
 
 // The trial's folder, its vault, its credentials and its settings file. Returns the paths, this start's tokens and the owner's case.
 // `locked`: the caller already holds the folder's lock (a start holds it until its server has read the credentials).
-export async function prepareTrialFolder({ home, provider, locked = false }) {
+export async function prepareTrialFolder({ home, provider, locked = false, lockWaitMs = COMMAND_LOCK_WAIT_MS }) {
   const resolved = checkTrialHome(home);
   await privateFolder(resolved, "The trial folder");
   const vault = path.join(resolved, "vault");
   await privateFolder(vault, "The trial's vault");
   const credentialsPath = path.join(resolved, "credentials.json");
-  const underLock = locked ? (operation) => operation() : (operation) => withTrialFolderLock(resolved, operation);
+  const underLock = locked ? (operation) => operation() : (operation) => withTrialFolderLock(resolved, operation, { waitMs: lockWaitMs });
   return underLock(async () => {
     const { clients } = await readClientList(resolved);
     const { token, caseId, clientTokens } = await prepareCredentials(credentialsPath, vault, clients);
@@ -410,10 +383,10 @@ export async function prepareTrialFolder({ home, provider, locked = false }) {
 // --add-client (design, point 1): a case for a new client, with keys of its own made from random bytes and never changed, and the
 // label the owner gives. The trial folder must have been made by a start already. The next start gives the case its grant. Labels
 // are compared without regard to case, so two clients can't be told apart only by capitals. Returns the new client's number.
-export async function addClient({ home, label, now = () => new Date() }) {
+export async function addClient({ home, label, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS }) {
   const resolved = checkTrialHome(home);
   try { await fsp.access(path.join(resolved, "credentials.json")); } catch { throw new StartError(`The trial folder ${resolved} isn't ready: start the trial once (or use --prepare-only) before adding a client.`); }
-  return withTrialFolderLock(resolved, () => addClientLocked({ resolved, label, now }));
+  return withTrialFolderLock(resolved, () => addClientLocked({ resolved, label, now }), { waitMs: lockWaitMs });
 }
 
 async function addClientLocked({ resolved, label, now }) {
@@ -442,10 +415,10 @@ async function addClientLocked({ resolved, label, now }) {
 // withdrawal holds at once (the server reads the list at every retrieval and before every delivery) and the next start drops the
 // purpose from the client's grant; a consent gives the grant its purpose from the next start. Confirming again after a withdrawal
 // starts a new consent.
-export async function setJournalConsent({ home, number, action, now = () => new Date() }) {
+export async function setJournalConsent({ home, number, action, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS }) {
   const resolved = checkTrialHome(home);
   if (!["confirm", "withdraw"].includes(action)) throw new StartError("--journal-consent must be confirm or withdraw.");
-  return withTrialFolderLock(resolved, () => setJournalConsentLocked({ resolved, number, action, now }));
+  return withTrialFolderLock(resolved, () => setJournalConsentLocked({ resolved, number, action, now }), { waitMs: lockWaitMs });
 }
 
 async function setJournalConsentLocked({ resolved, number, action, now }) {

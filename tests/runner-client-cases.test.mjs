@@ -314,9 +314,9 @@ test("one command at a time changes the trial folder: a start, an addition or a 
   for (let i = 0; i < 200 && release === null; i += 1) await new Promise((resolve) => setTimeout(resolve, 5));
   assert.equal(typeof release, "function", "the lock is taken");
   const busy = /Another runner-trial command is changing the trial folder/u;
-  await assert.rejects(addClient({ home, label: "Synthetic client two" }), busy);
-  await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), busy, "a consent change can't be written over by an addition, nor the other way round");
-  await assert.rejects(prepareTrialFolder({ home, provider: "codex" }), busy);
+  await assert.rejects(addClient({ home, label: "Synthetic client two", lockWaitMs: 40 }), busy);
+  await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm", lockWaitMs: 40 }), busy, "a consent change can't be written over by an addition, nor the other way round");
+  await assert.rejects(prepareTrialFolder({ home, provider: "codex", lockWaitMs: 40 }), busy);
   release();
   await held;
   assert.equal((await readRunnerClients(home)).clients.length, 1, "nothing was written while the folder was held");
@@ -324,7 +324,7 @@ test("one command at a time changes the trial folder: a start, an addition or a 
   // two commands can never both take it over.
   const lock = path.join(home, ".trial-folder.lock");
   await fs.writeFile(lock, "", { mode: 0o600 });
-  await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), busy);
+  await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm", lockWaitMs: 40 }), busy);
   await fs.writeFile(lock, "999999999 synthetic-token\n", { mode: 0o600 });
   await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), (error) => error.message.includes("ended without finishing") && error.message.includes(lock));
   assert.equal(await fs.readFile(lock, "utf8"), "999999999 synthetic-token\n", "left as it is");
@@ -362,8 +362,8 @@ test("a start holds the folder's lock from making its tokens until its server ha
     // While the start holds it, it makes its tokens under it, and every other command is refused.
     const prepared = await prepareTrialFolder({ home, provider: "codex", locked: true });
     assert.equal(Object.keys(prepared.clientTokens).length, 1);
-    await assert.rejects(prepareTrialFolder({ home, provider: "codex" }), /Another runner-trial command is changing the trial folder/u);
-    await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm" }), /Another runner-trial command/u);
+    await assert.rejects(prepareTrialFolder({ home, provider: "codex", lockWaitMs: 40 }), /Another runner-trial command is changing the trial folder/u);
+    await assert.rejects(setJournalConsent({ home, number: 1, action: "confirm", lockWaitMs: 40 }), /Another runner-trial command/u);
   } finally {
     await held.release();
   }
@@ -377,5 +377,16 @@ test("a start holds the folder's lock from making its tokens until its server ha
   const ready = at("const ready = await untilReady(");
   assert.ok(main.indexOf("await startLock.release();", ready) > ready, "released once the server answers");
   assert.equal(main.slice(at("async function startServer("), ready).includes("startLock.release()"), false, "and not before");
+});
+
+test("a command waits a moment for the folder's lock: a withdrawal asked while the trial holds it for an output is recorded right after", async (t) => {
+  const { home } = await clientFolder(t, ["Synthetic client one"]);
+  await setJournalConsent({ home, number: 1, action: "confirm" });
+  const held = await acquireTrialFolderLock(home);
+  const withdrawal = setJournalConsent({ home, number: 1, action: "withdraw", lockWaitMs: 5_000 });
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal((await readRunnerClients(home)).clients[0].journal.consent.withdrawn_at, null, "not while the output holds the folder");
+  await held.release();
+  assert.deepEqual(await withdrawal, { changed: true, state: "withdrawn" });
 });
 
