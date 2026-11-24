@@ -11,7 +11,8 @@ const listener = await listenInnerSignalLoopback({
   config,
   providers,
   privateCaseAccessService: privateRuntime?.privateCaseAccessService ?? null,
-  privateAuthContext: privateRuntime?.privateAuthContext ?? null
+  privateAuthContext: privateRuntime?.privateAuthContext ?? null,
+  privateCaseAuthContexts: privateRuntime?.privateCaseAuthContexts ?? new Map()
 });
 
 console.log(`Inner Signal runtime listening on ${listener.url}`);

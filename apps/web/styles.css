@@ -176,6 +176,9 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 .runner-thinking { font-style: italic; }
 .runner-divider { margin: 1rem 0; padding-top: .5rem; border-top: 1px solid var(--line); text-align: center; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .runner-progress { margin: .25rem 0 0; }
+.runner-client-choice { display: grid; gap: .35rem; margin: 0 0 .75rem; }
+.runner-client-choice select { max-width: 28rem; }
+.runner-client-current { margin: 0; font-weight: 700; }
 #runner-new-conversation.selected { outline: 2px solid var(--accent-strong); }
 /* The plan kept for next time (shown only while /health says runnerKeptPlan is on) */
 .runner-resume { margin: .5rem 0; padding: .65rem .85rem; border: 1px solid var(--accent); border-radius: .65rem; }

@@ -41,6 +41,31 @@ export const RUNNER_TRIAL_CASE_ID_SETTING = "INNER_SIGNAL_RUNNER_TRIAL_CASE_ID";
 // The form the start script makes, which is also the page's own: "case-" and a random (version 4) UUID, in lowercase.
 export const RUNNER_TRIAL_CASE_ID_PATTERN = /^case-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
+// Each client's token, for that client's case alone (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, point 2): a
+// JSON object from case id to token, which the start script makes at every start and passes only through the server's environment.
+// It is read where the owner's own token is (src/storage/private-runtime-environment.mjs), never into the app's config, so no
+// report of the config can hold a token.
+export const RUNNER_TRIAL_CLIENT_TOKENS_SETTING = "INNER_SIGNAL_RUNNER_TRIAL_CLIENT_TOKENS";
+const CLIENT_TOKEN = /^[A-Za-z0-9_-]{43}$/u;
+
+// Absent or blank is none. Anything else must be what the start script makes, or startup stops with a message that names the
+// setting and never a case or a token.
+export function readRunnerTrialClientTokens(raw) {
+  if (raw == null || raw.trim() === "") return new Map();
+  const refuse = () => { throw new RuntimeError(`${RUNNER_TRIAL_CLIENT_TOKENS_SETTING} isn't what scripts/runner-trial-start.mjs makes.`, { code: "BAD_CONFIG" }); };
+  let value;
+  try { value = JSON.parse(raw); } catch { refuse(); }
+  if (!value || typeof value !== "object" || Array.isArray(value)) refuse();
+  const tokens = new Map();
+  const seen = new Set();
+  for (const [caseId, token] of Object.entries(value)) {
+    if (!RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId) || typeof token !== "string" || !CLIENT_TOKEN.test(token) || seen.has(token)) refuse();
+    seen.add(token);
+    tokens.set(caseId, Object.freeze({ bearerToken: token }));
+  }
+  return tokens;
+}
+
 function readSwitch(raw, name) {
   const reading = readOnOffSetting(raw);
   if (reading === null) throw new RuntimeError(`${name} must be on or off.`, { code: "BAD_CONFIG" });

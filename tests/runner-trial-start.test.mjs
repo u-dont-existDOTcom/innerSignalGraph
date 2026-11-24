@@ -71,12 +71,12 @@ test("the provider must be chosen, as mixed, codex or claude; the port, the fold
   assert.throws(() => parseArguments(["--provider", "codex", "--owner-fallback", "--fixed-message-on-failure=on"]), refusedWith(2, /--fixed-message-on-failure takes no value/u));
   assert.throws(() => parseArguments(["--provider", "codex", "--owner-fallback", "--fixed-message-on-failure", "--fixed-message-on-failure"]), refusedWith(2, /--fixed-message-on-failure is given twice/u));
   assert.throws(() => parseArguments(["--help"]), refusedWith(0, /^Usage: node scripts\/runner-trial-start\.mjs/u));
-  assert.deepEqual({ ...parseArguments(["--provider", "codex"]) }, { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: false, fixedMessageOnFailure: false, fixedMessageOnAnyFailure: false, prepareOnly: false });
+  assert.deepEqual({ ...parseArguments(["--provider", "codex"]) }, { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: false, fixedMessageOnFailure: false, fixedMessageOnAnyFailure: false, responseEvidence: false, prepareOnly: false, addClient: false, journalConsent: null });
   assert.equal(parseArguments(["--provider", "mixed"]).provider, "mixed");
   assert.deepEqual({ ...parseArguments(["--provider=claude", "--port=9100", "--dir", "/synthetic/trial", "--kept-plan", "--number-now", "--feedback-link", "--owner-fallback", "--prepare-only"]) },
-    { provider: "claude", port: 9100, dir: "/synthetic/trial", keptPlan: true, numberNow: true, feedbackLink: true, ownerFallback: true, fixedMessageOnFailure: false, fixedMessageOnAnyFailure: false, prepareOnly: true });
+    { provider: "claude", port: 9100, dir: "/synthetic/trial", keptPlan: true, numberNow: true, feedbackLink: true, ownerFallback: true, fixedMessageOnFailure: false, fixedMessageOnAnyFailure: false, responseEvidence: false, prepareOnly: true, addClient: false, journalConsent: null });
   assert.deepEqual({ ...parseArguments(["--provider", "codex", "--fixed-message-on-failure", "--owner-fallback"]) },
-    { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: true, fixedMessageOnFailure: true, fixedMessageOnAnyFailure: false, prepareOnly: false }, "in either order");
+    { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: true, fixedMessageOnFailure: true, fixedMessageOnAnyFailure: false, responseEvidence: false, prepareOnly: false, addClient: false, journalConsent: null }, "in either order");
 });
 
 test("--fixed-message-on-any-failure is refused without --fixed-message-on-failure and --owner-fallback, takes no value, and is off unless given", () => {
@@ -89,7 +89,7 @@ test("--fixed-message-on-any-failure is refused without --fixed-message-on-failu
   assert.throws(() => parseArguments(["--provider", "codex", ...both, "--fixed-message-on-any-failure", "--fixed-message-on-any-failure"]), refusedWith(2, /--fixed-message-on-any-failure is given twice/u));
   assert.equal(parseArguments(["--provider", "codex", ...both]).fixedMessageOnAnyFailure, false, "off unless given");
   assert.deepEqual({ ...parseArguments(["--provider", "codex", "--fixed-message-on-any-failure", "--fixed-message-on-failure", "--owner-fallback"]) },
-    { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: true, fixedMessageOnFailure: true, fixedMessageOnAnyFailure: true, prepareOnly: false }, "in any order");
+    { provider: "codex", port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: true, fixedMessageOnFailure: true, fixedMessageOnAnyFailure: true, responseEvidence: false, prepareOnly: false, addClient: false, journalConsent: null }, "in any order");
   assert.match(USAGE, /--fixed-message-on-any-failure\n {21}turn on INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE \(off unless given; only with\n {21}--fixed-message-on-failure and --owner-fallback\)/u);
 
   const common = { base: { PATH: "/synthetic/bin", INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE: "on" }, port: 9123, credentialsPath: "/synthetic/trial/credentials.json", settingsPath: "/synthetic/trial/settings-codex.json", token: "synthetic-token", caseId: SYNTHETIC_CASE, provider: "codex" };
@@ -135,6 +135,8 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_OWNER_FALLBACK: "true",
     INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE: "on",
     INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE: "on",
+    INNER_SIGNAL_RESPONSE_EVIDENCE: "on",
+    INNER_SIGNAL_RUNNER_TRIAL_CLIENT_TOKENS: "{\"case-55555555-5555-4555-8555-555555555555\":\"synthetic-inherited\"}",
     INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR: "/synthetic/inherited-claude",
     INNER_SIGNAL_MODE: "cli",
     LEDGER_MODE: "full"
@@ -155,8 +157,10 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_RUNNER_FEEDBACK_LINK: "off",
     INNER_SIGNAL_OWNER_FALLBACK: "off",
     INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE: "off",
-    INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE: "off"
-  }, "the usual app's vault and the shell's switches never reach the trial's server, and a Codex run names no Claude folder");
+    INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE: "off",
+    INNER_SIGNAL_RESPONSE_EVIDENCE: "off"
+  }, "the usual app's vault, the shell's switches and its client tokens never reach the trial's server, and a Codex run names no Claude folder");
+  assert.equal(serverEnvironment({ ...common, provider: "codex", responseEvidence: true }).INNER_SIGNAL_RESPONSE_EVIDENCE, "on", "--response-evidence turns it on");
   assert.deepEqual([codex.PORT, codex.LEDGER_MODE, codex.PATH, codex.HOME, codex.CODEX_COMMAND], ["9123", "off", "/synthetic/bin", "/synthetic/home", "/synthetic/bin/codex"]);
   const flagged = serverEnvironment({ ...common, provider: "codex", keptPlan: true, numberNow: true, feedbackLink: true, ownerFallback: true, fixedMessageOnFailure: true });
   assert.deepEqual([flagged.INNER_SIGNAL_RUNNER_KEPT_PLAN, flagged.INNER_SIGNAL_RUNNER_NUMBER_NOW, flagged.INNER_SIGNAL_RUNNER_FEEDBACK_LINK, flagged.INNER_SIGNAL_OWNER_FALLBACK, flagged.INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE], ["on", "on", "on", "on", "on"]);
@@ -310,7 +314,8 @@ test("a real start serves the trial page on loopback in its own vault, names its
   const own = await post({ caseId: credentials.grants[0].case_ids[0], conversation: "current" });
   assert.equal(own.status, 200);
   assert.deepEqual((await own.json()).turns, []);
-  assert.equal((await post({ caseId: "case-synthetic-not-granted", conversation: "current" })).status, 403, "a case the credentials don't name is refused");
+  const refused = await post({ caseId: "case-synthetic-not-granted", conversation: "current" });
+  assert.deepEqual([refused.status, (await refused.json()).code], [404, "RUNNER_CASE_UNKNOWN"], "a case the credentials don't name is refused");
   child.kill("SIGTERM");
   assert.deepEqual(await exited, { code: 0, signal: null });
   assert.equal(`${stdout}${stderr}`.includes(credentials.grants[0].token_sha256), false);

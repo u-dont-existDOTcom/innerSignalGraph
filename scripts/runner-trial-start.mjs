@@ -4,17 +4,24 @@
 //
 //   node scripts/runner-trial-start.mjs --provider mixed|codex|claude [--port 8797] [--dir PATH]
 //                                       [--kept-plan] [--number-now] [--feedback-link] [--owner-fallback]
-//                                       [--fixed-message-on-failure] [--fixed-message-on-any-failure] [--prepare-only]
+//                                       [--fixed-message-on-failure] [--fixed-message-on-any-failure] [--response-evidence]
+//                                       [--prepare-only]
+//   node scripts/runner-trial-start.mjs --add-client [--dir PATH]
+//   node scripts/runner-trial-start.mjs --journal-consent confirm|withdraw [--dir PATH]
 //
 // Everything the trial keeps is in one folder outside the checkout, never the app's usual vault (default
 // $HOME/.local/share/inner-signal-runner-trial, or --dir), mode 0700:
 //   vault/                    the trial's encrypted vault (one AES-256-GCM file per case, made and checked by the app's store)
 //   credentials.json          the vault's development credentials, mode 0600, in the shape docs/PRIVATE-CASE-CONTINUITY.md gives:
-//                             one grant for one case, with the case's keys made once from random bytes and never changed
+//                             one grant per case (the owner's own, then each client's), with each case's keys made once from
+//                             random bytes and never changed
+//   clients.json              the owner's clients (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md), mode 0600:
+//                             each one's label, case and journal consent; labels are shown only by the page on this computer
 //   settings-<provider>.json  the trial settings (INNER_SIGNAL_RUNNER_TRIAL_SETTINGS), mode 0600, written at every start
-// A new random token is made at every start. Only its SHA-256 goes into credentials.json; the token itself goes to the server
-// through its environment and nowhere else: never on a command line, into a file or into the output. Nothing here prints a key.
-// The server is told the case the credentials grant (INNER_SIGNAL_RUNNER_TRIAL_CASE_ID), and the page takes it from /health.
+// A new random token is made for every grant at every start. Only its SHA-256 goes into credentials.json; the tokens themselves go
+// to the server through its environment and nowhere else: never on a command line, into a file or into the output. Nothing here
+// prints a key. The server is told the owner's own case (INNER_SIGNAL_RUNNER_TRIAL_CASE_ID); the page asks it which cases it may
+// use, and the owner picks one for each conversation.
 //
 // The settings are the arrangement that measured best (tasks/runner-trial-20261121): the whole writer with one whole checker,
 // readers and checkers at low effort and the writer at medium. With --provider mixed (measured fastest: replies p50 19.8 s,
@@ -30,11 +37,16 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import readline from "node:readline/promises";
+import { Writable } from "node:stream";
 import { OWNER_FALLBACK_SETTING } from "../src/core/config.mjs";
+import { RESPONSE_EVIDENCE_SETTING } from "../src/core/on-off-setting.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
+import { MAX_RUNNER_CLIENTS, journalConsentCurrent, journalConsentState, readRunnerClients, validateClientLabel, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import {
   RUNNER_RULES_ROOT,
+  RUNNER_TRIAL_CLIENT_TOKENS_SETTING,
   RUNNER_TRIAL_DIR,
   RUNNER_CLAUDE_CONFIG_DIR,
   RUNNER_FEEDBACK_LINK_SETTING,
@@ -57,6 +69,9 @@ export const defaultClaudeConfigDir = () => path.join(os.homedir(), ".config", "
 const PRINCIPAL = "runner-trial-local-owner";
 // The runtime needs all three (docs/PRIVATE-CASE-CONTINUITY.md); "Delete this case" is a write.
 const SCOPES = Object.freeze(["case:read", "case:write", "case:audit"]);
+// What the session-use journal reader needs of a client's grant beyond reading the case (pull request 241): given only once the
+// owner has confirmed that client's consent, and dropped at the next start after a withdrawal (design, point 5a).
+const JOURNAL_PURPOSES = Object.freeze(["session_use"]);
 const PROVIDERS = Object.freeze(["mixed", "codex", "claude"]);
 // The efforts of the measurement's arms ("normal" in tasks/runner-trial-20261121/measure.mjs), and its Claude models. A Codex
 // worker leaves the model to Codex's own default, as the measurement did.
@@ -71,7 +86,10 @@ const usesCodex = (provider) => provider !== "claude";
 
 export const USAGE = `Usage: node scripts/runner-trial-start.mjs --provider mixed|codex|claude [--port N] [--dir PATH]
                                            [--kept-plan] [--number-now] [--feedback-link] [--owner-fallback]
-                                           [--fixed-message-on-failure] [--fixed-message-on-any-failure] [--prepare-only]
+                                           [--fixed-message-on-failure] [--fixed-message-on-any-failure]
+                                           [--response-evidence] [--prepare-only]
+       node scripts/runner-trial-start.mjs --add-client [--dir PATH]
+       node scripts/runner-trial-start.mjs --journal-consent confirm|withdraw [--dir PATH]
 
   --provider mixed   the readers and the checker on Claude, the writer on GPT (measured fastest); each plan pays for its own
                      calls, and both companies see the conversation
@@ -92,7 +110,17 @@ export const USAGE = `Usage: node scripts/runner-trial-start.mjs --provider mixe
                      turn on ${RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING} (off unless given; only with
                      --fixed-message-on-failure and --owner-fallback): the owner's fixed message after every failure in
                      such a conversation, a refusal, a failed call and an interruption too
-  --prepare-only     make or check the folder, the credentials and the settings, and stop without starting the server`;
+  --response-evidence
+                     turn on ${RESPONSE_EVIDENCE_SETTING} for the trial (off unless given): every reply is checked
+                     against the sources it rests on, and a client's journal can be read for it (only with the client's
+                     consent and a passing cold test of that journal)
+  --prepare-only     make or check the folder, the credentials and the settings, and stop without starting the server
+  --add-client       add a client: asks for the label you'll know them by (shown only on this computer's page), makes
+                     their case with keys of its own, and stops; the next start gives it a grant
+  --journal-consent confirm|withdraw
+                     record that a client consented to their journal being used in these sessions (their words and
+                     excerpts go to the companies running the workers), or that they withdrew it; asks which client.
+                     A withdrawal holds at once, also while the trial runs; a consent holds from the next start`;
 
 class StartError extends Error {
   constructor(message, exitCode = 1) {
@@ -102,11 +130,13 @@ class StartError extends Error {
 }
 const usageError = (message) => new StartError(`${message}\n\n${USAGE}`, 2);
 
-const FLAGS = Object.freeze({ "--kept-plan": "keptPlan", "--number-now": "numberNow", "--feedback-link": "feedbackLink", "--owner-fallback": "ownerFallback", "--fixed-message-on-failure": "fixedMessageOnFailure", "--fixed-message-on-any-failure": "fixedMessageOnAnyFailure", "--prepare-only": "prepareOnly" });
-const VALUED = Object.freeze({ "--provider": "provider", "--port": "port", "--dir": "dir" });
+const FLAGS = Object.freeze({ "--kept-plan": "keptPlan", "--number-now": "numberNow", "--feedback-link": "feedbackLink", "--owner-fallback": "ownerFallback", "--fixed-message-on-failure": "fixedMessageOnFailure", "--fixed-message-on-any-failure": "fixedMessageOnAnyFailure", "--response-evidence": "responseEvidence", "--prepare-only": "prepareOnly", "--add-client": "addClient" });
+const VALUED = Object.freeze({ "--provider": "provider", "--port": "port", "--dir": "dir", "--journal-consent": "journalConsent" });
+// The two commands that change the client list and stop: each takes only --dir with it.
+const LIST_COMMANDS = Object.freeze(["--add-client", "--journal-consent"]);
 
 export function parseArguments(argv) {
-  const options = { provider: null, port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: false, fixedMessageOnFailure: false, fixedMessageOnAnyFailure: false, prepareOnly: false };
+  const options = { provider: null, port: DEFAULT_PORT, dir: null, keptPlan: false, numberNow: false, feedbackLink: false, ownerFallback: false, fixedMessageOnFailure: false, fixedMessageOnAnyFailure: false, responseEvidence: false, prepareOnly: false, addClient: false, journalConsent: null };
   const seen = new Set();
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
@@ -124,6 +154,15 @@ export function parseArguments(argv) {
     if (inline === null) index += 1;
     if (typeof value !== "string" || value === "" || (inline === null && value.startsWith("--"))) throw usageError(`${name} needs a value.`);
     options[VALUED[name]] = value;
+  }
+  const listCommand = LIST_COMMANDS.filter((name) => seen.has(name));
+  if (listCommand.length > 1) throw usageError("--add-client and --journal-consent are separate commands: give one.");
+  if (listCommand.length === 1) {
+    const others = [...seen].filter((name) => name !== listCommand[0] && name !== "--dir");
+    if (others.length) throw usageError(`${listCommand[0]} changes the client list and stops: give only --dir with it.`);
+    if (options.journalConsent !== null && !["confirm", "withdraw"].includes(options.journalConsent)) throw usageError("--journal-consent must be confirm or withdraw.");
+    if (options.dir !== null && !path.isAbsolute(options.dir)) throw usageError("--dir must be an absolute path.");
+    return Object.freeze(options);
   }
   if (options.provider === null) throw usageError("Choose the provider: --provider mixed (Claude reads and checks, GPT writes), codex (GPT, through Codex) or claude.");
   if (!PROVIDERS.includes(options.provider)) throw usageError("--provider must be mixed, codex or claude.");
@@ -158,8 +197,12 @@ export function trialSettings(provider) {
 // trial's own workers calls a model, and no decision ledger is written into the checkout. The kept plan, the number now, the
 // feedback link, the owner's fixed message, that message after the plan's limit, the sign-in or the time, and after every failure,
 // are off unless their flag is given; the last two only with the ones they extend.
-export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, rulesRoot = null, trialDir = path.dirname(settingsPath), claudeConfigDir = null, keptPlan = false, numberNow = false, feedbackLink = false, ownerFallback = false, fixedMessageOnFailure = false, fixedMessageOnAnyFailure = false }) {
+export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, clientTokens = {}, rulesRoot = null, trialDir = path.dirname(settingsPath), claudeConfigDir = null, keptPlan = false, numberNow = false, feedbackLink = false, ownerFallback = false, fixedMessageOnFailure = false, fixedMessageOnAnyFailure = false, responseEvidence = false }) {
   if (typeof caseId !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId)) throw new StartError("The trial's case id isn't of the form the credentials hold.");
+  if (!clientTokens || typeof clientTokens !== "object" || Array.isArray(clientTokens)
+    || Object.entries(clientTokens).some(([id, value]) => !RUNNER_TRIAL_CASE_ID_PATTERN.test(id) || id === caseId || typeof value !== "string" || !value)) {
+    throw new StartError("A client's grant isn't of the form the credentials hold.");
+  }
   if (fixedMessageOnFailure && !ownerFallback) throw new StartError("The fixed message after the plan's limit, the sign-in or the time needs the owner's fixed message on too.");
   if (fixedMessageOnAnyFailure && !(fixedMessageOnFailure && ownerFallback)) throw new StartError("The fixed message after every failure needs the owner's fixed message on, and after the plan's limit, the sign-in or the time.");
   const environment = Object.fromEntries(Object.entries(base).filter(([key, value]) => !key.startsWith("INNER_SIGNAL_") && typeof value === "string"));
@@ -179,8 +222,11 @@ export function serverEnvironment({ base = process.env, provider, port, credenti
     [RUNNER_FEEDBACK_LINK_SETTING]: feedbackLink ? "on" : "off",
     [OWNER_FALLBACK_SETTING]: ownerFallback ? "on" : "off",
     [RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING]: fixedMessageOnFailure ? "on" : "off",
-    [RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING]: fixedMessageOnAnyFailure ? "on" : "off"
+    [RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING]: fixedMessageOnAnyFailure ? "on" : "off",
+    [RESPONSE_EVIDENCE_SETTING]: responseEvidence ? "on" : "off"
   });
+  // Each client's token, for that client's case alone, beside the owner's own token; only with clients.
+  if (Object.keys(clientTokens).length) environment[RUNNER_TRIAL_CLIENT_TOKENS_SETTING] = JSON.stringify(clientTokens);
   if (rulesRoot) environment[RUNNER_RULES_ROOT] = rulesRoot;
   if (usesClaude(provider)) environment[RUNNER_CLAUDE_CONFIG_DIR] = claudeConfigDir ?? defaultClaudeConfigDir();
   return environment;
@@ -221,65 +267,164 @@ async function writePrivateFile(file, text) {
   }
 }
 
+const newCaseKeys = () => ({ routine_kek_base64: randomBytes(32).toString("base64"), recovery_secret_base64: randomBytes(32).toString("base64") });
+const validKeys = (keys) => Boolean(keys) && typeof keys === "object" && typeof keys.routine_kek_base64 === "string" && typeof keys.recovery_secret_base64 === "string";
+
+// The first grant is the owner's own case's, as this script has always made it; any further grants are the clients', which every
+// start makes anew from the client list, so they aren't checked here. Every case's keys stay as they were made.
 function existingCredentials(text, file, vault) {
   let value;
   try { value = JSON.parse(text); } catch { throw new StartError(`${file} isn't valid JSON; it was left as it is.`); }
-  const grant = Array.isArray(value?.grants) && value.grants.length === 1 ? value.grants[0] : null;
+  const grant = Array.isArray(value?.grants) && value.grants.length >= 1 ? value.grants[0] : null;
   const caseId = Array.isArray(grant?.case_ids) && grant.case_ids.length === 1 ? grant.case_ids[0] : null;
-  const keys = typeof caseId === "string" && value?.case_keys && typeof value.case_keys === "object" ? value.case_keys[caseId] : null;
-  if (value?.schema_version !== 1 || grant?.principal_id !== PRINCIPAL || typeof caseId !== "string" || !keys
-    || typeof keys.routine_kek_base64 !== "string" || typeof keys.recovery_secret_base64 !== "string") {
+  const keys = typeof caseId === "string" && value?.case_keys && typeof value.case_keys === "object" && !Array.isArray(value.case_keys) ? value.case_keys[caseId] : null;
+  if (value?.schema_version !== 1 || grant?.principal_id !== PRINCIPAL || typeof caseId !== "string" || !validKeys(keys)
+    || Object.values(value.case_keys).some((entry) => !validKeys(entry))) {
     throw new StartError(`${file} wasn't made by this script; it was left as it is. Use another --dir for the trial.`);
   }
   if (value.root_dir !== vault) throw new StartError(`${file} names another vault folder; it was left as it is. Start with the --dir it was made for.`);
   return value;
 }
 
-// The trial's credentials (docs/PRIVATE-CASE-CONTINUITY.md, "Encryption and key-provider model"): made on the first start, with
-// one case whose keys are random and never change afterwards; at every start only the grant's token digest is replaced, so the
-// token is new each time and is never kept. Returns the token for the server's environment, and the case the grant names.
-export async function prepareCredentials(file, vault) {
-  const token = randomBytes(32).toString("base64url");
-  const digest = createHash("sha256").update(token, "utf8").digest("hex");
+async function readCredentialsFile(file, vault) {
   const info = await lstatOrNull(file);
-  let credentials;
-  if (info === null) {
+  if (info === null) return null;
+  if (!info.isFile()) throw new StartError(`${file} must be a file, not a link or a folder.`);
+  if ((info.mode & 0o077) !== 0) throw new StartError(`${file} can be read by others (it must be mode 0600); it was left as it is.`);
+  return existingCredentials(await fsp.readFile(file, "utf8"), file, vault);
+}
+
+const newToken = () => {
+  const token = randomBytes(32).toString("base64url");
+  return { token, digest: createHash("sha256").update(token, "utf8").digest("hex") };
+};
+
+// The trial's credentials (docs/PRIVATE-CASE-CONTINUITY.md, "Encryption and key-provider model"): made on the first start, with
+// the owner's own case, whose keys are random and never change afterwards. At every start the grants are made anew, each with a new
+// token of which only the digest is kept: the owner's own case's first, then one for each client on the list, for that client's case
+// alone (read, write and audit, and the session-use purpose only while the owner has confirmed the client's consent; design,
+// point 2). A client on the list whose case has no keys stops the start. Returns the tokens for the server's environment, and the
+// owner's case.
+export async function prepareCredentials(file, vault, clients = []) {
+  let credentials = await readCredentialsFile(file, vault);
+  if (credentials === null) {
     // New keys can't open cases made with lost ones, so a vault that already holds anything gets no new credentials.
     const held = (await fsp.readdir(vault)).filter((name) => name !== ".journal-writer.lock");
     if (held.length) throw new StartError(`${file} is missing, but the vault ${vault} holds files that only its keys can open; nothing was changed.`);
+    if (clients.length) throw new StartError(`${file} is missing, but the client list names cases that only their keys can open; nothing was changed.`);
     const caseId = `case-${randomUUID()}`;
-    credentials = {
-      schema_version: 1,
-      root_dir: vault,
-      grants: [{ token_sha256: digest, principal_id: PRINCIPAL, case_ids: [caseId], scopes: [...SCOPES] }],
-      case_keys: { [caseId]: { routine_kek_base64: randomBytes(32).toString("base64"), recovery_secret_base64: randomBytes(32).toString("base64") } }
-    };
-  } else {
-    if (!info.isFile()) throw new StartError(`${file} must be a file, not a link or a folder.`);
-    if ((info.mode & 0o077) !== 0) throw new StartError(`${file} can be read by others (it must be mode 0600); it was left as it is.`);
-    credentials = existingCredentials(await fsp.readFile(file, "utf8"), file, vault);
-    credentials.grants[0].token_sha256 = digest;
+    credentials = { schema_version: 1, root_dir: vault, grants: [{ token_sha256: "", principal_id: PRINCIPAL, case_ids: [caseId], scopes: [...SCOPES] }], case_keys: { [caseId]: newCaseKeys() } };
   }
   const caseId = credentials.grants[0].case_ids[0];
   if (!RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId)) throw new StartError(`${file} names a case of another form; it was left as it is.`);
+  const own = newToken();
+  const clientTokens = {};
+  const clientGrants = clients.map((client, index) => {
+    if (client.case_id === caseId || !validKeys(credentials.case_keys[client.case_id])) {
+      throw new StartError(`Client ${index + 1} on the client list has no keys in ${file}; nothing was changed.`);
+    }
+    const grant = newToken();
+    clientTokens[client.case_id] = grant.token;
+    return { token_sha256: grant.digest, principal_id: PRINCIPAL, case_ids: [client.case_id], scopes: [...SCOPES], ...(journalConsentCurrent(client) ? { purposes: [...JOURNAL_PURPOSES] } : {}) };
+  });
+  credentials.grants = [{ ...credentials.grants[0], token_sha256: own.digest, case_ids: [caseId], scopes: [...SCOPES] }, ...clientGrants];
   await writePrivateFile(file, `${JSON.stringify(credentials, null, 2)}\n`);
-  return { token, caseId };
+  return { token: own.token, caseId, clientTokens };
 }
 
-// The trial's folder, its vault, its credentials and its settings file. Returns the paths, this start's token and the case.
-export async function prepareTrialFolder({ home, provider }) {
+function checkTrialHome(home) {
   const resolved = path.resolve(home);
   let outside;
   try { outside = isOutside(repositoryRoot, resolved); } catch { throw new StartError(`The trial folder ${resolved} can't be checked.`); }
   if (!outside) throw new StartError("The trial folder must be outside the InnerSignal checkout.");
+  return resolved;
+}
+
+async function readClientList(home) {
+  try { return await readRunnerClients(home); }
+  catch (error) { throw new StartError(`The client list can't be read: ${error.message} It was left as it is.`); }
+}
+
+// The trial's folder, its vault, its credentials and its settings file. Returns the paths, this start's tokens and the owner's case.
+export async function prepareTrialFolder({ home, provider }) {
+  const resolved = checkTrialHome(home);
   await privateFolder(resolved, "The trial folder");
   const vault = path.join(resolved, "vault");
   await privateFolder(vault, "The trial's vault");
   const credentialsPath = path.join(resolved, "credentials.json");
-  const { token, caseId } = await prepareCredentials(credentialsPath, vault);
+  const { clients } = await readClientList(resolved);
+  const { token, caseId, clientTokens } = await prepareCredentials(credentialsPath, vault, clients);
   const settingsPath = path.join(resolved, `settings-${provider}.json`);
   await writePrivateFile(settingsPath, `${JSON.stringify(trialSettings(provider), null, 2)}\n`);
-  return { home: resolved, vault, credentialsPath, settingsPath, token, caseId };
+  return { home: resolved, vault, credentialsPath, settingsPath, token, caseId, clientTokens, clientCount: clients.length };
+}
+
+// --add-client (design, point 1): a case for a new client, with keys of its own made from random bytes and never changed, and the
+// label the owner gives. The trial folder must have been made by a start already. The next start gives the case its grant. Labels
+// are compared without regard to case, so two clients can't be told apart only by capitals. Returns the new client's number.
+export async function addClient({ home, label, now = () => new Date() }) {
+  const resolved = checkTrialHome(home);
+  const vault = path.join(resolved, "vault");
+  const credentialsPath = path.join(resolved, "credentials.json");
+  const credentials = await readCredentialsFile(credentialsPath, vault);
+  if (credentials === null) throw new StartError(`The trial folder ${resolved} isn't ready: start the trial once (or use --prepare-only) before adding a client.`);
+  let checked;
+  try { checked = validateClientLabel(label); } catch (error) { throw new StartError(error.message); }
+  const list = await readClientList(resolved);
+  if (list.clients.length >= MAX_RUNNER_CLIENTS) throw new StartError(`The client list holds at most ${MAX_RUNNER_CLIENTS} clients.`);
+  if (list.clients.some((client) => client.label.toLocaleLowerCase("en") === checked.toLocaleLowerCase("en"))) throw new StartError("Another client already has that label; choose another.");
+  let caseId;
+  do { caseId = `case-${randomUUID()}`; } while (Object.hasOwn(credentials.case_keys, caseId));
+  // The keys first, then the list: a list that names a case always has its keys, and keys that no list names open nothing.
+  credentials.case_keys[caseId] = newCaseKeys();
+  await writePrivateFile(credentialsPath, `${JSON.stringify(credentials, null, 2)}\n`);
+  const added = { case_id: caseId, label: checked, added_at: now().toISOString(), journal: { corpus_id: null, consent: null } };
+  try { await writeRunnerClients(resolved, { schema_version: 1, clients: [...list.clients, added] }); }
+  catch (error) { throw new StartError(`The client list couldn't be written: ${error.message}`); }
+  return { number: list.clients.length + 1 };
+}
+
+// --journal-consent (design, point 5a): the owner confirms that a client consented to their journal being used in these sessions,
+// with their words and journal excerpts going to the companies that run the workers, or records that they withdrew it. A
+// withdrawal holds at once (the server reads the list at every retrieval and before every delivery) and the next start drops the
+// purpose from the client's grant; a consent gives the grant its purpose from the next start. Confirming again after a withdrawal
+// starts a new consent.
+export async function setJournalConsent({ home, number, action, now = () => new Date() }) {
+  const resolved = checkTrialHome(home);
+  if (!["confirm", "withdraw"].includes(action)) throw new StartError("--journal-consent must be confirm or withdraw.");
+  const list = await readClientList(resolved);
+  const client = Number.isSafeInteger(number) && number >= 1 ? list.clients[number - 1] : null;
+  if (!client) throw new StartError("There's no client with that number.");
+  const at = now().toISOString();
+  const state = journalConsentState(client);
+  if (action === "confirm") {
+    if (state === "confirmed") return { changed: false, state };
+    client.journal = { ...client.journal, consent: { confirmed_at: at, withdrawn_at: null } };
+  } else {
+    if (state !== "confirmed") return { changed: false, state };
+    client.journal = { ...client.journal, consent: { ...client.journal.consent, withdrawn_at: at } };
+  }
+  try { await writeRunnerClients(resolved, list); }
+  catch (error) { throw new StartError(`The client list couldn't be written: ${error.message}`); }
+  return { changed: true, state: journalConsentState(client) };
+}
+
+const CONSENT_WORDS = Object.freeze({ none: "no journal consent", confirmed: "journal consent confirmed", withdrawn: "journal consent withdrawn" });
+
+// A question in the terminal. With `hidden`, what is typed isn't shown (as for a password), so a label never stays on the screen or in
+// a terminal's scrollback that another program can read.
+async function ask(question, { hidden = false } = {}) {
+  if (!process.stdin.isTTY) throw new StartError("This command asks a question: run it in a terminal.");
+  let muted = false;
+  const output = new Writable({ write(chunk, encoding, callback) { if (!muted) process.stdout.write(chunk, encoding); callback(); } });
+  const prompt = readline.createInterface({ input: process.stdin, output, terminal: true });
+  process.stdout.write(question);
+  muted = hidden;
+  try { return await prompt.question(""); } finally {
+    muted = false;
+    prompt.close();
+    if (hidden) process.stdout.write("\n");
+  }
 }
 
 // The only network operation on startup. Tests inject git, including the fetch, and never contact a remote.
@@ -389,9 +534,35 @@ const WORKER_WORDS = Object.freeze({
   claude: "Claude (readers Sonnet 5.5, writer and checker Opus 5.5)"
 });
 
+// --add-client and --journal-consent: the question in the terminal, the change, and a line saying what changed. A label is typed
+// at a hidden prompt, never on the command line, so it stays out of the shell's history and off the screen; only the trial's page
+// shows labels (design, point 1), with each client's number, which these commands use instead.
+async function runListCommand(options, home) {
+  if (options.addClient) {
+    const label = await ask("The label you'll know this client by (it isn't shown as you type; only this computer's runner page shows it; initials or a code word are enough): ", { hidden: true });
+    const { number } = await addClient({ home, label });
+    console.log(`Added client ${number}, with a case of their own. Start the trial again to give it its grant; the page then lists them.`);
+    return 0;
+  }
+  const { clients } = await readClientList(checkTrialHome(home));
+  if (!clients.length) throw new StartError("There are no clients yet: add one with --add-client.");
+  console.log("Clients (their labels are on the runner page, beside the same numbers):");
+  clients.forEach((client, index) => console.log(`  ${index + 1}. added ${client.added_at.slice(0, 10)}, ${CONSENT_WORDS[journalConsentState(client)]}`));
+  const answer = (await ask(options.journalConsent === "confirm"
+    ? "Number of the client who consented to their journal being used in these sessions, their words and excerpts going to the companies running the workers: "
+    : "Number of the client who withdrew their journal consent: ")).trim();
+  if (!/^[1-9][0-9]{0,2}$/u.test(answer)) throw new StartError("That isn't a client's number; nothing was changed.");
+  const result = await setJournalConsent({ home, number: Number(answer), action: options.journalConsent });
+  if (!result.changed) console.log(`Nothing changed: client ${answer} has ${CONSENT_WORDS[result.state]}.`);
+  else if (options.journalConsent === "confirm") console.log(`Recorded: client ${answer}'s journal consent. It holds from the trial's next start; their journal is used only once it has a copy here that passed its cold test.`);
+  else console.log(`Recorded: client ${answer} withdrew their journal consent. From now on no retrieval or delivery uses their journal, also while the trial runs.`);
+  return 0;
+}
+
 async function main(argv) {
   const options = parseArguments(argv);
   const home = options.dir ?? defaultTrialHome();
+  if (options.addClient || options.journalConsent !== null) return runListCommand(options, home);
   const commands = [
     ...(usesCodex(options.provider) ? [{ name: "Codex", command: process.env.CODEX_COMMAND || "codex", help: " Install Codex and sign in with `codex login`." }] : []),
     ...(usesClaude(options.provider) ? [{ name: "Claude", command: process.env.CLAUDE_COMMAND || "claude", help: "" }] : [])
@@ -416,7 +587,7 @@ async function main(argv) {
   }
   const released = await prepareReleasedRules(prepared.home);
   console.log(released.rulesRoot ? `  Rules from ${released.source}.` : "  No local origin/stable ref: using rules from this checkout, not the release.");
-  const environment = serverEnvironment({ rulesRoot: released.rulesRoot, trialDir: prepared.home, provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, claudeConfigDir, keptPlan: options.keptPlan, numberNow: options.numberNow, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback, fixedMessageOnFailure: options.fixedMessageOnFailure, fixedMessageOnAnyFailure: options.fixedMessageOnAnyFailure });
+  const environment = serverEnvironment({ rulesRoot: released.rulesRoot, trialDir: prepared.home, provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, clientTokens: prepared.clientTokens, claudeConfigDir, keptPlan: options.keptPlan, numberNow: options.numberNow, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback, fixedMessageOnFailure: options.fixedMessageOnFailure, fixedMessageOnAnyFailure: options.fixedMessageOnAnyFailure, responseEvidence: options.responseEvidence });
   console.log(`Starting InnerSignal's runner trial on ${PROVIDER_WORDS[options.provider]}, with its own vault: ${prepared.vault}`);
   const child = spawn(node, [serveEntry], { cwd: repositoryRoot, env: environment, stdio: ["ignore", "inherit", "inherit"] });
   const exited = new Promise((resolve) => {
@@ -454,6 +625,7 @@ async function main(argv) {
     console.log(`  Workers: ${WORKER_WORDS[options.provider]}; the whole writer with one whole checker.`);
     console.log(`  Kept plan ${onOff(options.keptPlan)}, number now ${onOff(options.numberNow)}, feedback link ${onOff(options.feedbackLink)}, owner's fixed message ${onOff(options.ownerFallback)}, also after a plan limit, sign-in or timeout ${onOff(options.fixedMessageOnFailure)}.`);
     console.log(`  The owner's fixed message after every other failure too (a refusal, a failed call, an interruption): ${onOff(options.fixedMessageOnAnyFailure)}.`);
+    console.log(`  Response evidence ${onOff(options.responseEvidence)}; clients ${prepared.clientCount} (the page asks who each conversation is with).`);
     console.log("  Stop with Ctrl+C.");
   }
   const { code } = await exited;

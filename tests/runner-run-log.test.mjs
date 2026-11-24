@@ -744,6 +744,9 @@ test("rules extraction uses one quiet fetch, a local stable snapshot after fetch
   const health = await (await fetch(`http://127.0.0.1:${server.address().port}/health`)).json();
   assert.deepEqual(health.runnerRules, rules);
   assert.throws(() => createRunnerTrialController({ privateCaseSource: f.store, config: configFor(dir, { runnerRulesRoot: outside }) }), { code: "BAD_CONFIG" });
+  // The server's run log is written after it starts (startRunLog); the test's folder goes only once it is, or its removal can race
+  // with the write (ENOTEMPTY) and leave the run hanging.
+  await f.trial.logWriter.flush();
 });
 
 for (const kind of ["directory", "file"]) test(`rules loading refuses a nested ${kind} symlink`, async (t) => {

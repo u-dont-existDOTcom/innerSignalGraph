@@ -3,6 +3,7 @@ import { readResponseEvidenceSetting } from "../core/on-off-setting.mjs";
 import { RuntimeError } from "../core/errors.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "./private-case-access.mjs";
 import { acquirePrivateRootWriterLock } from "./shared-case-coordinator.mjs";
+import { RUNNER_TRIAL_CLIENT_TOKENS_SETTING, readRunnerTrialClientTokens } from "../runner-trial/switch.mjs";
 
 function optionalText(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -41,12 +42,20 @@ export async function loadPrivateRuntimeAccessFromEnvironment(environment = proc
       providers = await loadDevelopmentPrivateCaseProviders(path.resolve(credentialsPath));
     }
     let privateAuthContext = null;
+    // The runner trial's clients: each client case's own token (scripts/runner-trial-start.mjs), used only for that case.
+    let privateCaseAuthContexts = new Map();
     if (resolvedMode === "development") {
       const bearerToken = optionalText(environment.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN);
       if (!bearerToken) {
         throw new RuntimeError("INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN is required for the local private runtime.", { code: "BAD_CONFIG" });
       }
       privateAuthContext = Object.freeze({ bearerToken });
+      privateCaseAuthContexts = readRunnerTrialClientTokens(environment[RUNNER_TRIAL_CLIENT_TOKENS_SETTING]);
+      if ([...privateCaseAuthContexts.values()].some((context) => context.bearerToken === bearerToken)) {
+        throw new RuntimeError(`${RUNNER_TRIAL_CLIENT_TOKENS_SETTING} isn't what scripts/runner-trial-start.mjs makes.`, { code: "BAD_CONFIG" });
+      }
+    } else if (optionalText(environment[RUNNER_TRIAL_CLIENT_TOKENS_SETTING])) {
+      throw new RuntimeError(`${RUNNER_TRIAL_CLIENT_TOKENS_SETTING} is only for the runner trial's development vault.`, { code: "BAD_CONFIG" });
     }
     // This server writes the vault for as long as it runs, so it holds the vault's writer lock for
     // that long: the lock the one-shot operator and a journal publication take. Neither can change
@@ -71,6 +80,7 @@ export async function loadPrivateRuntimeAccessFromEnvironment(environment = proc
       productionReady: providers.productionReady,
       privateCaseAccessService,
       privateAuthContext,
+      privateCaseAuthContexts,
       close() {
         providers.close();
         return lock.release();

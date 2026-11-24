@@ -123,10 +123,16 @@ async function syncDirectory(directory) {
   finally { try { await handle?.close(); } catch { /* best effort */ } }
 }
 
-export function createRunnerLogWriter({ directory, runnerRules, arrangement: runnerArrangement, loadRecord }) {
+// One writer per log file: the owner's own case writes runner-log.jsonl, as before; each client's case its own file (the design for
+// clients, point 3), named by the case's id, never its label, and written and deleted only with that case.
+export const RUNNER_LOG_FILE = "runner-log.jsonl";
+export const runnerClientLogFile = (caseId) => `runner-log-${caseId}.jsonl`;
+
+export function createRunnerLogWriter({ directory, fileName = RUNNER_LOG_FILE, runnerRules, arrangement: runnerArrangement, loadRecord }) {
   let tail = Promise.resolve();
   let generation = 0;
-  const file = directory ? path.join(directory, "runner-log.jsonl") : null;
+  if (fileName !== RUNNER_LOG_FILE && !/^runner-log-case-[0-9a-f-]{36}\.jsonl$/u.test(fileName)) throw new Error("A runner log file name is the owner's or a client case's.");
+  const file = directory ? path.join(directory, fileName) : null;
   const header = { schema_version: 1, type: "header", runnerRules: rules(runnerRules), arrangement: arrangement(runnerArrangement) };
   const enqueue = (work) => { tail = tail.then(work).catch(() => {}); return tail; };
   return {

@@ -219,6 +219,8 @@ test("case-read authorization is retained and an unknown case is never created",
   const other = "case-11111111-1111-4111-8111-111111111111";
   assert.equal((await f.request(`${f.base}/v1/runner/turn-details?caseId=${other}&turn=1`, { headers: { origin: f.base } })).status, 404);
   assert.equal(await f.store.load(other), null);
+  // The servers' run logs are written after they start; the test's folder goes only once they are.
+  await Promise.all([f.trial.logWriter.flush(), trial.logWriter.flush()]);
 });
 
 test("trial-off route and page have no Run log or Details view", async (t) => {

@@ -37,6 +37,8 @@ export async function listenInnerSignalLoopback({
   privateCaseStore = null,
   privateCaseAccessService = null,
   privateAuthContext = null,
+  // The runner trial's clients: each client case's own token, for that case alone (src/storage/private-runtime-environment.mjs).
+  privateCaseAuthContexts = new Map(),
   privateTherapyController = null,
   privateSupervisorService = null,
   runnerTrialEvents = null,
@@ -47,7 +49,7 @@ export async function listenInnerSignalLoopback({
   // still taken one at a time and each page's stream hears its own turn whichever address it used. It stops startup when the
   // trial can't be built (no vault, or settings that don't pass their checks), before anything listens.
   const runnerTrial = config.runnerTrialEnabled === true && !privateTherapyController
-    ? createRunnerTrialController({ privateCaseSource, config })
+    ? createRunnerTrialController({ privateCaseSource, config, clientCaseIds: [...privateCaseAuthContexts.keys()] })
     : null;
   const sharedPrivateTherapyController = privateTherapyController ?? runnerTrial?.controller ?? (privateCaseSource
     ? createPrivateTherapyTurnController({
@@ -72,6 +74,7 @@ export async function listenInnerSignalLoopback({
     privateCaseStore,
     privateCaseAccessService,
     privateAuthContext,
+    privateCaseAuthContexts,
     privateTherapyController: sharedPrivateTherapyController,
     privateSupervisorService: sharedPrivateSupervisorService,
     runnerTrialEvents: sharedRunnerTrialEvents,

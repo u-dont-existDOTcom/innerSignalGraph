@@ -1,6 +1,8 @@
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { loadRunnerRules, runnerTrialDirectory } from "./released-rules.mjs";
-import { createRunnerLogWriter, runnerLogFromRecord } from "./run-log.mjs";
+import fs from "node:fs/promises";
+import { RUNNER_LOG_FILE, createRunnerLogWriter, runnerClientLogFile, runnerLogFromRecord } from "./run-log.mjs";
+import { clientJournalFolder } from "./clients.mjs";
 import { runnerTurnDetailsFromRecord } from "./turn-details.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts } from "./rule-parts.mjs";
@@ -72,7 +74,9 @@ export function isRunnerEventHub(value) {
 // owner's fixed message after the plan's limit, a lapsed sign-in or the time only when INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE
 // is (config.runnerFixedMessageOnFailureEnabled; design, section 7), with INNER_SIGNAL_OWNER_FALLBACK on too, and after every other
 // failure as well only when INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE is too (config.runnerFixedMessageOnAnyFailureEnabled).
-export function createRunnerTrialController({ privateCaseSource, config = {}, settings = null, parts = null, workerFor = null, events = null, now = undefined } = {}) {
+// `clientCaseIds`: the clients' cases the start script gave a grant (the design for clients, point 2); each has its own run log file
+// and journal folder, which "Delete this case" removes with the case.
+export function createRunnerTrialController({ privateCaseSource, config = {}, clientCaseIds = [], settings = null, parts = null, workerFor = null, events = null, now = undefined } = {}) {
   if (!privateCaseSource) {
     throw new RuntimeError(`${RUNNER_TRIAL_SETTING} is on, but encrypted private case storage isn't configured: the runner trial needs a vault of its own.`, { code: "BAD_CONFIG" });
   }
@@ -102,25 +106,40 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, se
       return await (typeof privateCaseSource.loadPrivateRuntimeCase === "function" ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext) : privateCaseSource.load(caseId));
     } catch (error) { if (error?.code === "PRIVATE_CASE_NOT_FOUND") return null; throw error; }
   };
-  const logWriter = createRunnerLogWriter({ directory: runnerTrialDirectory(config), runnerRules: runnerConfig.rules, arrangement: runnerConfig.arrangement, loadRecord: loadExisting });
+  const trialDirectory = runnerTrialDirectory(config);
+  const clientCases = new Set(clientCaseIds);
+  const logWriters = new Map();
+  const logWriterFor = (caseId) => {
+    const fileName = clientCases.has(caseId) ? runnerClientLogFile(caseId) : RUNNER_LOG_FILE;
+    if (!logWriters.has(fileName)) logWriters.set(fileName, createRunnerLogWriter({ directory: trialDirectory, fileName, runnerRules: runnerConfig.rules, arrangement: runnerConfig.arrangement, loadRecord: loadExisting }));
+    return logWriters.get(fileName);
+  };
+  const logWriter = logWriterFor(config.runnerTrialCaseId ?? null);
   const loggedController = Object.freeze({
     ...controller,
     async run(input) {
       try { return await controller.run(input); }
-      finally { logWriter.schedule(input.caseId, input.authContext); }
+      finally { logWriterFor(input.caseId).schedule(input.caseId, input.authContext); }
     },
     async reconcile(input) {
       try { return await controller.reconcile(input); }
-      finally { logWriter.schedule(input.caseId, input.authContext); }
+      finally { logWriterFor(input.caseId).schedule(input.caseId, input.authContext); }
     },
+    // The case's own run log goes with it, and a client's journal folder too (its cold-test receipt now, and the copy's bundle and
+    // staging once the copy step is built); the vault's deletion removes the case's journal copies.
     async deleteCase(input) {
       const result = await controller.deleteCase(input);
-      await logWriter.remove();
+      await logWriterFor(input.caseId).remove();
+      if (clientCases.has(input.caseId) && trialDirectory) await fs.rm(clientJournalFolder(trialDirectory, input.caseId), { recursive: true, force: true });
       return result;
     },
     async runLog({ caseId, authContext }) { return runnerLogFromRecord(await loadExisting(caseId, authContext)); },
     async turnDetails({ caseId, turn, authContext }) { return runnerTurnDetailsFromRecord(await loadExisting(caseId, authContext), turn); },
-    startRunLog(authContext) { if (config.runnerTrialCaseId) logWriter.schedule(config.runnerTrialCaseId, authContext); }
+    // At start, each case's log is rewritten from its stored turns: the owner's with the owner's token, each client's with its own.
+    startRunLog(authContext, caseAuthContexts = new Map()) {
+      if (config.runnerTrialCaseId) logWriter.schedule(config.runnerTrialCaseId, authContext);
+      for (const [caseId, context] of caseAuthContexts) if (clientCases.has(caseId)) logWriterFor(caseId).schedule(caseId, context);
+    }
   });
   return Object.freeze({ controller: loggedController, events: hub, runtime, settings: trialSettings, runnerRules: rules.runnerRules, logWriter });
 }
