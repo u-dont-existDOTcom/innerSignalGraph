@@ -44,7 +44,7 @@ import { RESPONSE_EVIDENCE_SETTING } from "../src/core/on-off-setting.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { MAX_RUNNER_CLIENTS, journalConsentCurrent, journalConsentState, readRunnerClients, syncFolder, validateClientLabel, writeRunnerClients } from "../src/runner-trial/clients.mjs";
-import { TrialFolderLockError, acquireTrialFolderLock as acquireFolderLock, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
+import { TrialFolderLockError, acquireTrialFolderLock as acquireFolderLock, folderLockLeftNotice, releaseAfterFailure, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
 import {
   RUNNER_RULES_ROOT,
   RUNNER_TRIAL_CLIENT_TOKENS_SETTING,
@@ -605,8 +605,8 @@ async function main(argv) {
   const startLock = await acquireTrialFolderLock(resolvedHome);
   let code;
   try { code = await startServer({ options, home: resolvedHome, commands, claudeConfigDir, startLock }); } catch (error) {
-    // What stopped the start is what's told, whether or not the lock could be let go.
-    await startLock.release().catch(() => {});
+    // What stopped the start is what's told, whether or not the lock could be let go (one that couldn't be is told after it).
+    await releaseAfterFailure(startLock, resolvedHome, error);
     throw error;
   }
   await startLock.release();
@@ -698,6 +698,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
         console.error(`The runner trial couldn't start: ${error?.message ?? error}`);
         process.exitCode = 1;
       }
+      const lockLeft = folderLockLeftNotice(error);
+      if (lockLeft) console.error(lockLeft);
     }
   );
 }

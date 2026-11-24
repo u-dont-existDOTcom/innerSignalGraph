@@ -243,12 +243,14 @@ more (one blocking); this is as built after all four, and what GPT's reviews cha
   back as fixed codes (`cleanup_left`), the page forgets the case all the same and names it, and Delete again clears it (the vault's
   deletion of a case that's gone finds nothing and goes on). The vault removes the case's file before its own last steps, so a deletion
   it reports as failed may have removed the case: that is found by loading it (as the trial loads any case), and a case that's gone is
-  deleted, with the vault's own cleanup among the codes (`VAULT_CLEANUP`; the owner's own case too). With the case still there, or not
-  to be seen, or for a caller the vault refused, the vault's error stands and nothing else is touched.
+  deleted, with the vault's own cleanup among the codes (`VAULT_CLEANUP`; the owner's own case too). Until a Delete the vault finishes,
+  the list then keeps the client's server case, though not the copy, since a power cut could bring the case back (GPT's fourth review).
+  With the case still there, or not to be seen, or for a caller the vault refused, the vault's error stands and nothing else is touched.
 - **The trial folder's lock is let go by its holder alone**, known by the file's device and inode, looked at while the file is still
   open. Only a lock file that's gone counts as let go. Any other failure to look at it or remove it is the release's error: Delete
   names it (`FOLDER_LOCK`), a command that has done its work says that a lock was left and which file, and a start stops its server. It
-  never hides what stopped the taking of the lock, a command or a start.
+  never hides what stopped the taking of the lock, a command or a start. The error of an operation under the lock also names a lock it
+  left (`folderLockLeft`; GPT's fourth review): a command or a start prints that in one line after it; a Delete's page doesn't.
 - **Under the trial folder's lock and the vault's writer lock** (so only while the trial is stopped), with a grant made in the process
   for that command and that case alone (write, and the archive, organize_search and session_use purposes the store asks), the import
   checks the whole bundle before anything is written to the vault (its digest, its graph, and its generation built once into a store

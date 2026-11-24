@@ -89,8 +89,8 @@ A client's journal can inform their replies only through the session-use journal
    folder at a time; another one meanwhile is refused with a message, and can simply be run again. A command that ended without
    finishing (a crash, say) leaves its lock behind: the next one names the file, to be removed by hand once no runner-trial
    command is running. One that has done its work and can't look at its lock, or remove it, names the file itself; only a lock file
-   that's gone already is let go in silence. A start holds the lock until its server has read the credentials, and stops that server
-   when the lock can't be let go then.
+   that's gone already is let go in silence. One that was stopped and can't either, a start included, names it after what stopped it.
+   A start holds the lock until its server has read the credentials, and stops that server when the lock can't be let go then.
 2. **A published copy.** The client's journal copy in their runner case, with an active generation published for session use.
    The copy step has two halves, each run only on your go:
    - **Where the journal lives**, the journal import's `export` (`npm run journal:import -- export --config ...`), with
@@ -205,7 +205,8 @@ says why. Once the case is gone from the vault, it's deleted whatever becomes of
 place on the list, their journal folder, what the running trial remembers, the case's run log): each is tried, the page forgets the
 case all the same and names what couldn't be cleared ("The case was deleted. Some leftovers on this computer remain: …; press Delete
 again to clear them."), and Delete again clears it. A vault that fails with the case's file gone already (found by loading the case)
-leaves "some of the vault's own files for the case", also for your own case; one that fails with the case still there, or where that
+leaves "some of the vault's own files for the case", also for your own case; a client's server case then stays theirs on the list (no
+other client's copy can come from it) until a Delete the vault finishes. One that fails with the case still there, or where that
 can't be seen, deletes nothing more, and the page says that Delete didn't finish. The journal folder counts as removed once the folder
 it was in is synced, so a power cut can't bring the key back. (The folder's lock, when it can't be looked at or removed, is named too:
 stop the trial and remove it by hand.) Cases that never read a journal, the owner's own included, are never stopped by the gate. With

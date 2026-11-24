@@ -14,8 +14,9 @@ import { RuntimeError } from "../core/errors.mjs";
 // The lock is never taken over: one left by a process that ended without finishing is reported, for the owner to remove by hand once
 // no runner-trial command runs, so two waiters can't both decide to take it over. Its holder removes only its own lock. A lock file
 // that's gone when its holder lets go is let go; one that can't be looked at or removed is an error of the release, never a quiet
-// success (GPT's third review of the copy step): Delete names the lock among what it left, and a command says the lock was left. A
-// waiter tries again every few milliseconds, up to `waitMs`.
+// success (GPT's third review of the copy step): Delete names the lock among what it left, and a command says the lock was left. After
+// an operation that failed, what stopped it is the error, which then names the lock left (GPT's fourth). A waiter tries again every few
+// milliseconds, up to `waitMs`.
 
 export const TRIAL_FOLDER_LOCK_FILE = ".trial-folder.lock";
 const pause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
@@ -85,13 +86,27 @@ export async function acquireTrialFolderLock(home, { pid = process.pid, waitMs =
   return Object.freeze({ async release() { if (released) return; released = true; await remove(); } });
 }
 
-// An operation under the lock. What stopped the operation is what's told, whether or not the lock could be let go; after one that
-// finished, a lock that couldn't be is told as one left behind.
+// Lets go of the lock after an operation that failed with `error`, which the caller then throws as it is. When the lock can't be let go
+// either, an Error gets one fixed property that isn't enumerable, `folderLockLeft`: the lock's path, for a command to tell after it.
+export async function releaseAfterFailure(held, home, error) {
+  try { await held.release(); } catch {
+    if (error instanceof Error) Reflect.defineProperty(error, "folderLockLeft", { value: path.join(home, TRIAL_FOLDER_LOCK_FILE) });
+  }
+}
+
+// What a command prints after an error's own message when the lock was left too: one fixed line, from that property alone. Null without it.
+export function folderLockLeftNotice(error) {
+  const left = error instanceof Error && Object.hasOwn(error, "folderLockLeft") ? error.folderLockLeft : null;
+  return typeof left === "string" ? `The trial folder's lock was left; once no runner-trial command runs, remove ${left} by hand.` : null;
+}
+
+// An operation under the lock. What stopped the operation is what's told, whether or not the lock could be let go (releaseAfterFailure);
+// after one that finished, a lock that couldn't be is told as one left behind.
 export async function withTrialFolderLock(home, operation, options = {}) {
   const held = await acquireTrialFolderLock(home, options);
   let result;
   try { result = await operation(); } catch (error) {
-    await held.release().catch(() => {});
+    await releaseAfterFailure(held, home, error);
     throw error;
   }
   try { await held.release(); } catch { throw lockLeft(path.join(home, TRIAL_FOLDER_LOCK_FILE)); }

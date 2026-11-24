@@ -2,7 +2,7 @@ import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { loadRunnerRules, runnerTrialDirectory } from "./released-rules.mjs";
 import { RUNNER_LOG_FILE, createRunnerLogWriter, runnerClientLogFile, runnerLogFromRecord } from "./run-log.mjs";
 import { forgetClientCopy, removeClientJournalFolder } from "./clients.mjs";
-import { acquireTrialFolderLock } from "./folder-lock.mjs";
+import { acquireTrialFolderLock, releaseAfterFailure } from "./folder-lock.mjs";
 import { runnerTurnDetailsFromRecord } from "./turn-details.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { cutRuleParts } from "./rule-parts.mjs";
@@ -148,19 +148,23 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
   // "Delete this case" of a client, once it's its turn in the case's queue: under the trial folder's lock, which every command takes, the
   // case and its journal copies go from the vault; then the client list names neither the copy nor the server case it came from, so a
   // cold test still running stops and another server case can be theirs; and their journal folder goes (their key for journal copies, their
-  // copy's cold-test receipt and its test's marker). Without the lock nothing is deleted. Once the case is gone from the vault it is
-  // deleted, whatever becomes of the rest: what couldn't be cleared is named in the result, and deleting again clears it (the vault's
-  // deletion finds nothing of the case any more and goes on). The owner's own case has the vault's part alone.
+  // copy's cold-test receipt and its test's marker). While the vault hasn't finished (VAULT_CLEANUP: a power cut could bring the case and
+  // its copies back), the list keeps the server case, so no other client's copy can come from it; a Delete the vault finishes lets it go.
+  // Without the lock nothing is deleted. Once the case is gone from the vault it is deleted, whatever becomes of the rest: what couldn't be
+  // cleared is named in the result, and deleting again clears it (the vault's deletion finds nothing of the case any more and goes on). A
+  // deletion that fails is told by the vault's own error, which also names the lock when that can't be let go either. The owner's own case
+  // has the vault's part alone.
   const deletingSource = Object.create(privateCaseSource, { deletePrivateCase: { value: async (caseId, ...rest) => {
     if (!clientCases.has(caseId) || !trialDirectory) return deleteFromVault(caseId, ...rest);
     const lock = await acquireTrialFolderLock(trialDirectory, { waitMs: DELETE_LOCK_WAIT_MS });
     let deleted;
     try { deleted = await deleteFromVault(caseId, ...rest); } catch (error) {
-      await lock.release().catch(() => {});
+      await releaseAfterFailure(lock, trialDirectory, error);
       throw error;
     }
     const left = [];
-    await clearOrName(left, "JOURNAL_LIST", () => forgetClientCopy(trialDirectory, caseId));
+    const keepSource = deleted?.cleanup_left?.includes("VAULT_CLEANUP") === true;
+    await clearOrName(left, "JOURNAL_LIST", () => forgetClientCopy(trialDirectory, caseId, { keepSource }));
     await clearOrName(left, "JOURNAL_FOLDER", () => removeClientJournalFolder(trialDirectory, caseId));
     await clearOrName(left, "FOLDER_LOCK", () => lock.release());
     return withCleanupLeft(deleted, left);

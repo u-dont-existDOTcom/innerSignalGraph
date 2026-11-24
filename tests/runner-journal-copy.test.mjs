@@ -19,14 +19,14 @@ import { journalRoleInstruction } from "../src/journal-import/provider-port.mjs"
 import { createJournalCopyKeyPair, exportJournalCopy, importJournalCopy, journalCopyCorpusId, openJournalCopy, sealJournalCopy, writeSealedJournalCopy } from "../src/journal-import/journal-copy.mjs";
 import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
 import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, RUNNER_CLIENTS_FILE, clientJournalFolder, readColdTestAttempt, readColdTestReceipt, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
-import { acquireTrialFolderLock as acquireFolderLock } from "../src/runner-trial/folder-lock.mjs";
+import { acquireTrialFolderLock as acquireFolderLock, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
 import { COLD_JUDGE_INSTRUCTION, COLD_JUDGE_SCHEMA, createSealedColdConsumerPort, runJournalColdTest } from "../src/runner-trial/journal-cold-test.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
 import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordinator.mjs";
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
-import { acquireTrialFolderLock, addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
+import { StartError, acquireTrialFolderLock, addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
 import { CLIENT_COPY_KEY_FILE, IMPORT_PURPOSES, USAGE, ensureJournalCopyKey, importClientJournal, oneTimeGrant, parseJournalArguments, runClientColdTest, runMain } from "../scripts/runner-trial-journal.mjs";
 import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
@@ -1161,9 +1161,9 @@ test("Delete this case of a client takes their copies, their key and their place
   await importClientJournal({ home, number: 2, sealedPath: path.join(outside, "second-for-two.sealed.json") });
 });
 
-test("once the vault has deleted a client's case, Delete is done: what can't be cleared besides is named, everything else goes, and deleting again clears it", async (t) => {
-  const trial = await copiedClient(t);
-  const { home, cases: [clientOne], prepared } = trial;
+test("once the vault has deleted a client's case, Delete is done: what can't be cleared besides is named, everything else goes, and deleting again clears it; until the vault has finished, their server case is no other client's", async (t) => {
+  const trial = await copiedClient(t, { clients: 2 });
+  const { home, cases: [clientOne, clientTwo], prepared } = trial;
   const deleteCase = deleting(trial);
   const folder = clientJournalFolder(home, clientOne);
   const list = path.join(home, RUNNER_CLIENTS_FILE);
@@ -1174,13 +1174,17 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
   const { consent } = (await readRunnerClients(home)).clients[0].journal;
   const journalOf = async () => (await readRunnerClients(home)).clients[0].journal;
   const caseGone = (caseId = clientOne) => assert.rejects(trial.copier(caseId).loadPrivateRuntimeCase(caseId, { bearerToken: "synthetic" }), { code: "PRIVATE_CASE_NOT_FOUND" });
+  // The same journal, exported again for a client.
+  let copies = 0;
+  const sealedFor = async (number) => {
+    const sealedPath = path.join(trial.outside, `filled-${copies += 1}.sealed.json`);
+    await writeSealedJournalCopy(sealedPath, await trial.server.exportFor((await ensureJournalCopyKey({ home, number })).publicKey, `2026-11-24T10:${String(copies).padStart(2, "0")}:00.000Z`));
+    return sealedPath;
+  };
   // A client's case with everything Delete takes: the copy in the vault, its place on the list, the journal folder (the key, the receipt and
   // the marker of the test that gave it) and the run log.
-  let copies = 0;
   const filled = async () => {
-    const sealedPath = path.join(trial.outside, `filled-${copies += 1}.sealed.json`);
-    await writeSealedJournalCopy(sealedPath, await trial.server.exportFor((await ensureJournalCopyKey({ home, number: 1 })).publicKey, `2026-11-24T10:${String(copies).padStart(2, "0")}:00.000Z`));
-    await importClientJournal({ home, number: 1, sealedPath });
+    await importClientJournal({ home, number: 1, sealedPath: await sealedFor(1) });
     assert.equal((await trial.coldTest({ port: consumer() })).passed, true);
     await fs.writeFile(logOf(clientOne), "{}\n", { mode: 0o600 });
     assert.deepEqual((await fs.readdir(folder)).sort(), [COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, CLIENT_COPY_KEY_FILE].sort());
@@ -1225,21 +1229,43 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
     const deleted = await deletingWith(codes, clientOne, using);
     // What a vault that failed had removed by then isn't known, but that the case is gone.
     assert.deepEqual([deleted.case_id, deleted.case_file_removed, deleted.journal_corpora_removed, deleted.cleanup_left], [clientOne, true, codes.includes("VAULT_CLEANUP") ? undefined : 1, codes]);
-    // The case is gone, and everything but what's named.
+    // The case is gone, and everything but what's named. Until the vault has finished, the list also keeps the server case the copy came from.
     await caseGone();
-    assert.deepEqual(await journalOf(), codes.includes("JOURNAL_LIST") ? listed : { corpus_id: null, consent }, codes.join());
+    const unfinished = codes.includes("VAULT_CLEANUP");
+    const cleared = { corpus_id: null, consent, ...(unfinished ? { source_sha256: listed.source_sha256 } : {}) };
+    assert.deepEqual(await journalOf(), codes.includes("JOURNAL_LIST") ? listed : cleared, codes.join());
     const inFolder = [CLIENT_COPY_KEY_FILE, COLD_TEST_RECEIPT_FILE, COLD_TEST_ATTEMPT_FILE].map((name) => [path.join(folder, name), "JOURNAL_FOLDER"]);
     for (const [place, code] of [...inFolder, [logOf(clientOne), "RUN_LOG"], [lock, "FOLDER_LOCK"]]) {
       if (codes.includes(code)) assert.ok((await fs.readFile(place)).length > 0, `${code} remains`);
       else await absent(place, `${codes.join()}: ${place}`);
     }
-    // Deleting again clears what remained (the lock only by hand), and again with nothing left is as good.
     if (codes.includes("FOLDER_LOCK")) await fs.unlink(lock);
+    // So it can't be copied for another client meanwhile, also when the vault, asked to delete again, can't finish again.
+    const forTwo = unfinished ? await sealedFor(2) : null;
+    const refusedForTwo = async () => {
+      const before = await tree(home);
+      await assert.rejects(importClientJournal({ home, number: 2, sealedPath: forTwo }), { message: "That journal was already copied for client 1 (or a copy of it begun); nothing was imported." });
+      assert.deepEqual(await tree(home), before, codes.join());
+    };
+    if (unfinished) {
+      await refusedForTwo();
+      assert.deepEqual((await deletingWith(["VAULT_CLEANUP"], clientOne, using)).cleanup_left, ["VAULT_CLEANUP"]);
+      assert.deepEqual(await journalOf(), cleared, codes.join());
+      await refusedForTwo();
+    }
+    // Deleting again clears what remained (the lock only by hand), and again with nothing left is as good.
     for (let time = 0; time < 2; time += 1) {
       const again = await deleteCase(clientOne);
       assert.deepEqual([again.case_file_removed, again.journal_corpora_removed, Object.hasOwn(again, "cleanup_left")], [false, 0, false], codes.join());
       assert.deepEqual(await journalOf(), { corpus_id: null, consent });
       for (const place of [folder, logOf(clientOne), lock]) await absent(place);
+    }
+    // Then it's nobody's: the other client can import it, and once they are deleted (a Delete that finishes lets go of it at once) this client
+    // can again, as the next round does.
+    if (unfinished) {
+      await importClientJournal({ home, number: 2, sealedPath: forTwo });
+      assert.equal(Object.hasOwn(await deleteCase(clientTwo), "cleanup_left"), false);
+      assert.deepEqual((await readRunnerClients(home)).clients[1].journal, { corpus_id: null, consent: null });
     }
   }
   // A cold test in its last call meanwhile, with a list that can't be written: it gives no receipt and makes no folder again.
@@ -1270,11 +1296,12 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
   assert.equal(Object.hasOwn(await deleting(alone)(alone.prepared.caseId), "cleanup_left"), false);
 
   // A vault that doesn't delete is told as it is: nothing else is touched, and the lock is let go (or, when it can't be, the vault's own
-  // error is still what's told). Whether the case is gone is found by loading it, never by the error, and an unsure answer is no.
+  // error is still what's told, and names the lock). Whether the case is gone is found by loading it, never by the error, and an unsure
+  // answer is no.
   const refusing = (error, change = {}) => deleting(trial, (source) => ({ ...source, ...change, deletePrivateCase: async () => { throw error; } }));
   const untouchedBy = async (using, code, caseId = clientOne) => {
     const before = await tree(home);
-    await assert.rejects(using(caseId), { code });
+    await assert.rejects(using(caseId), (error) => error.code === code && !Object.hasOwn(error, "folderLockLeft"));
     assert.deepEqual(await tree(home), before, code);
   };
   await filled();
@@ -1284,9 +1311,11 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
     for (const code of ["SYNTHETIC_VAULT_ERROR", "PRIVATE_CASE_NOT_FOUND"]) await untouchedBy(refusing(refuse(code)), code, caseId);
   }
   const before = await tree(home);
+  const vaultError = refuse("SYNTHETIC_VAULT_ERROR");
   const restoreLock = failing(["FOLDER_LOCK"]);
-  await assert.rejects(refusing(refuse("SYNTHETIC_VAULT_ERROR"))(clientOne), { code: "SYNTHETIC_VAULT_ERROR" });
+  await assert.rejects(refusing(vaultError)(clientOne), (error) => error === vaultError);
   restoreLock();
+  assert.deepEqual([vaultError.message, vaultError.code, Object.keys(vaultError), vaultError.folderLockLeft], ["Synthetic words.", "SYNTHETIC_VAULT_ERROR", ["code"], lock]);
   await fs.unlink(lock);
   assert.deepEqual(await tree(home), before);
   // A case that can't be looked at isn't known to be gone, and for a caller the vault refused nothing is deleted: here with everything a
@@ -1310,7 +1339,7 @@ test("a client's journal folder is removed for good, as is their place on the li
   const steps = [];
   // A Delete with the folder's removal and the syncs of the trial folder (the list's, and at the end the run log's) and of the folder it was
   // in, in order; `syncing` is what each sync answers.
-  const recorded = async (syncing = () => {}) => {
+  const recorded = async (syncing = () => {}, using = deleteCase) => {
     const { open, rm } = fs;
     steps.length = 0;
     const mocked = [
@@ -1320,7 +1349,7 @@ test("a client's journal folder is removed for good, as is their place on the li
         return names.has(where) ? Object.assign(Object.create(handle), { sync: async () => { steps.push(names.get(where)); syncing(names.get(where)); return handle.sync(); }, close: () => handle.close() }) : handle;
       })
     ];
-    try { return await deleteCase(clientOne); } finally { for (const each of mocked) each.mock.restore(); }
+    try { return await using(clientOne); } finally { for (const each of mocked) each.mock.restore(); }
   };
   const ORDER = ["sync trial folder", "rm folder", "sync journal folders", "sync trial folder"];
   const failing = (code, name = "sync journal folders") => (at) => { if (at === name) throw Object.assign(new Error("Synthetic words."), { code }); };
@@ -1329,7 +1358,8 @@ test("a client's journal folder is removed for good, as is their place on the li
     assert.equal(await modeOf(path.join(folder, CLIENT_COPY_KEY_FILE)), 0o600);
   };
   // The list's place, whose sync fails: it names no copy any more, but not for certain, so it's told as left, and Delete again syncs it.
-  assert.equal((await journalOf()).corpus_id, imported.corpus_id);
+  const tied = await journalOf();
+  assert.equal(tied.corpus_id, imported.corpus_id);
   assert.deepEqual((await recorded(failing("EIO", "sync trial folder"))).cleanup_left, ["JOURNAL_LIST"]);
   assert.deepEqual([steps, (await journalOf()).corpus_id], [ORDER, null]);
   assert.deepEqual((await recorded(failing("EIO", "sync trial folder"))).cleanup_left, ["JOURNAL_LIST"]);
@@ -1351,19 +1381,32 @@ test("a client's journal folder is removed for good, as is their place on the li
     assert.equal(Object.hasOwn(await recorded(failing(code)), "cleanup_left"), false, code);
     await absent(folder);
   }
+  // While the vault can't finish, the list keeps the server case, and is synced all the same: when the copy is taken off it, and when an
+  // earlier Delete that got no further had done that. One that finishes lets go of the server case too.
+  const unfinished = deleting(trial, (source) => ({ ...source, deletePrivateCase: async (...args) => { await source.deletePrivateCase(...args); throw Object.assign(new Error("Synthetic words."), { code: "SYNTHETIC_VAULT_ERROR" }); } }));
+  const list = await readRunnerClients(home);
+  list.clients[0].journal = tied;
+  await writeRunnerClients(home, list);
+  for (const [syncing, codes] of [[failing("EIO", "sync trial folder"), ["VAULT_CLEANUP", "JOURNAL_LIST"]], [failing("EIO", "sync trial folder"), ["VAULT_CLEANUP", "JOURNAL_LIST"]], [undefined, ["VAULT_CLEANUP"]]]) {
+    assert.deepEqual((await recorded(syncing, unfinished)).cleanup_left, codes);
+    assert.deepEqual([steps, await journalOf()], [ORDER, { ...tied, corpus_id: null }]);
+  }
+  assert.equal(Object.hasOwn(await recorded(), "cleanup_left"), false);
+  assert.deepEqual([steps, await journalOf()], [ORDER, { corpus_id: null, consent: tied.consent }]);
   // No client of the trial has had a journal folder: nothing to remove or sync, and nothing to tell.
   const fresh = await trialWith(t);
   await absent(path.join(fresh.home, "journal"));
   assert.equal(Object.hasOwn(await deleting(fresh)(fresh.cases[0]), "cleanup_left"), false);
 });
 
-test("the trial folder's lock on release: gone already is quiet, one that can't be looked at or removed is told (by Delete, by a command), another holder's stays, and what stopped the work is never hidden by it", async (t) => {
-  const trial = await copiedClient(t);
-  const { home, cases: [clientOne] } = trial;
+test("the trial folder's lock on release: gone already is quiet, one that can't be looked at or removed is told (by Delete, by a command), another holder's stays, and what stopped the work is told with it, never hidden by it", async (t) => {
+  const trial = await copiedClient(t, { clients: 2 });
+  const { home, cases: [clientOne, clientTwo] } = trial;
   const lock = path.join(home, ".trial-folder.lock");
   const held = async () => (await fs.readFile(lock, "utf8")).startsWith(`${process.pid} `);
   const refuse = (code) => Object.assign(new Error("Synthetic words."), { code });
   const leftLock = `A runner-trial command ended without finishing and left its lock. If no other runner-trial command is running, remove ${lock} and try again.`;
+  const leftToo = `The trial folder's lock was left; once no runner-trial command runs, remove ${lock} by hand.`;
   // `during`, with the module's own calls on the lock file made through these (the methods of node:fs/promises that it calls): the look at
   // it (`looking`, before it), its removal (`removing`, before it) and its handle's calls (`handled`, before each, by name).
   const meanwhile = async ({ looking = () => {}, removing = () => {}, handled = () => {} }, during) => {
@@ -1451,21 +1494,66 @@ test("the trial folder's lock on release: gone already is quiet, one that can't 
   assert.equal(await meanwhile({ looking: failingWith("EIO") }, () => runMain(["--copy-key", "--dir", home], { log: add, logError: add, askQuestion: async () => "1" })), 1);
   assert.equal(printed.at(-1), leftLock);
   await fs.unlink(lock);
-  // One that was stopped says what stopped it.
+  // One that was stopped is told by what stopped it, as it is; when it can't let go of its lock either, that error names the lock it left
+  // (in one property, fixed and not enumerable), and only then.
+  const adding = () => addClient({ home, label: "Synthetic client 1" });
+  const stoppedWith = (left) => (error) => {
+    assert.ok(error instanceof StartError);
+    assert.deepEqual([error.message, error.exitCode, Object.getOwnPropertyDescriptor(error, "folderLockLeft")], ["Another client already has that label; choose another.", 1, left]);
+    return true;
+  };
   for (const failing of ["looking", "removing"]) {
-    await meanwhile({ [failing]: failingWith("EACCES") }, () => assert.rejects(addClient({ home, label: "Synthetic client 1" }), { message: "Another client already has that label; choose another." }));
+    await meanwhile({ [failing]: failingWith("EACCES") }, () => assert.rejects(adding(), stoppedWith({ value: lock, writable: false, enumerable: false, configurable: false })));
     assert.equal(await held(), true);
     await fs.unlink(lock);
   }
+  await assert.rejects(adding(), stoppedWith(undefined));
+  await absent(lock);
+  // Whatever stopped the operation is what's thrown, the very same: an Error of any class takes that property, and nothing else of it
+  // changes; one that can't take it, and anything that isn't an Error, is thrown as it is.
+  const thrownBy = (stop, during) => meanwhile(during, () => withFolderLock(home, async () => { throw stop; }).then(() => assert.fail("the operation was stopped"), (thrown) => thrown));
+  for (const [stop, named] of [[new TypeError("Synthetic words."), true], [new ProviderError("Synthetic words.", { code: "TIMEOUT" }), true], [refuse("EIO"), true],
+    [Object.freeze(refuse("EIO")), false], ["Synthetic words.", false], [{ message: "Synthetic words." }, false], [null, false], [undefined, false]]) {
+    const asItIs = () => (stop instanceof Error ? [Object.getPrototypeOf(stop), stop.name, stop.message, stop.code, stop.stack, Object.keys(stop)] : structuredClone(stop));
+    const before = asItIs();
+    assert.equal(await thrownBy(stop, {}), stop);
+    assert.equal(stop?.folderLockLeft, undefined);
+    await absent(lock);
+    assert.equal(await thrownBy(stop, { removing: failingWith("EACCES") }), stop);
+    assert.equal(stop?.folderLockLeft, named ? lock : undefined);
+    assert.deepEqual(asItIs(), before);
+    assert.equal(await held(), true);
+    await fs.unlink(lock);
+  }
+  // As the terminal prints it: the error's own message (a refusal's, or an unexpected error's code alone), then the lock left in one fixed
+  // line; with the lock let go, the message alone.
+  const told = async (number, during) => {
+    const lines = [];
+    assert.equal(await meanwhile(during, () => runMain(["--copy-key", "--dir", home], { log: () => {}, logError: (text) => { lines.push(String(text)); }, askQuestion: async () => number })), 1);
+    return lines;
+  };
+  const { mkdir } = fs;
+  const unmade = t.mock.method(fs, "mkdir", async (where, ...args) => { if (where === clientJournalFolder(home, clientTwo)) throw refuse("EIO"); return mkdir.call(fs, where, ...args); });
+  for (const [number, message] of [["9", "There's no client with that number."], ["2", "The journal command failed: EIO."]]) {
+    for (const failing of ["looking", "removing"]) {
+      assert.deepEqual(await told(number, { [failing]: failingWith("EACCES") }), [message, leftToo]);
+      assert.equal(await held(), true);
+      await fs.unlink(lock);
+    }
+    assert.deepEqual(await told(number, {}), [message]);
+    await absent(lock);
+  }
+  unmade.mock.restore();
 });
 
-test("a start that can't let go of the trial folder's lock once its server answers stops that server and says why, and what stops a start is told all the same", async (t) => {
+test("a start that can't let go of the trial folder's lock once its server answers stops that server and says why, and what stops a start is told all the same, and then that the lock was left", async (t) => {
   const { home } = await trialWith(t, 0);
   const lock = path.join(home, ".trial-folder.lock");
   const script = new URL("../scripts/runner-trial-start.mjs", import.meta.url);
   // The start script whole, in a process of its own that reaches nothing outside the trial folder: no git is found, the port is asked of
-  // nobody, the server is a stand-in that answers at once and ends when it's told to, and the lock can't be looked at.
-  const starting = (port) => {
+  // nobody, the server is a stand-in that answers at once and ends when it's told to, and the lock can't be looked at (with `lockFails` off,
+  // it can).
+  const starting = (port, { lockFails = true } = {}) => {
     const standIns = `
       import childProcess from "node:child_process";
       import { EventEmitter } from "node:events";
@@ -1474,7 +1562,7 @@ test("a start that can't let go of the trial folder's lock once its server answe
       import net from "node:net";
       const { lstat } = fs;
       fs.lstat = async (where, ...args) => {
-        if (where === ${JSON.stringify(lock)}) throw Object.assign(new Error("Synthetic words about the lock."), { code: "EACCES" });
+        if (${JSON.stringify(lockFails)} && where === ${JSON.stringify(lock)}) throw Object.assign(new Error("Synthetic words about the lock."), { code: "EACCES" });
         return lstat.call(fs, where, ...args);
       };
       net.createServer = () => ({ once(event, then) { if (event === "error" && ${JSON.stringify(port)} === "taken") setImmediate(then); }, listen(...args) { if (${JSON.stringify(port)} === "free") setImmediate(args.at(-1)); }, close(then) { then(); } });
@@ -1499,11 +1587,14 @@ test("a start that can't let go of the trial folder's lock once its server answe
   assert.match(stopped.stdout, /No local origin\/stable ref: using rules from this checkout/u);
   assert.equal(/Runner trial ready/u.test(stopped.stdout), false);
   await fs.unlink(lock);
-  const taken = starting("taken");
-  assert.equal(taken.status, 1);
-  assert.match(taken.stderr, /^Port 8797 on 127\.0\.0\.1 is in use: is the trial already running\?/u);
-  assert.equal(/stopped with/u.test(taken.stdout), false, "no server was started");
-  await fs.unlink(lock);
+  const inUse = "Port 8797 on 127.0.0.1 is in use: is the trial already running? Stop it, or start with --port and another number (the page then starts with a new case).";
+  for (const [lockFails, said] of [[true, [inUse, `The trial folder's lock was left; once no runner-trial command runs, remove ${lock} by hand.`]], [false, [inUse]]]) {
+    const taken = starting("taken", { lockFails });
+    assert.deepEqual([taken.status, taken.stderr.split("\n")], [1, said]);
+    assert.equal(/stopped with/u.test(taken.stdout), false, "no server was started");
+    if (lockFails) await fs.unlink(lock);
+    await absent(lock);
+  }
 });
 
 test("a cold test that starts removes the copy's receipt and only a pass gives a new one: an error, a wrong or malformed answer, a judge's no, a failed judge leave none", async (t) => {

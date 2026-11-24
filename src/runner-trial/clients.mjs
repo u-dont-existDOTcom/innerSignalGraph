@@ -74,8 +74,8 @@ export function validateRunnerClients(value) {
     labels.add(folded);
     timestamp(client.added_at, `${name}.added_at`);
     // `source_sha256`: a digest of the server case the client's copies come from (scripts/runner-trial-journal.mjs, --import), written
-    // before the first import touches the vault and kept until their Delete: no other server case can be imported for them, and this
-    // one for no other client. Absent before a first import.
+    // before the first import touches the vault and kept until a Delete of theirs that the vault finishes: no other server case can be
+    // imported for them, and this one for no other client. Absent before a first import.
     exactKeys(client.journal, Object.hasOwn(client.journal ?? {}, "source_sha256") ? ["corpus_id", "consent", "source_sha256"] : ["corpus_id", "consent"], `${name}.journal`);
     if (Object.hasOwn(client.journal, "source_sha256") && !/^[0-9a-f]{64}$/u.test(client.journal.source_sha256 ?? "")) invalid(`${name}'s journal source is invalid.`);
     if (client.journal.corpus_id !== null && (typeof client.journal.corpus_id !== "string" || !CORPUS_ID.test(client.journal.corpus_id))) invalid(`${name}'s journal corpus id is invalid.`);
@@ -153,13 +153,16 @@ export async function writeRunnerClients(trialDir, value) {
 }
 
 // After "Delete this case" of a client has removed their copies from the vault: the list names no copy of theirs and no server case they
-// came from, so a copy from another one can be imported for them. Their consent stays as recorded. A list that names neither already is
-// made durable, since an earlier Delete may have changed it and not got that far. The caller holds the folder's lock.
-export async function forgetClientCopy(trialDir, caseId) {
+// came from, so a copy from another one can be imported for them. With `keepSource` (the vault removed the case and couldn't finish, so
+// the case and its copies may come back after a power cut) the list keeps naming the server case, which stays theirs alone. Their consent
+// stays as recorded. A list with nothing to take off is made durable, since an earlier Delete may have changed it and not got that far.
+// The caller holds the folder's lock.
+export async function forgetClientCopy(trialDir, caseId, { keepSource = false } = {}) {
   const list = await readRunnerClients(trialDir);
   const client = list.clients.find((entry) => entry.case_id === caseId);
-  if (!client || (client.journal.corpus_id === null && !Object.hasOwn(client.journal, "source_sha256"))) return syncFolder(trialDir);
-  client.journal = { corpus_id: null, consent: client.journal.consent };
+  const tied = Boolean(client) && Object.hasOwn(client.journal, "source_sha256");
+  if (!client || (client.journal.corpus_id === null && (keepSource || !tied))) return syncFolder(trialDir);
+  client.journal = { corpus_id: null, consent: client.journal.consent, ...(keepSource && tied ? { source_sha256: client.journal.source_sha256 } : {}) };
   await writeRunnerClients(trialDir, list);
 }
 

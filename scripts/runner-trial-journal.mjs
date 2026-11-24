@@ -18,6 +18,7 @@ import { withOpenedRegularFile } from "../src/core/opened-regular-file.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { createJournalCopyKeyPair, importJournalCopy, journalCopyCorpusId, journalCopyRecipientDigest, journalCopySourceDigest, openJournalCopy, readSealedJournalCopy } from "../src/journal-import/journal-copy.mjs";
 import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, clientJournalFolder, journalConsentState, readColdTestAttempt, readRunnerClients, syncFolder, writeRunnerClients } from "../src/runner-trial/clients.mjs";
+import { folderLockLeftNotice } from "../src/runner-trial/folder-lock.mjs";
 import { createSealedColdConsumerPort, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
 import { createRunnerWorkerFactory } from "../src/runner-trial/settings.mjs";
 import { RUNNER_CLAUDE_CONFIG_DIR } from "../src/runner-trial/switch.mjs";
@@ -427,16 +428,16 @@ async function main(argv, { log, askQuestion, worker }) {
 }
 
 // A command as the terminal runs it: what it prints, and its exit code. A refusal prints its own fixed message; any other error a fixed
-// line with its code, never its own text. `log`, `logError`, `askQuestion` and `worker` are for tests.
+// line with its code, never its own text; then, when the trial folder's lock was left too, the fixed line that says so. `log`, `logError`,
+// `askQuestion` and `worker` are for tests.
 export async function runMain(argv, { log = console.log, logError = console.error, askQuestion = ask, worker = null } = {}) {
   try { return await main(argv, { log, askQuestion, worker }); } catch (error) {
-    if (error instanceof StartError) {
-      logError(error.message);
-      return error.exitCode;
-    }
+    const refusal = error instanceof StartError;
     const code = codeOf(error);
-    logError(`The journal command failed${code ? `: ${code}` : ""}.`);
-    return 1;
+    logError(refusal ? error.message : `The journal command failed${code ? `: ${code}` : ""}.`);
+    const lockLeft = folderLockLeftNotice(error);
+    if (lockLeft) logError(lockLeft);
+    return refusal ? error.exitCode : 1;
   }
 }
 
