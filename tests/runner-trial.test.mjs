@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -8,6 +7,7 @@ import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { listPrivateArtifactLocatorsForCase, writePrivateArtifactLocator } from "../src/storage/private-artifact-locator.mjs";
 import { listPrivateCaseAliasLocatorsForCase, writePrivateCaseAliasLocator } from "../src/storage/private-case-alias-locator.mjs";
+import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 import { privateJournalCorpusDirectory } from "../src/storage/private-journal-corpus.mjs";
 import { createCaseMutationCoordinator } from "../src/storage/shared-case-coordinator.mjs";
 import { childContactPatternHits } from "../src/case-formulation/protective-compatibility.mjs";
@@ -1225,15 +1225,13 @@ test("a link, a folder or a named pipe at a locator's own path is never listed a
   assert.deepEqual(await listed(), [[handoff], []]);
   await fs.unlink(handoff); await fs.mkdir(handoff);
   assert.deepEqual(await listed(), [[], []]);
-  for (const file of [candidate, alias]) {
-    await fs.unlink(file);
-    execFileSync("mkfifo", [file]);
-    const writer = spawn("sh", ["-c", 'sleep 2; : > "$1"', "sh", file], { stdio: "ignore" });
-    t.after(() => writer.kill("SIGKILL"));
-  }
-  const started = performance.now();
-  assert.deepEqual(await listed(), [[], []]);
-  assert.ok(performance.now() - started < 1_500, "not waited on");
+  for (const file of [candidate, alias]) { await fs.unlink(file); makeNamedPipe(file); }
+  const printed = printedApart(`
+    import { listPrivateArtifactLocatorsForCase } from ${JSON.stringify(new URL("../src/storage/private-artifact-locator.mjs", import.meta.url).href)};
+    import { listPrivateCaseAliasLocatorsForCase } from ${JSON.stringify(new URL("../src/storage/private-case-alias-locator.mjs", import.meta.url).href)};
+    const [, rootDir, caseId] = process.argv;
+    for (const list of [listPrivateArtifactLocatorsForCase, listPrivateCaseAliasLocatorsForCase]) console.log(JSON.stringify(await list({ rootDir, caseId })));`, [root, caseId]);
+  assert.equal(printed, "[]\n[]\n");
 });
 
 // The store's per-case queue, watched: each run says whether its operation has started and finished.

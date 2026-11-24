@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import os from "node:os";
@@ -10,6 +9,7 @@ import {
   withOpenedRegularFile,
   withOpenedRegularFileSync
 } from "../src/core/opened-regular-file.mjs";
+import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
 async function fixture(context) {
   const root = await fsp.mkdtemp(path.join(os.tmpdir(), "inner-signal-opened-file-"));
@@ -70,21 +70,16 @@ test("sync regular-file reads stay bound to the opened inode after pathname repl
   assert.equal(content, "trusted\n");
 });
 
-test("a named pipe is refused without waiting for its writer, before invoking the reader", async (context) => {
+test("a named pipe is refused without waiting for a writer, before invoking the reader", async (context) => {
   const { root } = await fixture(context);
-  let invoked = false;
-  const reader = () => { invoked = true; };
-  for (const open of [withOpenedRegularFile, withOpenedRegularFileSync]) {
-    const pipe = path.join(root, open.name);
-    execFileSync("mkfifo", [pipe]);
-    // The pipe's writer joins after two seconds: an open that waits for it takes that long (and never holds the test forever).
-    const writer = spawn("sh", ["-c", 'sleep 2; : > "$1"', "sh", pipe], { stdio: "ignore" });
-    context.after(() => writer.kill("SIGKILL"));
-    const started = performance.now();
-    await assert.rejects(async () => open(pipe, reader), { code: "ERR_NOT_REGULAR_FILE" });
-    assert.ok(performance.now() - started < 1_500, `${open.name} didn't wait`);
-  }
-  assert.equal(invoked, false);
+  const pipe = path.join(root, "pipe");
+  makeNamedPipe(pipe);
+  const printed = printedApart(`
+    import { withOpenedRegularFile, withOpenedRegularFileSync } from ${JSON.stringify(new URL("../src/core/opened-regular-file.mjs", import.meta.url).href)};
+    for (const open of [withOpenedRegularFile, withOpenedRegularFileSync]) {
+      try { await open(process.argv[1], () => console.log("reader invoked")); console.log("opened"); } catch (error) { console.log(error.code); }
+    }`, [pipe]);
+  assert.equal(printed, "ERR_NOT_REGULAR_FILE\nERR_NOT_REGULAR_FILE\n");
 });
 
 test("sync regular-file opens reject directories before invoking the reader", async (context) => {

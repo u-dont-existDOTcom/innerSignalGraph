@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { execFileSync, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
@@ -41,6 +41,7 @@ import {
   validateRunnerTrialSettings
 } from "../src/runner-trial/settings.mjs";
 import { createRunnerEventHub, createRunnerTrialController, runnerEventLine } from "../src/runner-trial/trial-controller.mjs";
+import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
 // The runner trial wired into the local app (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 8, 10 and 11):
 // the switch, the settings file and the worker factory, /health, the NDJSON stream of /v1/therapy/respond and the page's fixed
@@ -315,12 +316,10 @@ test("the settings file must be named by an absolute path outside the repository
   await fs.writeFile(large, `{}${" ".repeat(64 * 1024)}`);
   assert.throws(() => loadRunnerTrialSettings({ settingsPath: large }), /must name a readable JSON file/u);
   const pipe = path.join(dir, "pipe.json");
-  execFileSync("mkfifo", [pipe]);
-  const writer = spawn("sh", ["-c", 'sleep 2; : > "$1"', "sh", pipe], { stdio: "ignore" });
-  t.after(() => writer.kill("SIGKILL"));
-  const started = performance.now();
-  assert.throws(() => loadRunnerTrialSettings({ settingsPath: pipe }), /must name a readable JSON file/u);
-  assert.ok(performance.now() - started < 1_500, "not waited on");
+  makeNamedPipe(pipe);
+  assert.match(printedApart(`
+    import { loadRunnerTrialSettings } from ${JSON.stringify(new URL("../src/runner-trial/settings.mjs", import.meta.url).href)};
+    try { loadRunnerTrialSettings({ settingsPath: process.argv[1] }); console.log("loaded"); } catch (error) { console.log(error.message); }`, [pipe]), /must name a readable JSON file/u);
   const kept = path.join(dir, "kept.json");
   await fs.writeFile(kept, JSON.stringify({ writerMode: "whole" }));
   const toKept = path.join(dir, "to-kept.json");
