@@ -109,8 +109,10 @@ and adds to the quotations, up to twelve. A message that shares no less common w
 acted or being about to, thoughts of death with no wish to act, or something that could mean either), or, with the number now on, as needing
 the emergency number now, or its conversation has been read as one about wanting to die by any reader or checker, no search is made, and the
 turn's evidence says `journal_withheld`. When only the checker reads it as one, after a draft was written with quotations in view, that draft
-isn't sent, and its repair gets neither them nor the draft. An unsent draft that was written with the journal is never a source of a later
-turn. The reply is made from the conversation alone; a new conversation gets the journal again.
+isn't sent, and its repair gets neither them nor the draft. The reply is made from the conversation alone; a new conversation gets the journal
+again. Once a case has read its journal, no turn of it gets anything but the conversation and its own quotations as evidence: no unsent draft,
+report, instruction or list of them, since any of these may hold the journal's words (a rule about the whole case, in place of following
+each draft, which kept leaving a way).
 
 **Once a client's case has read its journal, the case is used only while the gate is open.** The gate is open when the owner's
 confirmation of the consent stands, the client list names the copy, the client's current grant opens it for session use, and a

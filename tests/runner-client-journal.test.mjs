@@ -19,9 +19,12 @@ import { RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
 import { CHECKER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE_NO_QUOTATION, WRITER_EVIDENCE_NOTE, WRITER_EVIDENCE_NOTE_NO_QUOTATION } from "../src/runner-trial/worker-prompts.mjs";
 import { runnerLogFromRecord } from "../src/runner-trial/run-log.mjs";
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
-import { RESPONSE_EVIDENCE_DIMENSIONS } from "../src/supervisor/response-evidence-contract.mjs";
+import { RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot } from "../src/supervisor/response-evidence-contract.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
+import { serializeVaultEnvelope } from "../src/storage/private-case-store.mjs";
+import { createVaultEnvelope } from "../src/storage/vault-crypto.mjs";
 import { addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
+import { asIfNoJournalWasRead } from "./helpers/evidence-case.mjs";
 
 // A client's journal in the runner trial (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, points 4 to 7): the
 // journal gate (consent, a published session_use copy in the client's runner case, a cold-test receipt for exactly that copy) and
@@ -140,7 +143,8 @@ async function journalTrial(t, { evidence = true, consent = true, receipt = "mat
   };
   if (receipt === "match") await plantReceipt();
   if (receipt === "other-generation") await plantReceipt({ generation: "generation-0" });
-  const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true, responseEvidencePolicy: evidence ? "enforced" : "advisory" });
+  const serviceWith = (on) => createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true, responseEvidencePolicy: on ? "enforced" : "advisory" });
+  const service = serviceWith(evidence);
   const caseAuthContexts = new Map(Object.entries(prepared.clientTokens).map(([caseId, token]) => [caseId, Object.freeze({ bearerToken: token })]));
   const ownAuth = Object.freeze({ bearerToken: prepared.token });
   const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, runnerTrialEnabled: true, runnerTrialCaseId: prepared.caseId, runnerTrialDir: home, runnerTrialSettingsPath: null, runnerClaudeConfigDir: null, runnerRulesRoot: null, responseEvidenceEnforced: evidence, ...configured });
@@ -152,22 +156,23 @@ async function journalTrial(t, { evidence = true, consent = true, receipt = "mat
     // event the turn's page would get, each journal search as it starts (`search`; the one place the copy is opened), each evidence
     // snapshot as it is frozen (`freeze`) and each worker's call as it starts (its role). `onSearch`, when given, is awaited as a search
     // starts; `stopAt` names a store call at which the process stops for good (`stopped` resolves then); `withClients: false` is a
-    // trial without clients, which has no journal reader.
-    turns({ onSearch = null, stopAt = null, withClients = true } = {}) {
+    // trial without clients, which has no journal reader; `evidenceOff` one started again with response evidence off.
+    turns({ onSearch = null, stopAt = null, withClients = true, evidenceOff = false } = {}) {
       const happened = [];
       let reached;
       const stopped = new Promise((resolve) => { reached = resolve; });
+      const cases = evidenceOff ? serviceWith(false) : service;
       const source = {
-        ...service,
+        ...cases,
         async withJournalCorpus(...args) {
           happened.push("search");
           if (onSearch) await onSearch(happened);
-          return service.withJournalCorpus(...args);
+          return cases.withJournalCorpus(...args);
         },
-        async freezeResponseEvidence(...args) { happened.push("freeze"); return service.freezeResponseEvidence(...args); }
+        async freezeResponseEvidence(...args) { happened.push("freeze"); return cases.freezeResponseEvidence(...args); }
       };
       if (stopAt) source[stopAt] = () => { reached(); return new Promise(() => {}); };
-      const trial = createRunnerTrialController({ privateCaseSource: source, config, clientCaseIds: withClients ? [...caseAuthContexts.keys()] : [], settings: validateRunnerTrialSettings({ writerMode: "whole", checkerMode }), parts,
+      const trial = createRunnerTrialController({ privateCaseSource: source, config: evidenceOff ? { ...config, responseEvidenceEnforced: false } : config, clientCaseIds: withClients ? [...caseAuthContexts.keys()] : [], settings: validateRunnerTrialSettings({ writerMode: "whole", checkerMode }), parts,
         workerFor: (role) => ({ call: (request) => { happened.push(role); return fake.workerFor(role).call(request); } }) });
       trials.push(trial);
       return {
@@ -186,7 +191,13 @@ async function journalTrial(t, { evidence = true, consent = true, receipt = "mat
       trials.push(trial);
       return { trial, base: await listen(t, createInnerSignalServer({ config, providers: createProviders(config), privateCaseAccessService: service, privateAuthContext: ownAuth, privateCaseAuthContexts: caseAuthContexts, privateTherapyController: trial.controller, runnerTrialEvents: trial.events })) };
     },
-    record: (caseId) => service.loadPrivateRuntimeCase(caseId, caseId === prepared.caseId ? ownAuth : caseAuthContexts.get(caseId))
+    record: (caseId) => service.loadPrivateRuntimeCase(caseId, caseId === prepared.caseId ? ownAuth : caseAuthContexts.get(caseId)),
+    // A synthetic fixture: the case's record written into the vault as given, as another build would have stored it.
+    async seed(caseId, record) {
+      const { routineKek, recoverySecretBytes } = await providers.keyProvider.getCaseKeyMaterial({ caseId });
+      const envelope = await createVaultEnvelope({ plaintextBytes: Buffer.from(JSON.stringify(record)), routineKek, recoverySecretBytes });
+      await fs.writeFile(path.join(providers.rootDir, `${caseId}.vault.json`), JSON.stringify(serializeVaultEnvelope(envelope)), { mode: 0o600 });
+    }
   };
 }
 
@@ -789,12 +800,134 @@ test("no call of a later turn gets the journal's words from anything an earlier 
       assert.equal(given && name !== "quiet", false, `${name}: no quotation for ${role}`);
       assert.equal(holdsWords(request, quoted), given, `${name}: ${role} gets its words from nothing else`);
       if (!packet.response_evidence) { assert.ok(["R1", "R3"].includes(role)); continue; }
-      assert.deepEqual([packet.response_evidence.source_items.some((item) => item.kind === "unsent_draft"), packet.response_evidence.communication_projection.omitted.source_items.find((entry) => entry.reason === "draft_written_with_the_journal")],
-        [false, { reason: "draft_written_with_the_journal", count: 2 }], `${name}: ${role}`);
+      const { source_items: items, communication_projection: { omitted, ...lists } } = packet.response_evidence;
+      const besides = items.filter((item) => !["exact_client_turn", "app_committed_client_outbound", "journal_retrieval_record", "journal_quotation"].includes(item.kind));
+      assert.deepEqual([besides, Object.values(lists).flat(), omitted.source_items.find((entry) => entry.reason === "journal_case_conversation_alone"), omitted.confirmed_or_reported_client_outbound],
+        [[], [], { reason: "journal_case_conversation_alone", count: 2 }, 1], `${name}: ${role}`);
     }
     // Nor does the word-free run log hold any.
     assert.equal(JSON.stringify(runnerLogFromRecord(await j.record(j.clientA))).includes(quoted), false);
   }
+});
+
+// A turn's first evidence as a build that left nothing out froze it, in the record as that build would have stored it.
+function frozenWithAllOfIt(record, runtimeTurnId) {
+  const at = record.response_evidence_snapshots.findIndex((snapshot) => snapshot.owner.runtime_turn_id === runtimeTurnId);
+  const { id, owner, revision, parent_snapshot_id, revision_reason, candidate_origin, inbound, journal, created_at } = record.response_evidence_snapshots[at];
+  record.response_evidence_snapshots[at] = buildResponseEvidenceSnapshot(asIfNoJournalWasRead(record), { snapshotId: id, owner, revision, parentSnapshotId: parent_snapshot_id, revisionReason: revision_reason, candidateOrigin: candidate_origin, inbound, journal }, { createdAt: created_at });
+  return record.response_evidence_snapshots[at];
+}
+// The first turn's draft quotes the journal and is stopped; its repair, which quotes nothing, is sent. `later` answers for the turns after it.
+function stoppedQuotation(later) {
+  const ofLater = (request) => packetOf(request).latest_message.text !== MESSAGE;
+  return script({
+    R1: later.R1 ?? quietReader,
+    W: (count, request) => (ofLater(request) ? later.W(packetOf(request)) : writer(count, request)),
+    "W-repair": (count, request) => (ofLater(request) ? later.repair(packetOf(request)) : { reply: "What makes asking hard for you?", answered_level: "none", quotes: [] }),
+    CW: (count, request) => {
+      const value = { ...wholeChecker(count, request), repair_induced_checks: request.user.includes("previous_candidate") ? [...REPAIR_INDUCED_ERROR_CHECKS] : [] };
+      if (ofLater(request)) return { ...value, ...later.CW(packetOf(request)) };
+      return count === 1 ? { ...value, findings: [{ code: "VERBOSITY", severity: "substantive", summary: "synthetic: too long", evidence_turn_ids: [] }] } : value;
+    }
+  });
+}
+const SAD = "I can't do this any more.";
+
+test("what an earlier build froze besides the conversation reaches no call of a turn that gets no journal: drafts, reports with their references, a supervisor's inputs, what was listed of them", async (t) => {
+  // The person says they want to die, or their message can't be read.
+  for (const [name, R1, level] of [["the reader reads it", (count) => (count === 1 ? quietReader() : wantsToDieReading()), "wants_to_die"], ["the message can't be read", (count) => { if (count > 1) throw Object.assign(new Error("A synthetic reader failure."), { code: "PROVIDER_FAILED" }); return quietReader(); }, "none"]]) {
+    const j = await journalTrial(t, { workers: stoppedQuotation({ R1, W: () => ({ reply: "I'm here with you.", answered_level: "unclear", quotes: [] }), CW: () => ({ level }) }) });
+    assert.equal((await j.turns().run("exchange-all-1", MESSAGE)).deliveryKind, "candidate", name);
+    const quoted = journalItems(packetOf(j.calls.find((call) => call.role === "W").request))[0].exact_excerpt;
+    const stopping = j.turns({ stopAt: "recordPrivateRuntimeInvocationEvent" });
+    stopping.run("exchange-all-2", SAD);
+    await stopping.stopped;
+    const auth = j.caseAuthContexts.get(j.clientA);
+    const [stopped] = (await j.record(j.clientA)).candidate_responses, draft = { kind: "candidate", candidateId: stopped.id, candidateVersion: stopped.version };
+    assert.ok(stopped.exact_text.includes(quoted));
+    for (const [eventId, subject] of [["event:agent", draft], ["event:ambiguous", { kind: "unresolved", candidateRefs: [{ candidateId: stopped.id, candidateVersion: stopped.version }] }]]) {
+      await j.service.recordCommunicationEvent(j.clientA, { eventId, kind: "reported_sent", audience: "client", subject, provenance: { origin: "agent_relayed", sourceRef: "the-lantern-entry" } }, auth);
+    }
+    await j.service.recordSupervisorInputs(j.clientA, { inputs: [{ inputId: "input:one", inputType: "supervisor_revision", text: `Say more of the lantern: ${quoted}` }] }, auth);
+    const record = await j.record(j.clientA), older = frozenWithAllOfIt(record, "runtime:exchange-all-2");
+    assert.deepEqual(older.source_items.map((item) => item.kind).filter((kind) => ["agent_relayed_report", "supervisor_instruction"].includes(kind)), ["agent_relayed_report", "supervisor_instruction"]);
+    assert.ok(JSON.stringify(older.communication_projection).match(/the-lantern-entry/gu).length === 2);
+    await j.seed(j.clientA, record);
+    const before = j.calls.length;
+    assert.equal((await j.turns().run("exchange-all-2", SAD)).answer, "I'm here with you.", name);
+    const calls = j.calls.slice(before);
+    assert.deepEqual(calls.map((call) => call.role), ["W", "CW"], name);
+    for (const { role, request } of calls) for (const words of [quoted, "lantern"]) assert.equal(holdsWords(request, words), false, `${name}: ${role} gets none of it: ${words}`);
+    const frozen = snapshotsOf(await j.record(j.clientA)).filter((snapshot) => snapshot.owner.runtime_turn_id === "runtime:exchange-all-2");
+    assert.deepEqual(frozen.map((snapshot) => [snapshot.revision_reason, snapshot.snapshot_sha256 === older.snapshot_sha256]), [["initial", true], ["dependency_refresh", false]], name);
+  }
+});
+
+test("a draft written from an older snapshot that held a draft quoting the journal isn't sent, shown to its repair or made a source, once its turn gets no journal", async (t) => {
+  // Turn two's search finds nothing, and its evidence, as an earlier build froze it, holds the first turn's stopped draft: its own draft takes the
+  // journal's words from there, and only its check reads someone who wants to die. Turn three is a later one of that conversation.
+  const THIRD = "It's the same as before.", taken = [];
+  const later = {
+    W: (packet) => {
+      const source = packet.response_evidence.source_items.find((item) => item.kind === "unsent_draft");
+      if (source) taken.push(source.exact_excerpt);
+      return { reply: source ? `As before. ${source.exact_excerpt}` : "I'm here with you.", answered_level: "none", quotes: [] };
+    },
+    repair: () => ({ reply: "I'm here. Please call 112 now.", answered_level: "wants_to_die", quotes: [] }),
+    CW: (packet) => ({ level: packet.latest_message.text === SAD ? "wants_to_die" : "none", findings: packet.latest_message.text === SAD && !Object.hasOwn(packet, "previous_candidate") ? [{ code: "VERBOSITY", severity: "substantive", summary: `synthetic: ${packet.candidate_reply}`, evidence_turn_ids: [] }] : [] })
+  };
+  const j = await journalTrial(t, { workers: stoppedQuotation(later) });
+  assert.equal((await j.turns().run("exchange-older-1", MESSAGE)).deliveryKind, "candidate");
+  const quoted = journalItems(packetOf(j.calls.find((call) => call.role === "W").request))[0].exact_excerpt;
+  const stopping = j.turns({ stopAt: "recordPrivateRuntimeInvocationEvent" });
+  stopping.run("exchange-older-2", SAD);
+  await stopping.stopped;
+  const record = await j.record(j.clientA), older = frozenWithAllOfIt(record, "runtime:exchange-older-2");
+  assert.deepEqual(older.source_items.filter((item) => item.kind === "journal_quotation"), [], "its own search found nothing");
+  await j.seed(j.clientA, record);
+  const { run } = j.turns();
+  const result = await run("exchange-older-2", SAD);
+  assert.equal(result.answer, "I'm here. Please call 112 now.");
+  assert.ok(taken.length === 1 && taken[0].includes(quoted), "its draft was written with those words in view, while it may have had the journal");
+  const { candidate_responses: candidates } = await j.record(j.clientA);
+  const [written, repaired] = candidates.slice(-2);
+  assert.ok(written.exact_text.includes(quoted));
+  assert.deepEqual([written, repaired].map((candidate) => candidate.audit_history.at(-1).findings.some((finding) => finding.code === "PROGRAM_JOURNAL_IN_CRISIS")), [true, false], "the repair was written without it");
+  const before = j.calls.findIndex((call) => call.role === "W" && packetOf(call.request).latest_message.text === SAD);
+  assert.equal((await run("exchange-older-3", THIRD)).answer, "I'm here with you.");
+  const calls = j.calls.slice(before + 2);
+  assert.deepEqual(calls.map((call) => call.role).sort(), ["CW", "CW", "R1", "R3", "W", "W-repair"], "after the check that read it: the repair, its check, and the third turn");
+  for (const { role, request } of calls) assert.equal(holdsWords(request, quoted), false, `${role} gets none of its words`);
+  assert.match(packetOf(calls.find((call) => call.role === "W-repair").request).previous_candidate, /^Not shown: /u);
+  const snapshots = snapshotsOf(await j.record(j.clientA)).slice(-2);
+  assert.deepEqual(snapshots.map((snapshot) => [snapshot.revision_reason, snapshot.source_items.some((item) => item.kind === "unsent_draft")]), [["dependency_refresh", false], ["initial", false]]);
+});
+
+test("in a case that has read no journal nothing is hidden and nothing is stopped, whatever its evidence holds", async (t) => {
+  const j = await journalTrial(t, { receipt: "none", workers: stoppedQuotation({ R1: (count) => (count === 1 ? quietReader() : wantsToDieReading()), W: () => ({ reply: "I'm here with you, and I won't go away.", answered_level: "wants_to_die", quotes: [] }),
+    repair: () => ({ reply: "I'm here. Please call 112 now.", answered_level: "wants_to_die", quotes: [] }),
+    CW: (packet) => ({ level: "wants_to_die", findings: Object.hasOwn(packet, "previous_candidate") ? [] : [{ code: "VERBOSITY", severity: "substantive", summary: "synthetic: too long", evidence_turn_ids: [] }] }) }) });
+  const { run } = j.turns();
+  await run("exchange-none-1", MESSAGE);
+  assert.equal((await run("exchange-none-2", SAD)).answer, "I'm here. Please call 112 now.");
+  const record = await j.record(j.clientA);
+  assert.deepEqual(record.candidate_responses.flatMap((candidate) => candidate.audit_history.at(-1).findings.map((finding) => finding.code)).filter((code) => code.startsWith("PROGRAM_JOURNAL")), []);
+  const [repair, check] = ["W-repair", "CW"].map((role) => packetOf(lastRequest(j.calls, role)));
+  for (const packet of [repair, check]) assert.equal(packet.previous_candidate, "I'm here with you, and I won't go away.");
+  assert.deepEqual(repair.findings.map((finding) => finding.summary), ["synthetic: too long"]);
+  assert.ok(check.response_evidence.source_items.some((item) => item.kind === "unsent_draft"), "the first turn's stopped draft is a source, as ever");
+  assert.equal(snapshotsOf(record).every((snapshot) => snapshot.source_items.every((item) => item.kind !== "journal_quotation")), true);
+});
+
+test("with response evidence off a conversation about wanting to die gets its reply, also in a case that has read its journal: no call of it gets any source", async (t) => {
+  const j = await journalTrial(t, { workers: script({ R1: (count) => (count === 1 ? quietReader() : wantsToDieReading()), CW: (count, request) => ({ ...wholeChecker(count, request), level: count === 1 ? "none" : "wants_to_die" }) }) });
+  await j.turns().run("exchange-off-1", MESSAGE);
+  assert.ok(snapshotsOf(await j.record(j.clientA)).some((snapshot) => snapshot.source_items.some((item) => item.kind === "journal_quotation")));
+  const off = j.turns({ evidenceOff: true });
+  const result = await off.run("exchange-off-2", SAD);
+  assert.deepEqual([result.deliveryKind, result.answer], ["candidate", "What makes asking hard for you?"]);
+  for (const role of ["W", "CW"]) assert.equal(Object.hasOwn(packetOf(lastRequest(j.calls, role)), "response_evidence"), false, role);
+  assert.equal((await j.record(j.clientA)).candidate_responses.at(-1).audit_history.at(-1).findings.length, 0);
 });
 
 test("a reply that quoted the journal and was sent stays what it is, in the conversation and among what was sent, and is the one thing that holds its words later", async (t) => {
