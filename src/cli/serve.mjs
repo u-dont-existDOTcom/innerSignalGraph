@@ -6,7 +6,7 @@ import { loadPrivateRuntimeAccessFromEnvironment } from "../storage/private-runt
 
 const config = loadConfig();
 const providers = createProviders(config);
-const privateRuntime = await loadPrivateRuntimeAccessFromEnvironment();
+const privateRuntime = await loadPrivateRuntimeAccessFromEnvironment(process.env, { responseEvidenceEnforced: config.responseEvidenceEnforced });
 const listener = await listenInnerSignalLoopback({
   config,
   providers,

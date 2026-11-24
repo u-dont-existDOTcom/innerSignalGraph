@@ -1,5 +1,6 @@
 import { ValidationError } from "../core/errors.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS, validateCandidateAuditFinding } from "../supervisor/private-candidate-lifecycle.mjs";
+import { evidenceReviewV1Schema, normalizeEvidenceReview } from "../supervisor/response-evidence-contract.mjs";
 
 const stringArray = { type: "array", items: { type: "string" } };
 
@@ -34,6 +35,12 @@ export const privateRuntimeRepairResultSchema = Object.freeze({
   required: ["exact_text"]
 });
 
+export const privateRuntimeEvidenceAuditResultSchema = Object.freeze({
+  ...privateRuntimeAuditResultSchema,
+  properties: { ...privateRuntimeAuditResultSchema.properties, evidence_review: evidenceReviewV1Schema },
+  required: [...privateRuntimeAuditResultSchema.required, "evidence_review"]
+});
+
 function exactKeys(value, allowed, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`${label} must be an object.`);
   const unexpected = Object.keys(value).filter((key) => !allowed.includes(key));
@@ -55,6 +62,21 @@ export function validatePrivateRuntimeAuditResult(value, { reconstructed = false
     throw new ValidationError("Private runtime audit did not return the exact required repair-induced checklist.");
   }
   return value;
+}
+
+export function validatePrivateRuntimeEvidenceAuditResult(value, { candidateText, snapshot, ...options } = {}) {
+  try {
+    exactKeys(value, ["findings", "repair_induced_checks", "evidence_review"], "Private runtime audit result");
+    validatePrivateRuntimeAuditResult({ findings: value.findings, repair_induced_checks: value.repair_induced_checks }, options);
+    for (const finding of value.findings) {
+      if (finding.id.startsWith("evidence:")) throw new ValidationError("Private runtime audit finding id is reserved.", { code: "RESPONSE_EVIDENCE_INVALID" });
+    }
+    return { ...value, evidence_review: normalizeEvidenceReview(value.evidence_review, { candidateText, snapshot }) };
+  } catch {
+    throw new ValidationError("Private runtime evidence audit result invalid.", {
+      code: "RESPONSE_EVIDENCE_INVALID", details: { failure_origin: "model_output_validation" }
+    });
+  }
 }
 
 export function validatePrivateRuntimeRepairResult(value) {

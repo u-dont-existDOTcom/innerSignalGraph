@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readResponseEvidenceSetting } from "../core/on-off-setting.mjs";
 import { RuntimeError } from "../core/errors.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "./private-case-access.mjs";
 import { acquirePrivateRootWriterLock } from "./shared-case-coordinator.mjs";
@@ -15,7 +16,7 @@ function optionalText(value) {
  * always backed by the same encrypted, authorization-first service used by the
  * backend mutation orchestrator. The read-only continuity MCP is not involved.
  */
-export async function loadPrivateRuntimeAccessFromEnvironment(environment = process.env) {
+export async function loadPrivateRuntimeAccessFromEnvironment(environment = process.env, { responseEvidenceEnforced = readResponseEvidenceSetting(environment) } = {}) {
   const mode = optionalText(environment.INNER_SIGNAL_PRIVATE_RUNTIME_MODE);
   const credentialsPath = optionalText(environment.INNER_SIGNAL_PRIVATE_RUNTIME_CREDENTIALS);
   if (mode && !["development", "hosted"].includes(mode)) {
@@ -39,12 +40,6 @@ export async function loadPrivateRuntimeAccessFromEnvironment(environment = proc
     } else {
       providers = await loadDevelopmentPrivateCaseProviders(path.resolve(credentialsPath));
     }
-    const privateCaseAccessService = createPrivateCaseAccessService({
-      rootDir: providers.rootDir,
-      authorizationProvider: providers.authorizationProvider,
-      keyProvider: providers.keyProvider,
-      allowDevelopmentFileProvider: resolvedMode === "development"
-    });
     let privateAuthContext = null;
     if (resolvedMode === "development") {
       const bearerToken = optionalText(environment.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN);
@@ -61,6 +56,14 @@ export async function loadPrivateRuntimeAccessFromEnvironment(environment = proc
       if (error?.code !== "PRIVATE_ROOT_WRITER_ACTIVE") throw error;
       throw new RuntimeError("Another writer holds this private vault: a one-shot operator, a journal publication or another InnerSignal server. Start this server after it finishes.", { code: "PRIVATE_ROOT_WRITER_ACTIVE" });
     }
+    const privateCaseAccessService = createPrivateCaseAccessService({
+      rootDir: providers.rootDir,
+      heldRootDir: writerLock.rootDir,
+      authorizationProvider: providers.authorizationProvider,
+      keyProvider: providers.keyProvider,
+      responseEvidencePolicy: responseEvidenceEnforced ? "enforced" : "advisory",
+      allowDevelopmentFileProvider: resolvedMode === "development"
+    });
     const lock = writerLock;
     return Object.freeze({
       mode: resolvedMode,

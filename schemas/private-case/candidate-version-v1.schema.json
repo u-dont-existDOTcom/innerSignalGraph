@@ -24,7 +24,85 @@
         "sent_with_audit_id": { "type": "string", "minLength": 1, "maxLength": 200 },
         "sent_turn_id": { "type": "string", "minLength": 1, "maxLength": 160 },
         "sent_in_reply_to_turn_id": { "type": "string", "minLength": 1, "maxLength": 160 },
-        "sent_status_only": { "const": true }
+        "sent_status_only": { "const": true },
+        "response_evidence": {
+          "description": "Reserved for trusted store paths; callers cannot supply this binding.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "schema_version": {
+              "const": 1
+            },
+            "policy_version": {
+              "const": "response-evidence-v1"
+            },
+            "snapshot_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "snapshot_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "candidate_origin": {
+              "enum": [
+                "backend_produced",
+                "external_draft"
+              ]
+            },
+            "writer_inclusion": {
+              "enum": [
+                "verified",
+                "not_attested"
+              ]
+            },
+            "writer_inclusion_sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "established_context_after_commit_sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "compatibility_state_after_commit_binding": {
+              "type": ["string", "null"],
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "dependency_status": {
+              "enum": [
+                "current_at_commit",
+                "stale_at_commit"
+              ]
+            }
+          },
+          "required": [
+            "schema_version",
+            "policy_version",
+            "snapshot_id",
+            "snapshot_sha256",
+            "candidate_origin",
+            "writer_inclusion",
+            "writer_inclusion_sha256",
+            "established_context_after_commit_sha256",
+            "dependency_status"
+          ]
+        }
       }
     }
   },

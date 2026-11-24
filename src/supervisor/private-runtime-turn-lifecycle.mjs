@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
-import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES } from "./private-candidate-lifecycle.mjs";
+import { MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES, validateCandidateAuditFinding } from "./private-candidate-lifecycle.mjs";
+import { deriveEvidenceFindings, normalizeEvidenceReview, normalizeRecordOnlyFinding, sha256Json } from "./response-evidence-contract.mjs";
 import { OWNER_FALLBACK_KIND, OWNER_FALLBACK_MESSAGE } from "./owner-fallback-message.mjs";
 
 export const PRIVATE_RUNTIME_TURN_STATES = Object.freeze([
@@ -69,6 +70,24 @@ function validateQuestion(value) {
 // Whether a stored question could be saved and sent as the discriminator. The same rule validateQuestion enforces.
 export function isDeliverableDiscriminatorQuestion(value) {
   try { validateQuestion(value); return true; } catch { return false; }
+}
+
+export function validatePrivateRuntimeDiscriminatorReview(value, { exactText, snapshot = null } = {}) {
+  const blocked = () => { throw new ValidationError("Discriminating question evidence review invalid.", { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" }); };
+  if (!value || Object.keys(value).some((key) => !["schema_version", "exact_text_sha256", "snapshot_id", "snapshot_sha256", "auditor_context_id", "auditor_inclusion_sha256", "findings", "review"].includes(key))
+      || value.schema_version !== 1 || value.exact_text_sha256 !== sha256ExactText(exactText)
+      || !SHA256.test(value.snapshot_sha256) || !SHA256.test(value.auditor_inclusion_sha256)
+      || typeof value.snapshot_id !== "string" || !value.snapshot_id || value.snapshot_id.length > 160
+      || typeof value.auditor_context_id !== "string" || !value.auditor_context_id || value.auditor_context_id.length > 160
+      || !Array.isArray(value.findings) || value.findings.length > 200) blocked();
+  if (snapshot && (value.snapshot_id !== snapshot.id || value.snapshot_sha256 !== snapshot.snapshot_sha256)) blocked();
+  const normalized = normalizeEvidenceReview(value.review, { candidateText: exactText, snapshot });
+  if (sha256Json(normalized) !== sha256Json(value.review) || deriveEvidenceFindings(normalized).length) blocked();
+  for (const [index, finding] of value.findings.entries()) {
+    validateCandidateAuditFinding(finding, index);
+    if (finding.id.startsWith("evidence:") || ["substantive", "high"].includes(normalizeRecordOnlyFinding(finding).severity)) blocked();
+  }
+  return value;
 }
 
 // The owner fallback is fixed text, not a question. Only the named constant can be created; a stored one is read back by shape,
@@ -145,6 +164,10 @@ export function validatePrivateRuntimeTurn(value) {
     requiredId(value.discriminator.producer_context_id, "runtime discriminator producer_context_id", 160);
     requiredTimestamp(value.discriminator.created_at, "runtime discriminator created_at");
     if (value.discriminator.sha256 !== sha256ExactText(value.discriminator.exact_text)) throw new ValidationError("Runtime discriminator digest does not match its exact bytes.");
+  }
+  if (value.discriminator_review != null) {
+    if (!value.discriminator || value.discriminator.kind === OWNER_FALLBACK_KIND) throw new ValidationError("Runtime discriminator review binding invalid.", { code: "PRIVATE_DISCRIMINATOR_EVIDENCE_BLOCKED" });
+    validatePrivateRuntimeDiscriminatorReview(value.discriminator_review, { exactText: value.discriminator.exact_text });
   }
 
   if (value.delivery == null) {
