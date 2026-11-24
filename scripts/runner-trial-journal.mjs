@@ -55,9 +55,11 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      fresh call of the checker's worker, which judges it (and is asked again, up to twice, when it finds something
                      wrong), and the file's planted wrong answers too: about three calls a question, one at a time. The copy passes
                      when the file has at least ${COLD_TEST_RULE.answerable} questions the journal answers (in words of its passages), ${COLD_TEST_RULE.unanswerable} it doesn't (and the
-                     search returns something for) and ${COLD_TEST_RULE.planted} planted wrong answers; the judge catches at least ${COLD_TEST_RULE.caught.at_least} of every ${COLD_TEST_RULE.caught.of} of those; at
-                     most ${COLD_TEST_RULE.wrong.at_most} answer in ${COLD_TEST_RULE.wrong.of} is wrong; at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} of each kind are right; at most ${COLD_TEST_RULE.left_out.at_most} question in ${COLD_TEST_RULE.left_out.of} is
-                     left out (a search slower than a reply waits, a model that refuses); and the copy's publication didn't change.
+                     search returns something for) and ${COLD_TEST_RULE.planted} planted wrong answers; the judge catches at least ${COLD_TEST_RULE.caught.at_least} of every ${COLD_TEST_RULE.caught.of} of those,
+                     and ${COLD_TEST_RULE.caught_of_each_kind.at_least} of every ${COLD_TEST_RULE.caught_of_each_kind.of} of each kind; at most ${COLD_TEST_RULE.wrong.at_most} answer is wrong, to any question, for every ${COLD_TEST_RULE.wrong.of} judged to questions of
+                     those two sorts; at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} of each sort are right; at most ${COLD_TEST_RULE.left_out.at_most} question in ${COLD_TEST_RULE.left_out.of} is left out (a search
+                     slower than a reply waits, a refusal by Claude; one by GPT would most likely come as a malformed answer, be
+                     asked twice more and then stop the test); and the copy's publication didn't change.
                      The file says who wrote it (anthropic, openai or person): not the company whose model judges.
                      A test that starts removes the copy's receipt; only a pass gives a new one, which the journal gate asks for.
                      Of two tests that overlap, the one started last decides, also when it never ends.

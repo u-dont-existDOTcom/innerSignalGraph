@@ -128,7 +128,7 @@ test("a copy whose passages whole messages find, with true answers, passes, and 
     questions: { same_words: 40, other_words: 10, unanswerable: 20, unanswerable_without_passages: 10, planted: 20 },
     found: { same_words: { found: 40, of: 40 }, other_words: { found: 0, of: 10 } },
     right: { same_words: { right: 40, of: 40 }, other_words: { right: 0, of: 10 }, unanswerable: { right: 20, of: 20 }, unanswerable_without_passages: { right: 10, of: 10 } },
-    wrong: 0, answers: 80, disputed: 0, incomplete: 10, left_out: { timed_out: 0, refused: 0 },
+    wrong: 0, answers: 60, disputed: 0, incomplete: 10, left_out: { timed_out: 0, refused: 0 },
     planted: { caught: 20, of: 20, by_kind: Object.fromEntries(PLANTED_KINDS.map((kind) => [kind, { caught: 4, of: 4 }])) },
     same_snapshot: true, not_met: [], passed: true });
   assert.deepEqual(byQuestion.map(({ n }) => n), Array.from({ length: 80 }, (_, index) => index + 1));
@@ -522,8 +522,8 @@ test("same words: the question shares a word the search goes by with a passage o
 
 test("the rule's numbers, in one place with their version: a change of one is a change of the version", () => {
   assert.deepEqual(COLD_TEST_RULE, { version: "journal-cold-test-rule-v3", answerable: 40, unanswerable: 20, planted: 20, planted_of_each_kind: 3,
-    caught: { at_least: 4, of: 5 }, wrong: { at_most: 1, of: 30 }, right: { at_least: 2, of: 3 }, left_out: { at_most: 1, of: 10 } });
-  assert.ok([COLD_TEST_RULE, COLD_TEST_RULE.caught, COLD_TEST_RULE.wrong, COLD_TEST_RULE.right, COLD_TEST_RULE.left_out].every(Object.isFrozen));
+    caught: { at_least: 4, of: 5 }, caught_of_each_kind: { at_least: 1, of: 2 }, wrong: { at_most: 1, of: 30 }, right: { at_least: 2, of: 3 }, left_out: { at_most: 1, of: 10 } });
+  assert.ok([COLD_TEST_RULE, ...Object.values(COLD_TEST_RULE).filter((value) => typeof value === "object")].every(Object.isFrozen));
   assert.deepEqual(PLANTED_KINDS, ["negation", "person", "time", "happened", "certainty"]);
   assert.deepEqual(COLD_QUESTION_AUTHORS, ["anthropic", "openai", "person"]);
   assert.equal(JOURNAL_SEARCH_TIMEOUT_MS, 4000);
@@ -548,7 +548,7 @@ test("a file with fewer than forty answerable questions that share words with th
   assert.deepEqual((await run(standIns(), { questions: nothing })).report.not_met, ["too_few_questions"]);
 });
 
-test("the judge is tested in every run: at least twenty planted wrong answers, three of each kind, and at least four of five caught by the calls a real answer goes through", async (t) => {
+test("the judge is tested in every run: at least twenty planted wrong answers, three of each kind, and at least four of five caught, and half of each kind, by the calls a real answer goes through", async (t) => {
   const { run } = await copyOf(t);
   const planting = (planted) => run(standIns({ planted }));
   // Caught is wrong in two of at most three calls; right, incomplete or disputed is missed.
@@ -564,7 +564,15 @@ test("the judge is tested in every run: at least twenty planted wrong answers, t
     const { report } = await turns(...verdicts);
     assert.deepEqual([report.by_question[0].planted, report.planted.caught, calls], [{ kind: "negation", verdict }, caught, verdicts.length], verdicts.join());
     // What becomes of a planted answer isn't the copy's: nothing of it is counted as an answer's.
-    assert.deepEqual([report.by_question[0].result, report.wrong, report.disputed, report.incomplete, report.answers], ["right", 0, 0, 10, 80]);
+    assert.deepEqual([report.by_question[0].result, report.wrong, report.disputed, report.incomplete, report.answers], ["right", 0, 0, 10, 60]);
+  }
+  // Of each kind at least half, however many of all: of four, two; of three, two. A judge that sees nothing of one kind can't pass by the others.
+  const places = (kind) => Array.from({ length: PLANTS }, (_, place) => place).filter((place) => PLANTED_KINDS[place % PLANTED_KINDS.length] === kind);
+  const blindTo = async (missed) => { const { passed, report } = await planting((packet) => (missed.includes(numberOf(packet) - 1) ? "right" : "wrong")); return [passed, report.planted.caught, report.not_met]; };
+  for (const kind of PLANTED_KINDS) {
+    assert.deepEqual(await blindTo(places(kind).slice(0, 2)), [true, 18, []], kind);
+    assert.deepEqual(await blindTo(places(kind).slice(0, 3)), [false, 17, ["judge_missed"]], kind);
+    assert.deepEqual(await blindTo(places(kind)), [false, 16, ["judge_missed"]], `${kind}: four of five of all, and none of it`);
   }
   // Too few of them, or of a kind; on questions the journal answers alone, and only where the file has them.
   const plantedAt = (change) => QUESTIONS.map((entry, place) => { const planted = place < WORDED_ALIKE ? change(place) : null; return planted ? { ...bare(entry), planted } : bare(entry); });
@@ -577,22 +585,44 @@ test("the judge is tested in every run: at least twenty planted wrong answers, t
     const { report } = await run(standIns(), { questions: plantedAt(change) });
     assert.deepEqual([report.planted.of, report.questions.planted, report.not_met], [of, of, notMet]);
   }
+  // Three of a kind: two caught are half of them, one isn't.
+  const threeOfOne = plantedAt((place) => (place < 25 ? { ...plantOn(place), kind: PLANTED_KINDS[place < 3 ? 0 : 1 + (place % 4)] } : null));
+  for (const [missed, notMet] of [[1, []], [2, ["judge_missed"]]]) {
+    const { report } = await run(standIns({ planted: (packet) => (numberOf(packet) <= missed ? "right" : "wrong") }), { questions: threeOfOne });
+    assert.deepEqual([report.planted.by_kind[PLANTED_KINDS[0]], report.planted.caught, report.not_met], [{ caught: 3 - missed, of: 3 }, 25 - missed, notMet]);
+  }
 });
 
-test("more than one wrong answer in thirty, of either kind, and the copy doesn't pass; misses, incomplete and disputed answers don't hold it back by themselves", async (t) => {
+test("more than one wrong answer, to any question, in thirty answers judged to those the rule counts, and the copy doesn't pass; misses, incomplete and disputed answers don't hold it back by themselves", async (t) => {
   const { run } = await copyOf(t);
-  for (const [numbers, passes] of [[[1], true], [[1, 2], true], [[1, 2, 3], false], [[ANSWERABLE + 1, ANSWERABLE + 2], true], [[WORDED_ALIKE, ANSWERABLE + 1, ANSWERABLE + 12], false]]) {
+  // Whatever its question: one the rule counts, one worded otherwise, one for which nothing is found.
+  for (const [numbers, passes] of [[[1], true], [[1, 2], true], [[1, 2, 3], false], [[ANSWERABLE + 1, ANSWERABLE + 2], true], [[WORDED_ALIKE, ANSWERABLE + 1, ANSWERABLE + 12], false], [[WORDED_ALIKE + 1, ANSWERABLE, ANSWERABLE + 1], false]]) {
     const { passed, receipt, report } = await run(findingWrong(...numbers));
-    assert.deepEqual([passed, receipt !== null, report.wrong, report.answers, report.not_met], [passes, passes, numbers.length, 80, passes ? [] : ["wrong_answers"]], numbers.join());
+    assert.deepEqual([passed, receipt !== null, report.wrong, report.answers, report.not_met], [passes, passes, numbers.length, 60, passes ? [] : ["wrong_answers"]], numbers.join());
   }
-  // One in thirty of the answers given: of exactly sixty, two; of fifty-nine, one.
+  // Questions that show nothing loosen nothing: ten more of them make ninety answers, and three wrong are still more than one in thirty. Thirty
+  // more that find a passage make ninety that count, and three wrong are no more than that; four are.
+  const padded = [...QUESTIONS, ...ABSENT.map((thing) => ({ id: `file-more-${thing}`, question: `When did I sell a ${thing}?`, answerable: false }))];
+  const some = await run(findingWrong(1, 2, 3), { questions: padded });
+  assert.deepEqual([some.report.by_question.length, some.report.questions.unanswerable_without_passages, some.report.answers, some.report.wrong, some.report.not_met], [90, 20, 60, 3, ["wrong_answers"]]);
+  const more = Array.from({ length: 30 }, (_, place) => ({ id: `file-more-${place}`, question: premise(PREMISES + place), answerable: false }));
+  const counting = [...QUESTIONS.filter(({ question }) => !question.startsWith("Number ") && !question.startsWith("When ")), ...more];
+  const script = Object.fromEntries(counting.filter(({ answerable }) => !answerable).map(({ question }) => [question, "false_premise"]));
+  for (const [wrong, notMet] of [[3, []], [4, ["wrong_answers"]]]) {
+    const { report } = await run(standIns({ script, verdict: (packet) => (numberOf(packet) <= wrong ? "wrong" : usualVerdict(packet)) }), { questions: counting });
+    assert.deepEqual([report.questions.unanswerable, report.answers, report.wrong, report.not_met], [50, 90, wrong, notMet]);
+  }
+  // One in thirty of those: of exactly sixty, two; of fifty-nine, one, where a model refuses one, or an answer has no words for the judge.
   const sixty = QUESTIONS.filter(({ question }) => !question.startsWith("Number ") && !question.startsWith("When "));
   assert.equal(sixty.length, 60);
   assert.deepEqual([(await run(findingWrong(1, 2), { questions: sixty })).passed, (await run(findingWrong(1, 2, 3), { questions: sixty })).report.not_met], [true, ["wrong_answers"]]);
-  const refusing = (numbers, wrong) => standIns({ verdict: (packet) => (wrong.includes(numberOf(packet)) ? "wrong" : usualVerdict(packet)),
-    reply: async (count, request, usual) => { const packet = JSON.parse(request.user); if (request.stage === "cold_consumer" && numbers.includes(numberOf(packet))) throw new ProviderError("A synthetic refusal.", { code: "REFUSED" }); return usual(); } });
-  const fiftyNine = await run(refusing([60], [1, 2]), { questions: sixty });
-  assert.deepEqual([fiftyNine.report.answers, fiftyNine.report.wrong, fiftyNine.report.not_met], [59, 2, ["wrong_answers"]]);
+  const unjudged = (stage, number, instead) => standIns({ verdict: (packet) => ([1, 2].includes(numberOf(packet)) ? "wrong" : usualVerdict(packet)),
+    reply: async (count, request, usual) => (request.stage === stage && numberOf(JSON.parse(request.user)) === number ? instead(await usual()) : usual()) });
+  const refusal = () => { throw new ProviderError("A synthetic refusal.", { code: "REFUSED" }); };
+  for (const [stage, number, instead] of [["cold_consumer", 60, refusal], ["cold_judge", 60, refusal], ["cold_judge", 40, refusal], ["cold_consumer", 60, (usual) => ({ ...usual, answer: " " })]]) {
+    const fiftyNine = await run(unjudged(stage, number, instead), { questions: sixty });
+    assert.deepEqual([fiftyNine.report.answers, fiftyNine.report.wrong, fiftyNine.report.not_met], [59, 2, ["wrong_answers"]], `${stage} ${number}`);
+  }
   // A third of the forty the rule asks for incomplete or disputed, and six of the twenty unanswerable: nothing is wrong, and two thirds are right.
   let calls = 0;
   const { passed, report } = await run(standIns({ verdict: (packet) => {
@@ -642,7 +672,7 @@ test("a question whose search takes longer than a reply waits, or that a model r
   const numbers = (count) => Array.from({ length: count }, (_, place) => PLANTS + 1 + place);
   const workers = standIns();
   const atTenth = await run(workers, slow(numbers(8)));
-  assert.deepEqual([atTenth.passed, atTenth.report.left_out, atTenth.report.answers, atTenth.report.right.same_words, atTenth.report.not_met], [true, { timed_out: 8, refused: 0 }, 72, { right: 32, of: 40 }, []]);
+  assert.deepEqual([atTenth.passed, atTenth.report.left_out, atTenth.report.answers, atTenth.report.right.same_words, atTenth.report.not_met], [true, { timed_out: 8, refused: 0 }, 52, { right: 32, of: 40 }, []]);
   assert.ok(atTenth.report.slowest_search_ms >= 400);
   assert.equal(workers.sent.some(({ packet }) => numbers(8).includes(numberOf(packet))), false, "nothing is asked about it");
   assert.deepEqual(entryOf(atTenth, PLANTS + 1), { n: 21, answerable: true, found: false, cited: false, same_words: true, passages: 0, answerability: null, verdict: null, result: "left_out", left_out: "timed_out", planted: null });
@@ -665,7 +695,7 @@ test("a question whose search takes longer than a reply waits, or that a model r
   assert.deepEqual([resultsOf(refusedAnswer), entryOf(refusedAnswer, 2).left_out, refusedAnswer.report.left_out, refusedAnswer.report.retries], [["right", "left_out", "right", "right"], "refused", { timed_out: 0, refused: 1 }, { consumer: 0, judge: 0 }]);
   assert.deepEqual([consumers.packets("W").map(numberOf), consumers.packets("CW").map(numberOf)], [[1, 2, 3, 4], [1, 3, 4]]);
   const refusedVerdict = await run(refusing("cold_judge", [2]), { questions: FEW });
-  assert.deepEqual([entryOf(refusedVerdict, 2).result, entryOf(refusedVerdict, 2).verdict, entryOf(refusedVerdict, 2).left_out, refusedVerdict.report.answers], ["left_out", null, "refused", 4]);
+  assert.deepEqual([entryOf(refusedVerdict, 2).result, entryOf(refusedVerdict, 2).verdict, entryOf(refusedVerdict, 2).left_out, refusedVerdict.report.answers], ["left_out", null, "refused", 2]);
   // What the program itself finds wrong is wrong, whether or not the judge reads it.
   const citing = standIns({ reply: async (count, request, usual) => {
     const packet = JSON.parse(request.user);

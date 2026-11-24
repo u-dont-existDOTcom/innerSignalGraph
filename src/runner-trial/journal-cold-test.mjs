@@ -144,6 +144,8 @@ async function readForQuestion({ reader, auth, caseId, corpusId, before, entry, 
 }
 
 // A call's outcome, or REFUSED when the model refuses it (what it was given can't be told from an answer, so it's neither right nor wrong).
+// Only Claude's worker can tell a refusal, by the API's own stop reason. Codex gives no sign of one: GPT's would most likely come as a
+// malformed answer, be asked twice more as one (the port below), and then stop the test.
 const REFUSED = Symbol("refused");
 async function orRefused(call) {
   try { return await call; } catch (error) {
@@ -220,7 +222,8 @@ function tally(byQuestion, { author, judgeProvider, sameSnapshot }) {
   const planted = byQuestion.map((entry) => entry.planted).filter((plant) => plant?.verdict);
   const caught = (plants) => ({ caught: count(plants, (plant) => plant.verdict === "wrong"), of: plants.length });
   const ofKind = (kind) => planted.filter((plant) => plant.kind === kind);
-  const answers = count(byQuestion, (entry) => entry.answerability !== null);
+  // What the share of wrong answers is of: the answers judged, to the questions the rule counts.
+  const answers = count([...worded, ...tempted], (entry) => entry.verdict !== null);
   const leftOut = (why) => count(byQuestion, (entry) => entry.left_out === why);
   const scores = {
     questions: { same_words: worded.length, other_words: otherwise.length, unanswerable: tempted.length, unanswerable_without_passages: untempted.length, planted: planted.length },
@@ -237,10 +240,12 @@ function tally(byQuestion, { author, judgeProvider, sameSnapshot }) {
   const atLeast = ({ at_least: share, of }, part, whole) => part * of >= whole * share;
   const atMost = ({ at_most: share, of }, part, whole) => part * of <= whole * share;
   const enoughRight = (entries) => entries.length > 0 && atLeast(rule.right, right(entries).right, entries.length);
+  const enoughCaught = atLeast(rule.caught, scores.planted.caught, planted.length)
+    && Object.values(scores.planted.by_kind).every((kind) => atLeast(rule.caught_of_each_kind, kind.caught, kind.of));
   const notMet = [
     ...(worded.length < rule.answerable || tempted.length < rule.unanswerable ? ["too_few_questions"] : []),
     ...(planted.length < rule.planted || PLANTED_KINDS.some((kind) => ofKind(kind).length < rule.planted_of_each_kind) ? ["too_few_planted"] : []),
-    ...(atLeast(rule.caught, scores.planted.caught, planted.length) ? [] : ["judge_missed"]),
+    ...(enoughCaught ? [] : ["judge_missed"]),
     ...(atMost(rule.wrong, scores.wrong, answers) ? [] : ["wrong_answers"]),
     ...(enoughRight(worded) && enoughRight(tempted) ? [] : ["too_few_right"]),
     ...(atMost(rule.left_out, scores.left_out.timed_out + scores.left_out.refused, byQuestion.length) ? [] : ["too_many_left_out"]),
@@ -350,9 +355,9 @@ const isJudgeAnswer = ajv.compile({ ...COLD_JUDGE_SCHEMA, properties: { ...COLD_
 // each packet leaves.
 //
 // A call is made again, with the same packet, when it failed for a reason a reply's is made again for (RETRYABLE_WORKER_FAILURES) or its answer
-// is outside its schema or for another question: at most twice, and at most MAX_RETRIES times in a test, for its form alone and never for what
-// it says. Then, or for any other failure, it stops the test, with nothing of it in the error. Of the judge's answer only the verdict comes
-// back, never its reason.
+// is outside its schema or for another question: at most twice, and at most MAX_COLD_RETRIES times in a test, for its form alone and never for
+// what it says. Then, or for any other failure, it stops the test, with nothing of it in the error. Of the judge's answer only the verdict
+// comes back, never its reason.
 const MAX_CALL_ATTEMPTS = 3;
 export const MAX_COLD_RETRIES = 6;
 export function createSealedColdTestPort({ consumer, judge, timeoutMs = 10 * 60_000, beforeSend = null }) {

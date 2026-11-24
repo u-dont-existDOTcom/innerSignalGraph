@@ -1470,7 +1470,7 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   }
   const small = path.join(outside, "small-questions.json");
   await fs.writeFile(small, JSON.stringify(withQuestions(QUESTIONS.questions.slice(1))), { mode: 0o600 });
-  // Three wrong answers of sixty-one are more than one in thirty.
+  // Three wrong answers are more than one in thirty of the sixty that count.
   const numbered = (packet) => Number(packet.question_id.slice("question-".length));
   const consuming = (change) => replying(async (count, request, usual) => { const value = await usual(); return !isJudge(request) && numbered(value) <= 3 ? change(value) : value; });
   const judging = (wrong) => using(standIns({ verdict: (packet) => (wrong(numbered(packet)) ? "wrong" : "right") }));
@@ -1522,8 +1522,9 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   assert.match(USAGE, /A test that starts removes the copy's receipt; only a pass gives a new one/u);
   assert.match(USAGE, /--cold-test FILE --provider mixed\|claude\|codex/u);
   assert.match(USAGE, /excerpts of the client's journal to the companies running those workers \(with --provider mixed,\s+Anthropic and OpenAI; claude, Anthropic; codex, OpenAI\)/u);
-  for (const said of [/at least 40 questions the journal answers \(in words of its passages\), 20 it doesn't \(and the\s+search returns something for\) and 20 planted wrong answers/u, /the judge catches at least 4 of every 5 of those/u,
-    /at\s+most 1 answer in 30 is wrong; at least 2 of every 3 of each kind are right; at most 1 question in 10 is\s+left out/u, /The file says who wrote it \(anthropic, openai or person\): not the company whose model judges\./u]) assert.match(USAGE, said);
+  for (const said of [/at least 40 questions the journal answers \(in words of its passages\), 20 it doesn't \(and the\s+search returns something for\) and 20 planted wrong answers/u, /the judge catches at least 4 of every 5 of those,\s+and 1 of every 2 of each kind;/u,
+    /at most 1 answer is wrong, to any question, for every 30 judged to questions of\s+those two sorts; at least 2 of every 3 of each sort are right; at most 1 question in 10 is left out \(a search\s+slower than a reply waits, a refusal by Claude; one by GPT would most likely come as a malformed answer, be\s+asked twice more and then stop the test\);/u,
+    /The file says who wrote it \(anthropic, openai or person\): not the company whose model judges\./u]) assert.match(USAGE, said);
   // Questions by the company whose model judges are refused before anything: no call, and the receipt stays as it is.
   await setJournalConsent({ home, number: 1, action: "confirm" });
   const byOther = path.join(outside, "by-a-company.json");

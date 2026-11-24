@@ -309,7 +309,7 @@ test("once a case has read its journal, a closed gate stops the whole case: the 
   assert.equal(again.json.closing ?? null, null, "with the consent confirmed again, the case replies");
 });
 
-test("a reader other than the one tested closes the gate of a case that has read its journal, as a lost receipt does: the next turn makes no model call, and the page's list says no test passed", async (t) => {
+test("a reader other than the one tested closes the gate of a case that has read its journal, as a lost receipt does: the next turn makes no model call; the page's list, which compares the copy and the rule alone, says no test passed when the receipt names another rule, or none", async (t) => {
   const j = await journalTrial(t);
   const { base } = await j.serve();
   const listed = async () => (await (await fetch(`${base}/v1/runner/clients`, { headers: { origin: base } })).json()).cases.find((entry) => entry.caseId === j.clientA).journal.coldTestPassed;
@@ -323,6 +323,7 @@ test("a reader other than the one tested closes the gate of a case that has read
   };
   await j.plantReceipt({ reader_version: "session-use-reader-v1:every-word" });
   await closed("exchange-reader-2");
+  assert.equal(await listed(), true, "the list compares the copy and the rule alone");
   await j.plantFirstReceipt();
   await closed("exchange-reader-3");
   assert.equal(await listed(), false, "a receipt that names no reader is no passed test");

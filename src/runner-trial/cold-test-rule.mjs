@@ -7,8 +7,11 @@
 //   (without one no word search can find it; the others are counted and shown, and not required), and `unanswerable` ones for which the
 //   search returns a passage all the same (one that finds nothing is answered "not found" by anything);
 // - the judge catches planted wrong answers: the file holds at least `planted` of them, `planted_of_each_kind` of each kind, on questions
-//   the journal answers (it is told which it doesn't, so a plant there would test nothing), and at least `caught` of those are judged wrong;
-// - no more than `wrong` of the answers are wrong, and at least `right` of both kinds of questions above are right;
+//   the journal answers (it is told which it doesn't, so a plant there would test nothing), and at least `caught` of those are judged wrong,
+//   and `caught_of_each_kind` of each kind (a judge that sees nothing of one kind could pass by the others);
+// - no more than `wrong` of the answers are wrong. A wrong answer counts whatever its question; the share is of the answers the judge judged
+//   to the two kinds of questions above, so the others, and answers no one judged, loosen nothing;
+// - at least `right` of each of those two kinds of questions are right;
 // - no more than `left_out` of the questions are left out: searched for longer than a reply waits, or refused by a model;
 // - another company's model than the judge's wrote the file, or a person did (the file says who): a key built on a misreading, or errors
 //   the judge's own model sees as errors, would be shared;
@@ -21,6 +24,7 @@ export const COLD_TEST_RULE = Object.freeze({
   version: "journal-cold-test-rule-v3",
   answerable: 40, unanswerable: 20, planted: 20, planted_of_each_kind: 3,
   caught: Object.freeze({ at_least: 4, of: 5 }),
+  caught_of_each_kind: Object.freeze({ at_least: 1, of: 2 }),
   wrong: Object.freeze({ at_most: 1, of: 30 }),
   right: Object.freeze({ at_least: 2, of: 3 }),
   left_out: Object.freeze({ at_most: 1, of: 10 })
