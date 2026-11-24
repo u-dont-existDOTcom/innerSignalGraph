@@ -832,6 +832,11 @@ function stoppedQuotation(later) {
   });
 }
 const SAD = "I can't do this any more.";
+// A turn whose process stops for good before its writer is called, its evidence frozen.
+async function stoppedBeforeItsWriter(j, exchange) {
+  const { run, stopped } = j.turns({ stopAt: "recordPrivateRuntimeInvocationEvent" });
+  await Promise.race([stopped, run(exchange, SAD).then(({ answer }) => assert.fail(`The turn went on to its end: ${answer}`))]);
+}
 
 test("what an earlier build froze besides the conversation reaches no call of a turn that gets no journal: drafts, reports with their references, a supervisor's inputs, what was listed of them", async (t) => {
   // The person says they want to die, or their message can't be read.
@@ -839,9 +844,7 @@ test("what an earlier build froze besides the conversation reaches no call of a 
     const j = await journalTrial(t, { workers: stoppedQuotation({ R1, W: () => ({ reply: "I'm here with you.", answered_level: "unclear", quotes: [] }), CW: () => ({ level }) }) });
     assert.equal((await j.turns().run("exchange-all-1", MESSAGE)).deliveryKind, "candidate", name);
     const quoted = journalItems(packetOf(j.calls.find((call) => call.role === "W").request))[0].exact_excerpt;
-    const stopping = j.turns({ stopAt: "recordPrivateRuntimeInvocationEvent" });
-    stopping.run("exchange-all-2", SAD);
-    await stopping.stopped;
+    await stoppedBeforeItsWriter(j, "exchange-all-2");
     const auth = j.caseAuthContexts.get(j.clientA);
     const [stopped] = (await j.record(j.clientA)).candidate_responses, draft = { kind: "candidate", candidateId: stopped.id, candidateVersion: stopped.version };
     assert.ok(stopped.exact_text.includes(quoted));
@@ -879,9 +882,7 @@ test("a draft written from an older snapshot that held a draft quoting the journ
   const j = await journalTrial(t, { workers: stoppedQuotation(later) });
   assert.equal((await j.turns().run("exchange-older-1", MESSAGE)).deliveryKind, "candidate");
   const quoted = journalItems(packetOf(j.calls.find((call) => call.role === "W").request))[0].exact_excerpt;
-  const stopping = j.turns({ stopAt: "recordPrivateRuntimeInvocationEvent" });
-  stopping.run("exchange-older-2", SAD);
-  await stopping.stopped;
+  await stoppedBeforeItsWriter(j, "exchange-older-2");
   const record = await j.record(j.clientA), older = frozenWithAllOfIt(record, "runtime:exchange-older-2");
   assert.deepEqual(older.source_items.filter((item) => item.kind === "journal_quotation"), [], "its own search found nothing");
   await j.seed(j.clientA, record);
