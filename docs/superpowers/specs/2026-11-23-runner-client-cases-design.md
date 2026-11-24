@@ -301,30 +301,38 @@ judge for every question, the printed numbers) holds in it.
   - **The judge is tested in every run.** An answerable question may hold a planted wrong answer, by whoever wrote the file: a "not" dropped
     or added, another person, another time, something planned, wished or dreamed told as done (or the other way round), something uncertain
     told as certain (`PLANTED_KINDS`). It goes to the judge in the very packet a real answer does and through the same calls, with nothing
-    that says it's planted. It is refused on a question the journal doesn't answer: the judge is told which those are.
+    that says it's planted. It is refused on a question the journal doesn't answer: the judge is told which those are. **Two shares must be
+    caught:** four in five of all, and half of each kind. The five kinds are different mistakes, and four in five of all lets every planted
+    answer of one kind be missed (four of twenty): a judge that sees nothing of one kind, and catches the others at 90% a call, would pass
+    by it in 16% of runs, and one that always catches the others in all of them. Half of each kind costs a good judge little (one that
+    catches 90% a call passes both in 93% of runs, the first alone in 94%), while four in five of each, of so few, would fail it in nine runs
+    of ten by chance.
   - **A call that fails for its form** (an answer outside its schema or for another question, a timeout, an incomplete receipt: a reply's own
     reasons, `RETRYABLE_WORKER_FAILURES`) is made again with the same packet, at most twice and six times in a test, counted by role, and
-    then stops the test with no verdict. Any other failure (a plan limit, a lapsed sign-in) stops it at once. A refusal, by either model,
-    is never asked again: it leaves the question out, and is counted.
+    then stops the test with no verdict. Any other failure (a plan limit, a lapsed sign-in) stops it at once. A refusal that its worker
+    can tell is never asked again: it leaves the question out, and is counted. Only Claude's worker can, by the API's own stop reason; Codex
+    gives no sign of one, so a refusal by GPT would most likely come as a malformed answer, be asked twice more and then stop the test.
   - **The program scores** by exact checks only: `found` (a passage of every key quote is among those returned, by record), `cited` (among
     those it cites), what the consumer declares, the judge's verdict, and `same_words` (the question shares a word the search goes by
     with a passage of every key quote's group, by the search's own rule: `evidenceWordsShared` in `src/journal-import/retrieval.mjs`; no
     search by words can find all of the evidence without). An answerable question is right when found, supported in words, cited and judged
     right; an unanswerable one when declared one of the three others and judged right. Wrong is: judged wrong, a cited passage it wasn't
     given, or `supported` with none cited. Left out is a search slower than a reply waits, or a refusal, unless it's wrong. Anything else is
-    neither (a miss, incomplete, disputed).
+    neither (a miss, incomplete, disputed). `answers` counts those the judge judged, to the two sorts of questions the rule counts.
   - **The pass rule** is one constant with a version (`COLD_TEST_RULE` in `src/runner-trial/cold-test-rule.mjs`; the owner decides it). The file
     holds at least 40 answerable questions with `same_words`, 20 unanswerable ones for which the search returns a passage (one that finds
     nothing is answered "not found" by anything), and 20 planted wrong answers, three of each kind (a smaller file runs and reports, and
-    can't pass); at least four in five of the planted answers are caught; at most one answer in thirty is wrong; at least two thirds of the
-    40 and of the 20 are right; at most one question in ten is left out; another company's model than the judge's, or a person, wrote the
-    file; and the publication is the same before and after. The other questions are counted and shown, and not required. The report keeps
+    can't pass); at least four in five of the planted answers are caught, and half of each kind; at most one answer is wrong for every
+    thirty judged to the questions of those two sorts; at least two thirds of each sort are right; at most one question in ten is left
+    out; another company's model than the judge's, or a person, wrote the file; and the publication is the same before and after. The other
+    questions are counted and shown, and not required. A wrong answer counts whatever its question; the share is of the answers to the
+    questions counted, so others added to a file loosen nothing, nor does an answer no one judged (a refusal, no words). The report keeps
     retrieval (`found`) apart from answers (`right`), and names the points of the rule that aren't met.
   - **Why one wrong in thirty.** With none allowed, a consumer that errs on 1 to 3% of sixty answers fails 47 to 82% of runs, so a good copy
-    would be tested until it passed. With two of sixty, such a copy passes 76 to 97% of runs, and one whose answers are wrong 10% of the
-    time about 8% (for a judge that says wrong, each time it's asked, of nine wrong answers in ten and of three right ones in a hundred). A
-    judge that catches 90% of the planted answers' calls passes that point 94% of the time, one that catches 60%, under 1%. These odds are
-    computed for independent calls, not measured.
+    would be tested until it passed. With two of sixty, such a copy passes 76 to 97% of runs, one whose answers are wrong 10% of the time
+    8%, and one wrong 15% of the time 1% (wrong being two of at most three calls, of a judge that says wrong, each time it's asked, of nine
+    wrong answers in ten and of three right ones in a hundred). A judge that catches 90% of the planted answers' calls meets the first share
+    of those 94% of the time, one that catches 60%, under 1%. These odds are computed for independent calls, not measured.
   - **The questions file** says who wrote it (`author`: `anthropic`, `openai` or `person`) and has up to 100 questions, each asked once (whatever
     its case, spacing or Unicode form). The key names evidence by exact words of the journal, each found in one to three usable passages, so
     whoever writes the questions needs no internal ids; a passage is the evidence of at most two questions. The file's own question ids go
@@ -337,7 +345,10 @@ judge for every question, the printed numbers) holds in it.
     the report and the command say it too). The gate refuses a receipt that names no reader (the first design's), another than the one it
     would read with, or another rule than the present one (`cold_test_receipt_mismatch`), before anything of the journal is read, and so does
     its own check of an open case (`openNow`). So a change of the reader or of the rule closes every client's journal until its copy has
-    passed again. The gate still loads the reader late, when a journal is first read or its receipt first checked.
+    passed again. The gate still loads the reader late, when a journal is first read or its receipt first checked. **The list the page
+    loads** (`/v1/runner/clients`) says that a client's cold test passed (`coldTestPassed`) when their receipt names the copy on the list
+    and the present rule. It compares neither the reader nor the publication (the server starts without the packages the reader needs, and
+    the list opens no vault), so it can say passed where the gate refuses the receipt. The page doesn't show it.
   - **Limits.** The test makes no reading of the message, where a reply gets no journal in a conversation that could be about wanting to die.
     It asks one short question at a time on a quiet computer: real messages are paragraphs, which can draw in a passage by a stray word, and
     are searched while other work runs. The consumer has the cold test's instruction, not the writer's, so it tests the search and what the

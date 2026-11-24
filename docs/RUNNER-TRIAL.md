@@ -162,16 +162,18 @@ A client's journal can inform their replies only through the session-use journal
    answer, and says whether it is right, incomplete or wrong. A wrong is asked again: an answer counts as wrong when two of at most three
    calls say so, and as disputed when one does. A planted wrong answer goes to the judge in the same packet as a real one and through the
    same calls. That is two calls a question, and two more for a planted answer: for the smallest file that can pass about 160 calls, one at a
-   time, and three for each further wrong. A call that fails for its form is made again, at most twice and six times in a test; a plan
-   limit stops it.
+   time, and one or two more for each other answer the judge finds wrong. A call that fails for its form is made again, at most twice and six
+   times in a test; a plan limit stops it. A refusal by Claude, known by its own stop reason, leaves the question out. One by GPT can't be
+   told, as Codex gives no sign of one: it would most likely come as a malformed answer, be asked twice more and then stop the test.
 
-   The copy passes when the file is large enough; the judge caught at least four in five of the planted answers; at most one answer in
-   thirty is wrong (judged so, a passage cited that it wasn't given, or an answer said to be supported that cites none); at least two
-   thirds of those 40 questions are right (their passages found and cited, supported in words, judged right) and of those 20; at most one
-   question in ten is left out (its search took over four seconds, after which a reply goes without the journal, or a model refused it);
+   The copy passes when the file is large enough; the judge caught at least four in five of the planted answers, and half of each kind; at
+   most one answer is wrong (judged so, a passage cited that it wasn't given, or an answer said to be supported that cites none), to any
+   question, for every thirty answers judged to the questions of those two sorts (the 40's and the 20's); at least two thirds of the
+   questions of the first sort are right (their passages found and cited, supported in words, judged right) and of the second; at most one
+   question in ten is left out (its search took over four seconds, after which a reply goes without the journal, or Claude refused it);
    and the copy's publication is the same before and after. A miss is safe in use: the reply is then made from the conversation alone.
-   Questions worded without their passages' words, which a word search can't find, are counted and shown, and not required. This rule is
-   yours to decide (below).
+   Questions worded without their passages' words, which a word search can't find, and those that find nothing, are counted and shown, and
+   not required; a wrong answer to one counts, and they loosen nothing. This rule is yours to decide (below).
 
    A test that starts removes the copy's receipt; only a pass gives a new one. Too many wrong answers, a malformed one, a file too small, a
    failed call, a key quote that doesn't fit, a part of the journal the reader can't give, a withdrawn consent or a deleted case leaves
@@ -189,9 +191,9 @@ A client's journal can inform their replies only through the session-use journal
    the packet; one after the hand-over is honoured at the next packet, or before the receipt is written.
 
    What it prints is numbers: how many questions of each kind, how many had their passages found and how many were answered right (each
-   for the questions the rule counts and for the others), what was wrong, disputed, incomplete or left out, how many planted answers of each
-   kind were caught, calls made again, the slowest search, the points of the rule that aren't met, each question's place in the file with
-   its scores, and an opaque name for the snapshot tested. No
+   for the questions the rule counts and for the others), what was wrong (and the answers that share is of), disputed, incomplete or left
+   out, how many planted answers of each kind were caught, calls made again, the slowest search, the points of the rule that aren't met, each
+   question's place in the file with its scores, and an opaque name for the snapshot tested. No
    command here prints a label, a question's id, an answer, journal text or the judge's reason (which isn't kept), nor an unexpected
    error's own words, which can quote a file: its code only.
 
