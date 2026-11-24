@@ -1,7 +1,7 @@
 import http from "node:http";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { CaseNotContinuationSafeError, PRIVATE_CASE_SCOPES, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
-import { TherapyProtocolUnavailableError, loadTherapyProtocol, therapyProtocolManifest, therapyProtocolPayload } from "../protocol/therapy-protocol.mjs";
+import { ProtocolRequestError, TherapyProtocolUnavailableError, loadTherapyProtocol, therapyProtocolAnswer, therapyProtocolManifest } from "../protocol/therapy-protocol.mjs";
 import { JOURNAL_READ_ONLY_MCP_TOOLS } from "../journal-import/http.mjs";
 import { projectCasePlan } from "../case-formulation/case-roadmap.mjs";
 import { KNOWN_VS_NEW_LIMITS } from "../case-formulation/known-vs-new.mjs";
@@ -263,15 +263,32 @@ const PROTOCOL_TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_therapy_protocol",
     title: "Load InnerSignal therapy protocol",
-    description: "Call before any InnerSignal therapy response (inner-child, younger-self, reparenting, or self-relationship work), including advice to a supervisor about that work or a review of case records or the person's own writing for it. Returns the complete current therapy instructions and every reference file, including the therapy map, with version and hashes.",
-    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    description: "Call before any InnerSignal therapy response (inner-child, younger-self, reparenting, or self-relationship work), including advice to a supervisor about that work or a review of case records or the person's own writing for it. The protocol comes in parts, so each answer reaches you whole. Called without inputs, it returns the first part of the therapy rules, with version and hash, and the groups of parts to load before your first reply; called with `parts`, it returns those parts (the rest of the rules, a reference file such as the therapy map, the box list, or a box's advice), as many as fit in one answer, and names any still to load.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        parts: {
+          type: "array",
+          minItems: 1,
+          maxItems: 40,
+          items: { type: "string", minLength: 1, maxLength: 200 },
+          description: "Names of the parts to load, exactly as the first answer and the box list give them, for example \"rules/2\", \"references/FOCUS-DISCIPLINE.md\" or \"box/IC.MEET_GUARD\". Leave it out to get the first answer."
+        },
+        protocol_sha256: {
+          type: "string",
+          pattern: "^[0-9a-f]{64}$",
+          description: "The sha256 from the first answer, so that an answer can say when the protocol has changed in between."
+        }
+      }
+    },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }
 ]);
 const PROTOCOL_TOOLS = new Set(PROTOCOL_TOOL_DEFINITIONS.map((tool) => tool.name));
 
 const THERAPY_INSTRUCTIONS = [
-  "InnerSignal. Before any inner-child, younger-self, reparenting, or self-relationship therapy response, including advice to a supervisor about that work or a review of case records or the person's own writing for it, call load_therapy_protocol and follow its instructions and files; do not mention the map to the user.",
+  "InnerSignal. Before any inner-child, younger-self, reparenting, or self-relationship therapy response, including advice to a supervisor about that work or a review of case records or the person's own writing for it, call load_therapy_protocol and load the parts its first answer lists, as it says, and follow the rules and files it returns; do not mention the map to the user.",
   "If the protocol cannot be loaded, say that InnerSignal's therapy protocol is unavailable right now instead of improvising it from memory."
 ];
 const AUTHORIZATION_INSTRUCTION = "Authorization is transport-owned; never put bearer tokens or key material in tool arguments.";
@@ -333,30 +350,24 @@ function extensionToolError({ code, message, details }) {
   };
 }
 
-function protocolToolResult(protocol, name) {
+// The manifest is small and keeps its structured form. load_therapy_protocol answers in text alone: an app that shows the
+// model a result's structured content in place of its text (as ChatGPT was reported to) would otherwise see a copy, or
+// none, of the rules, and the copy would double what the app has to keep.
+function protocolToolResult(protocol, name, args) {
   if (!protocol) throw new TherapyProtocolUnavailableError("The InnerSignal therapy protocol is unavailable on this server.");
-  if (name === "get_therapy_protocol_manifest") return therapyProtocolManifest(protocol);
-  return therapyProtocolPayload(protocol);
-}
-
-// Model-facing text. Each block carries its exact packaged bytes between its BEGIN and END lines, so
-// the text matches the advertised hashes; a newline is added before END only when a block lacks one.
-function protocolBlock(label, sha256, content) {
-  const bytes = Buffer.byteLength(content, "utf8");
-  return `<<<BEGIN ${label} sha256=${sha256} bytes=${bytes}>>>\n${content}${content.endsWith("\n") ? "" : "\n"}<<<END ${label}>>>`;
+  if (name === "get_therapy_protocol_manifest") {
+    const value = therapyProtocolManifest(protocol);
+    return { ...toolResult(value), content: [{ type: "text", text: protocolText(value) }] };
+  }
+  return { content: [{ type: "text", text: therapyProtocolAnswer(protocol, args).text }], isError: false };
 }
 
 function protocolText(value) {
-  const header = `InnerSignal therapy protocol ${value.version} (sha256 ${value.protocol_sha256})`;
-  if (!value.instructions) {
-    return [header, ...value.files.map((file) => `- ${file.path}: ${file.bytes} bytes, sha256 ${file.sha256}`)].join("\n");
-  }
   return [
-    header,
-    value.usage,
-    protocolBlock("instructions", value.instructions_sha256, value.instructions),
-    ...value.files.map((file) => protocolBlock(file.path, file.sha256, file.content))
-  ].join("\n\n");
+    `InnerSignal therapy protocol ${value.version} (sha256 ${value.protocol_sha256})`,
+    ...value.files.map((file) => `- ${file.path}: ${file.bytes} bytes, sha256 ${file.sha256}`),
+    `Parts (load_therapy_protocol): ${value.parts.length}; the first answer holds ${value.first_answer.join(", ")}, then ${value.load_before_first_reply.length} groups before the first reply.`
+  ].join("\n");
 }
 
 // The therapy rules a review of a case needs, carried in the results that open a case (issue #172): a session that loads a
@@ -765,9 +776,12 @@ export function createPrivateCaseMcpServer({ caseAccessService, journalApi = nul
     const reply = (status, payload, code = null, extraHeaders = {}) => ({ status, payload, code, headers: extraHeaders });
     if (PROTOCOL_TOOLS.has(name)) {
       try {
-        const value = protocolToolResult(protocol, name);
-        return reply(200, success(request.id, { ...toolResult(value), content: [{ type: "text", text: protocolText(value) }] }));
-      } catch {
+        return reply(200, success(request.id, protocolToolResult(protocol, name, args)));
+      } catch (error) {
+        if (error instanceof ProtocolRequestError) {
+          // The message rides in the structured result too, for an app that shows the model only that.
+          return reply(200, success(request.id, extensionToolError({ code: error.code, message: error.message, details: { message: error.message } })), error.code);
+        }
         return reply(200, failure(request.id, -32003, "InnerSignal therapy protocol is unavailable; do not improvise it.", { code: "THERAPY_PROTOCOL_UNAVAILABLE" }), "THERAPY_PROTOCOL_UNAVAILABLE");
       }
     }

@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createPrivateCaseMcpServer, listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
-import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol, unservedReferenceMentions } from "../src/protocol/therapy-protocol.mjs";
+import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol, therapyProtocolDelivery, unservedReferenceMentions } from "../src/protocol/therapy-protocol.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const pluginRoot = path.join(root, "plugins/inner-signal-therapy");
@@ -83,10 +83,10 @@ test("a map fix changes the served hash without a version bump or plugin reinsta
   assert.notEqual(after.protocolSha256, before.protocolSha256);
 
   const listener = await listen(t, { therapyProtocol: after });
-  const loaded = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: {} });
-  assert.equal(loaded.body.result.structuredContent.protocol_sha256, after.protocolSha256);
-  const map = loaded.body.result.structuredContent.files.find((file) => file.path === "references/INNER-CHILD-THERAPY-MAP.md");
-  assert.match(map.content, /Synthetic map fix\./u);
+  const loaded = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { parts: ["references/INNER-CHILD-THERAPY-MAP.md"] } });
+  const text = loaded.body.result.content[0].text;
+  assert.ok(text.startsWith(`InnerSignal therapy protocol ${after.version} (sha256 ${after.protocolSha256})`));
+  assert.match(text, /Synthetic map fix\./u);
 });
 
 test("initialize tells the host to load the protocol first and to fail closed", async (t) => {
@@ -120,27 +120,38 @@ test("protocol tools are public and read-only while private case tools keep OAut
 
   const loaded = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: {} });
   assert.equal(loaded.response.status, 200);
-  const value = loaded.body.result.structuredContent;
-  assert.equal(value.version, protocol.version);
-  assert.equal(value.instructions, protocol.instructions);
-  assert.deepEqual(value.files.map((file) => file.path), [...THERAPY_PROTOCOL_FILES]);
-  // The model-facing text carries every block's exact packaged bytes, matching the advertised hashes.
-  const text = loaded.body.result.content[0].text;
-  const blocks = [["instructions", protocol.instructionsSha256, protocol.instructions], ...protocol.files.map((file) => [file.path, file.sha256, file.content])];
-  for (const [label, digest, content] of blocks) {
-    const begin = `<<<BEGIN ${label} sha256=${digest} bytes=${Buffer.byteLength(content, "utf8")}>>>\n`;
+  // Text alone (owner answer i60a): no structured copy for an app to show in its place.
+  assert.equal(Object.hasOwn(loaded.body.result, "structuredContent"), false);
+  const first = loaded.body.result.content[0].text;
+  assert.ok(first.startsWith(`InnerSignal therapy protocol ${protocol.version} (sha256 ${protocol.protocolSha256})\n`));
+  // The first answer and the groups it lists carry the rules and every always-read part, each block's exact packaged bytes
+  // matching its hash.
+  const delivery = therapyProtocolDelivery(protocol);
+  const texts = [first];
+  for (const name of delivery.groupNames) {
+    assert.ok(first.includes(`- \`${name}\`: `), `${name} is listed`);
+    const answer = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { parts: [name], protocol_sha256: protocol.protocolSha256 } });
+    texts.push(answer.body.result.content[0].text);
+  }
+  const text = texts.join("\n");
+  const bodyOf = (part) => {
+    const begin = `<<<BEGIN ${part.label} sha256=${part.sha256} bytes=${Buffer.byteLength(part.content, "utf8")}>>>\n`;
     const start = text.indexOf(begin);
-    assert.notEqual(start, -1, `${label} block is present`);
+    assert.notEqual(start, -1, `${part.name} block is present`);
     const bodyStart = start + begin.length;
-    const end = text.indexOf(`<<<END ${label}>>>`, bodyStart);
-    const body = text.slice(bodyStart, end);
-    assert.equal(content.endsWith("\n") ? body : body.slice(0, -1), content, `${label} bytes are exact`);
-    assert.equal(createHash("sha256").update(content, "utf8").digest("hex"), digest);
+    const body = text.slice(bodyStart, text.indexOf(`<<<END ${part.label}>>>`, bodyStart));
+    const content = part.content.endsWith("\n") ? body : body.slice(0, -1);
+    assert.equal(createHash("sha256").update(content, "utf8").digest("hex"), part.sha256, `${part.name} bytes are exact`);
+    return content;
+  };
+  assert.equal(delivery.rules.map(bodyOf).join(""), protocol.instructions, "the rules, whole");
+  for (const file of protocol.files.filter((file) => !["references/GUIDE-REFERRALS.md", "references/INNER-CHILD-BOX-GUIDANCE.md"].includes(file.path))) {
+    assert.equal(delivery.references.filter((part) => part.source === file.path).map(bodyOf).join(""), file.content, file.path);
   }
 
-  // A request for a subset still returns the complete protocol: every reference is mandatory.
-  const subset = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { paths: [] } });
-  assert.deepEqual(subset.body.result.structuredContent.files.map((file) => file.path), [...THERAPY_PROTOCOL_FILES]);
+  // Arguments it doesn't know are ignored: the first answer again.
+  const other = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { paths: [] } });
+  assert.equal(other.body.result.content[0].text, first);
 
   const privateCall = await post(listener.url, "tools/call", { name: "retrieve_case_evidence", arguments: { case_id: "synthetic-case", query: "x" } });
   assert.equal(privateCall.response.status, 401);

@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
-import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
+import { loadTherapyProtocol, therapyProtocolDelivery } from "../src/protocol/therapy-protocol.mjs";
 import {
   ANSWER_STAGE,
   CODEX_ISOLATION_CONFIG,
@@ -41,6 +41,8 @@ const goodReply = (caseId) => calibration.find((entry) => entry.case_id === case
 const replyIn = (user) => user.match(/<<<REPLY-([0-9a-f]{12})\n([\s\S]*)\nREPLY-\1>>>/u)[2];
 
 // A judge that grades the known replies as their entries say, quoting the reply for every fail.
+const callOf = (transcript, name) => transcript.calls.find((call) => call.name === name);
+
 function oracleJudge({ verdictsFor = null, calls = [] } = {}) {
   const known = new Map(calibration.map((entry) => [entry.text, expectedFor(entry)]));
   return {
@@ -104,10 +106,29 @@ test("the model is asked with the connector's own results: the protocol exactly 
   assert.equal(transcript.calls[0].name, "load_therapy_protocol");
   assert.equal(transcript.calls[0].text, served);
   assert.deepEqual(transcript.protocol, { version: protocol.version, sha256: protocol.protocolSha256 });
-  for (const file of protocol.files) assert.ok(served.includes(file.content), `${file.path} is served byte for byte`);
+  // Then the calls that bring every other part (owner answer i60a): each group the first answer lists, by name, then the
+  // rest, since the answering model can't call tools to load a box when it uses one. Every file arrives byte for byte.
+  const loadCalls = source.loadCalls(protocol);
+  assert.ok(loadCalls.length > 0);
+  const protocolCalls = transcript.calls.filter((call) => call.name === "load_therapy_protocol");
+  assert.deepEqual(protocolCalls.slice(1).map((call) => call.arguments), loadCalls.map((parts) => ({ parts, protocol_sha256: protocol.protocolSha256 })));
+  assert.ok(protocolCalls.every((call) => !/Still to load|Not part names/u.test(call.text)), "every call's parts came whole");
+  // Every part arrives exactly once, its text byte for byte as its BEGIN line's count says.
+  const loaded = protocolCalls.map((call) => call.text).join("\n");
+  const delivered = new Map();
+  for (const match of loaded.matchAll(/<<<BEGIN (.+?) sha256=([0-9a-f]{64}) bytes=(\d+)>>>\n/gu)) {
+    const start = Buffer.byteLength(loaded.slice(0, match.index + match[0].length), "utf8");
+    const body = Buffer.from(loaded, "utf8").subarray(start, start + Number(match[3])).toString("utf8");
+    assert.ok(!delivered.has(match[1]), `${match[1]} arrives once`);
+    delivered.set(match[1], body);
+  }
+  const delivery = therapyProtocolDelivery(protocol);
+  assert.equal(delivered.size, delivery.all.length);
+  for (const part of delivery.all) assert.equal(delivered.get(part.label), part.content, part.name);
+  assert.equal(delivery.rules.map((part) => delivered.get(part.label)).join(""), protocol.instructions);
 
   const { system, user } = answerPrompt(spec, transcript);
-  assert.ok(user.includes(served), "the prompt holds the served protocol unchanged");
+  for (const call of protocolCalls) assert.ok(user.includes(call.text), "the prompt holds every protocol answer unchanged");
   assert.match(system, /Return only a JSON object of the form \{"reply": "\.\.\."\}/u, "the answer's JSON contract is in the prompt too");
   assert.match(system, /don't run commands, read files, search the web, call tools or browse/u);
   assert.match(judgePrompt(spec, "A reply.").system, /Grade from the text below alone: don't run commands, read files, search the web, call tools or browse/u);
@@ -118,11 +139,11 @@ test("the model is asked with the connector's own results: the protocol exactly 
   assert.ok(user.startsWith(`SUPERVISOR\n${spec.question}\n`), "the supervisor's question comes first, as in a chat");
   assert.ok(system.includes(transcript.instructions) && /call load_therapy_protocol/u.test(transcript.instructions), "the server's own instructions");
   for (const name of ["load_therapy_protocol", "load_case_context", "find_journal_quotes"]) assert.ok(system.includes(`- ${name}: `), name);
-  const opened = JSON.parse(transcript.calls[1].text);
+  const opened = JSON.parse(callOf(transcript, "load_case_context").text);
   assert.equal(Object.keys(opened)[0], "therapy_rules", "this checkout's connector sends the rules first with the case");
   assert.equal(opened.case_state.case_id, spec.case_id);
   assert.equal(opened.case_state.items.length, spec.items.length);
-  const journal = JSON.parse(transcript.calls[2].text);
+  const journal = JSON.parse(callOf(transcript, "find_journal_quotes").text);
   assert.equal(journal.quotes.length, spec.journal.length);
   assert.ok(journal.quotes.every((quote, index) => quote.text === spec.journal[index].text));
   // Nothing in the prompt comes from a real case: the synthetic case and the served protocol only.
@@ -156,9 +177,12 @@ test("a case that names points to check gets check_case_known_vs_new's own answe
   // close match. The test shows the model that answer exactly as the connector gives it, and grades what the model makes of it.
   const spec = caseById.get("journal-review-paraphrased-known");
   const transcript = await connectorTranscript(spec, await connectorSource());
-  assert.deepEqual(transcript.calls.map((call) => call.name), ["load_therapy_protocol", "load_case_context", "find_journal_quotes", "check_case_known_vs_new"]);
-  assert.deepEqual(transcript.calls[3].arguments, { case_id: spec.case_id, points: spec.known_vs_new_points });
-  const checked = JSON.parse(transcript.calls[3].text);
+  const source = await connectorSource();
+  const loadCalls = source.loadCalls(loadTherapyProtocol());
+  assert.deepEqual(transcript.calls.map((call) => call.name), [...Array(1 + loadCalls.length).fill("load_therapy_protocol"), "load_case_context", "find_journal_quotes", "check_case_known_vs_new"]);
+  const check = callOf(transcript, "check_case_known_vs_new");
+  assert.deepEqual(check.arguments, { case_id: spec.case_id, points: spec.known_vs_new_points });
+  const checked = JSON.parse(check.text);
   assert.equal(checked.case_id, spec.case_id);
   assert.match(checked.note, /close_word_match false means no entry shares most of a point's words, not that the record lacks the point/u);
   // Three established points in other words, one repeated in the record's words, one genuinely new.
@@ -166,13 +190,13 @@ test("a case that names points to check gets check_case_known_vs_new's own answe
   assert.equal(checked.points[3].matches[0].id, "item:running");
   const { system, user } = answerPrompt(spec, transcript);
   assert.ok(system.includes("- check_case_known_vs_new: "), "the tool is in the list the model sees");
-  assert.ok(user.includes(`TOOL CALL check_case_known_vs_new ${JSON.stringify(transcript.calls[3].arguments)}`));
+  assert.ok(user.includes(`TOOL CALL check_case_known_vs_new ${JSON.stringify(check.arguments)}`));
   // The grader is told the check's answer doesn't make a point new, by the rubric and by the case.
   const judged = judgePrompt(spec, "A reply.").user;
   assert.match(judged, /a record check that matches words \(such as check_case_known_vs_new\) found no close match for it/u);
   assert.match(judged, /Calling any of them a new finding, pattern or insight fails known_not_called_new, whatever the check returned/u);
-  // A case without points makes the three calls it always made.
-  assert.equal((await connectorTranscript(caseById.get("supervisor-invites-the-split"), await connectorSource())).calls.length, 3);
+  // A case without points makes the calls it always made: the protocol's, the case and the journal.
+  assert.equal((await connectorTranscript(caseById.get("supervisor-invites-the-split"), source)).calls.length, 1 + loadCalls.length + 2);
 });
 
 test("a connector that can't answer the check can't run such a case, and nothing is asked of a model", async () => {
@@ -341,7 +365,7 @@ test("the first-contact case grades a bare-name clinical opening and a warmly gr
 
   // The model reads the served rules, the sister's note marked as a third party's and the client's own words, then the request.
   const transcript = await connectorTranscript(spec, await connectorSource());
-  const opened = JSON.parse(transcript.calls[1].text);
+  const opened = JSON.parse(callOf(transcript, "load_case_context").text);
   assert.deepEqual(opened.case_state.items.filter((item) => item.source.kind === "third_party_referral_note").map((item) => item.id), ["item:referral", "item:referral-theory"]);
   assert.equal(opened.case_state.items.find((item) => item.id === "item:intake").source.kind, "user_report");
   const asked = answerPrompt(spec, transcript).user;

@@ -76,7 +76,8 @@ test("378a: the advice and cautions inside every box, and the cross-guide routes
   const boxes = served("references/INNER-CHILD-BOX-GUIDANCE.md");
   assert.equal(boxes, read("../docs/INNER-CHILD-BOX-GUIDANCE.md"), "served copy is byte-equal to the docs copy");
   assert.equal(served("references/INNER-CHILD-THERAPY-MAP.md"), read("../docs/INNER-CHILD-THERAPY-MAP.md"));
-  assert.match(skill, /`references\/INNER-CHILD-BOX-GUIDANCE\.md`, `references\/PHENOMENOLOGY-AND-REPRESENTATION\.md`/u, "in the read list");
+  // Since i60a (21 Nov 2026) a box's advice is read when the box is used, one section at a time, not the whole file first.
+  assert.match(skill, /`references\/INNER-CHILD-BOX-GUIDANCE\.md` \(one section per box\): read the safety boxes' sections before responding \(`IC\.SAFETY_ORIENTATION`[^)]*\), and any other box's section before you use that box\./u, "the safety boxes first, the others when used");
   for (const name of ["inner-child", "cross-guide"]) {
     for (const entry of graph(name).nodes) {
       assert.ok(boxes.includes(`### ${entry.id}: `), entry.id);
