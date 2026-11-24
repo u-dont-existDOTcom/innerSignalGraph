@@ -45,8 +45,8 @@ function countedParagraphs(size, held = {}, extra = {}) {
 const counts = (entries) => entries.map(({ term, quotes, reason }) => [term, quotes, ...(reason ? [reason] : [])]);
 
 test("the numbers of the search, in one place with their version: a change of one is a change of the version", () => {
-  assert.deepEqual(EVIDENCE_QUOTE_SEARCH, { version: "evidence-quotes-v1", common: { share: 0.05, quotes: 20 }, termsMax: 24, rare: { share: 0.01, quotes: 10 },
-    matched: { terms: 2, share: 0.5 }, candidatesMax: 40, queryCharacters: 40_000 });
+  assert.deepEqual(EVIDENCE_QUOTE_SEARCH, { version: "evidence-quotes-v1", common: { share: 0.05, quotes: 20 }, rare: { share: 0.01, quotes: 10 },
+    matched: { terms: 2, share: 0.5, atMost: 3 }, candidatesMax: 40, queryCharacters: 40_000 });
   assert.deepEqual(QUOTE_BM25, { k1: 1.2, b: 0.75 }, "the constants of the version 3 ranking");
 });
 
@@ -108,14 +108,30 @@ for (const index of ALL) test(`a stop word of one language that is a word of the
     const words = searchedBy(await find(query));
     for (const word of ["car", "aura", "son", "ma", "pour", "elle", "ours", "but", "or", "an"]) assert.equal(words.includes(word), false, `${word} in: ${query}`);
   }
+  // One other word of a language doesn't say that a message is written in it.
+  for (const [query, word] of [["le son", "son"], ["the ours", "ours"]]) assert.ok(searchedBy(await find(query)).includes(word), query);
   // Typed without its accents a French stop word is one; with one it doesn't have, it isn't.
   assert.deepEqual(searchedBy(await find("meme apres etre avant")), []);
   assert.deepEqual(searchedBy(await find("je suis sûr")), ["sûr"]);
 });
 
+test("everyday words of both languages that aren't content are left out, and a summer isn't", async (t) => {
+  const { find, texts } = await journal(t, { paragraphs: [...countedParagraphs(60), "Un bel été au bord de la mer.", "aujourd hui quelqu un", "not no nor cannot didnt"] });
+  // Typed without its apostrophe, such a word is one too, unless that makes another word of it.
+  assert.deepEqual(searchedBy(await find("im here, ive had it, youre what theyve got and thats all, whos there, hes off, shes out, itll do, we wouldve")), ["got"]);
+  assert.deepEqual(searchedBy(await find("jai vu quil y etait, cest tout, cetait aujourdhui, quelquun et quon")), ["vu"]);
+  assert.deepEqual(searchedBy(await find("she was ill in the shed, as well as wed")), ["ill", "shed", "wed", "well"].map(formsReadingTerm).sort());
+  for (const query of ["not no nor cannot", "I didnt, we couldnt, it isnt, they dont", "aujourd'hui, quelqu'un", "jusqu'à présent quoiqu'il"]) {
+    const words = searchedBy(await find(query));
+    for (const word of ["not", "no", "nor", "cannot", "didnt", "couldnt", "isnt", "dont", "aujourd", "hui", "quelqu", "quoiqu", "didn", "couldn"]) assert.equal(words.includes(word), false, `${word} in: ${query}`);
+  }
+  assert.deepEqual(await texts("Je pense à cet été, au bord de la mer"), ["Un bel été au bord de la mer."]);
+  assert.deepEqual(await texts("C'était un été."), ["Un bel été au bord de la mer."], "searched by that word itself");
+});
+
 test("an English negation is left out whole, however its apostrophe is written", async (t) => {
   const { find, texts } = await journal(t, { paragraphs: [...countedParagraphs(60), "couldn and wouldn and don are no words.", "I slept in the greenhouse."] });
-  for (const query of ["I couldn't and wouldn't, I don't", "I couldn’t and WOULDN’T, I don’t", "couldn't", "she isn't"]) assert.deepEqual(searchedBy(await find(query)), [], query);
+  for (const query of ["I couldn't and wouldn't, I don't", "I couldn’t and WOULDN’T, I don’t", "couldn't", "she isn't", "I couldn`t, I don´t, they wouldnʼt", "we couldn‘t"]) assert.deepEqual(searchedBy(await find(query)), [], query);
   assert.deepEqual(await texts("I couldn't sleep in the greenhouse"), ["I slept in the greenhouse."]);
   // A name with an apostrophe, and a "t" that isn't a negation's, stay words.
   assert.deepEqual(searchedBy(await find("O'Tooles greenhouse't")), ["greenhou", "tool"]);
@@ -161,17 +177,22 @@ test("in a large journal the shares count: 5% of the quotes for a common word, 1
   assert.equal((await find("few2")).kept, 0);
 });
 
-for (const index of ["quote-index-v4", "none"]) test(`of more words than it ranks by, the rarest 24, so a long message's point counts wherever it stands (${index})`, async (t) => {
-  const weak = Array.from({ length: 25 }, (_, place) => `weak${place + 1}`);
-  const { find, texts } = await journal(t, { paragraphs: countedParagraphs(360, Object.fromEntries(weak.map((word) => [word, 12])), { 200: ["point1"] }), index });
-  const result = await find(`${weak.join(" and then ")} and that is what this was about: point1`);
-  assert.equal(result.terms.chosen.length, 24);
-  assert.deepEqual(counts(result.terms.chosen).slice(0, 4), [["point1", 1], ["weak1", 12], ["weak2", 12], ["weak3", 12]], "the rarest first, the others as they stand in the message");
-  assert.deepEqual(counts(result.terms.dropped), [["weak24", 12, "over_the_term_limit"], ["weak25", 12, "over_the_term_limit"]]);
-  assert.match((await texts(`${weak.join(" ")} point1`))[0], /point1/u);
+for (const index of ["quote-index-v4", "none"]) test(`a long message's subject counts beside its incidental words: every word that isn't common is ranked by (${index})`, async (t) => {
+  // Forty words one quote each holds, and three that make up the subject, which fifteen quotes hold each and one quote all.
+  const incidental = Array.from({ length: 40 }, (_, place) => `incidental${place + 1}`);
+  const subject = ["subject1", "subject2", "subject3"];
+  const { find, texts } = await journal(t, { paragraphs: countedParagraphs(360, { ...Object.fromEntries(incidental.map((word) => [word, 1])), ...Object.fromEntries(subject.map((word) => [word, 14])) }, { 300: subject }), index });
+  const query = `${incidental.join(" and then ")}, and what this was about: ${subject.join(", ")}.`;
+  const result = await find(query);
+  assert.equal(result.terms.chosen.length, 43);
+  assert.deepEqual(counts(result.terms.chosen).slice(-3), [["subject1", 15], ["subject2", 15], ["subject3", 15]], "the rarest first, the others as they stand in the message");
+  assert.deepEqual(result.terms.dropped, []);
+  assert.match((await texts(query))[0], /own300a .*subject1 subject2 subject3/u, "the quote of the subject before any that shares one incidental word");
+  // Wherever the subject stands.
+  assert.deepEqual(await texts(`${subject.join(", ")}: ${incidental.join(" and then ")}.`), await texts(query));
 });
 
-for (const index of ALL) test(`a quote is kept for a word at most 10 quotes hold, or for two and half of the chosen words (${index})`, async (t) => {
+for (const index of ALL) test(`a quote is kept for a word at most 10 quotes hold, or for two and half of the words ranked by, or three (${index})`, async (t) => {
   const { find, texts } = await journal(t, { index, paragraphs: countedParagraphs(120, { rare1: 10, mid1: 11, mid2: 11, mid3: 11, mid4: 11, mid5: 11, often1: 30 },
     { 100: ["mid1", "mid2", "both1"], 101: ["mid1", "mid2", "mid3"], 102: ["often1", "lone1"], 103: ["often1"] }) });
   assert.equal((await find("rare1", { limit: 40 })).kept, 10, "a rare word by itself");
@@ -180,6 +201,10 @@ for (const index of ALL) test(`a quote is kept for a word at most 10 quotes hold
   assert.deepEqual((await texts("mid1 mid2", { limit: 40 })).length, 2);
   assert.deepEqual((await texts("mid1 mid2 mid3 mid4", { limit: 40 })).length, 2);
   assert.deepEqual((await texts("mid1 mid2 mid3 mid4 mid5", { limit: 40 })).map((text) => text.includes("own101a")), [true]);
+  // However many words the message has, three are enough: the same quote with three of nine.
+  const nine = await journal(t, { index, paragraphs: countedParagraphs(120, Object.fromEntries(Array.from({ length: 9 }, (_, place) => [`part${place + 1}`, 11])), { 100: ["part1", "part2", "part3"], 101: ["part1", "part2"] }) });
+  const parts = await nine.texts(Array.from({ length: 9 }, (_, place) => `part${place + 1}`).join(" "), { limit: 40 });
+  assert.ok(parts.some((text) => text.includes("own100a")) && !parts.some((text) => text.includes("own101a")));
   // The quote that shares one rare word with a message is kept; one that shares only common words isn't.
   const shared = await texts("often1 and lone1");
   assert.deepEqual(shared.map((text) => text.includes("own102a")), [true]);
@@ -310,6 +335,19 @@ test("at most 40 candidates are looked at, and no more once the quotes asked for
   assert.deepEqual([found.kept, found.examined, found.returned], [45, 3, 3]);
 });
 
+test("quotes the caller has already are gone past, and stay counted", async (t) => {
+  const { open, find } = await journal(t, { paragraphs: countedParagraphs(60, { lantern1: 9 }) });
+  const all = await find("lantern1", { limit: 9 });
+  assert.deepEqual([all.kept, all.excluded, all.examined, all.returned], [9, 0, 9, 9]);
+  const ids = all.quotes.map(({ record_id: id }) => id);
+  const reader = await open();
+  try {
+    const rest = await reader.findEvidenceQuotes({ query: "lantern1", limit: 3, exclude: [...ids.slice(0, 4), "passage:of-another-search"] });
+    assert.deepEqual([rest.quotes.map(({ record_id: id }) => id), rest.kept, rest.excluded, rest.examined, rest.returned], [ids.slice(4, 7), 9, 4, 3, 3]);
+    for (const exclude of ["passage", [1], null]) await assert.rejects(reader.findEvidenceQuotes({ query: "lantern1", limit: 3, exclude }), { code: "EVIDENCE_IDS_INVALID" });
+  } finally { reader.close(); }
+});
+
 // ---- What a quote comes back with, the cache, the snapshot ---------------------------------------------------------------------------
 
 test("each quote comes back with its record, span, lifecycle, the date it was written under, its cues and the words it matched", async (t) => {
@@ -347,8 +385,9 @@ test("a cached search gives the same result from fewer reads, holds ids and coun
   assert.ok(reads - firstReads < firstReads, "the word list isn't read again");
   assert.equal(values.length, 1);
   const words = first.terms.chosen.length + first.terms.dropped.length;
-  assert.deepEqual(values[0].slice(0, 1 + words).map(Number).every(Number.isSafeInteger), true);
-  assert.ok(values[0].slice(1 + words).every((id) => /^passage:[a-f0-9]{32}$/u.test(id)) && values[0].length === 1 + words + first.kept);
+  assert.deepEqual(values[0].slice(0, 2 + words).map(Number).every(Number.isSafeInteger), true);
+  assert.ok(values[0].slice(2 + words).every((id) => /^passage:[a-f0-9]{32}$/u.test(id)) && values[0].length === 2 + words + first.kept);
+  assert.ok(first.shared >= first.kept && Number(values[0][1]) === first.shared);
   // The key names the case, the corpus, the purpose, the publication and what was asked by a digest, the method with its numbers included.
   assert.deepEqual(JSON.parse(keys[0]).slice(0, 8), [CASE, CORPUS, "session_use", generation, 0, persisted.manifest_object_id, "evidence-quotes", EVIDENCE_QUOTE_SEARCH.version]);
   assert.match(JSON.parse(keys[0])[8], /^[a-f0-9]{64}$/u);

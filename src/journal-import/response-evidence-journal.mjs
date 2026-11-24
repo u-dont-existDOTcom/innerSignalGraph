@@ -16,14 +16,24 @@ const empty = (availability, retrieval_status = "not_attempted") => ({
   budget: { max_tokens: 8000, max_bytes: 64000, used_tokens: 0, used_bytes: 0 }
 });
 const refused = new Set(["PRIVATE_CASE_ACCESS_DENIED", "GRANT_REVOKED", "GRAPH_MANIFEST_SCOPE_MISMATCH", "GRAPH_RECORD_SCOPE_MISMATCH"]);
-const searchable = (value) => typeof value === "string" && value.trim().length > 0 && value.length <= EVIDENCE_QUOTE_SEARCH.queryCharacters;
+const bounded = (value) => typeof value === "string" && value.length <= EVIDENCE_QUOTE_SEARCH.queryCharacters;
+const searchable = (value) => bounded(value) && value.trim().length > 0;
 
-// What was searched and what that can't show, for the models that read the quotations.
-function coverageOf({ questions, matched, returned }) {
-  const search = questions
-    ? `${questions} ranked ${questions === 1 ? "search" : "searches"}, one for each missing-history question, for its less common words; ${matched} matching passages, counted for each question; ${returned} exact quotations added.`
-    : `One ranked search for the message's less common words; ${matched} matching passages; ${returned} exact quotations returned.`;
-  return `${search} Sharing words doesn't make a quotation relevant to the ${questions ? "question" : "message"}, and wording cues are found for English wording only. Coverage is limited to ${questions ? "these searches" : "this search"} and the published generation; no review of the whole journal and no independent verification of events is claimed.`;
+// What was searched and what that can't show, for the models that read the quotations. `matched` counts the passages kept, without those
+// looked at that may not be used; with none left, it says why, so that a message whose words many passages hold isn't told as one the
+// journal says nothing about.
+function coverageOf({ expansion, searches, found, returned }) {
+  const kept = found.reduce((sum, search) => sum + search.kept, 0);
+  const matched = kept - found.reduce((sum, search) => sum + search.omitted.reduce((count, entry) => count + entry.count, 0), 0);
+  const shared = found.reduce((sum, search) => sum + search.shared, 0);
+  const onlyCommon = found.length > 0 && found.every((search) => search.terms.chosen.length === 0 && search.terms.dropped.some((entry) => entry.reason === "common"));
+  const usable = matched === 0 && kept > 0 ? " that may be used" : "";
+  const none = kept > 0 || found.length === 0 ? "" : shared > 0 ? `; ${shared} passages share one of those words, none specifically enough to be returned`
+    : onlyCommon ? "; every word of it that the journal holds is in too many passages to search by" : "; no passage holds any of them";
+  const search = expansion
+    ? `${searches} ranked ${searches === 1 ? "search" : "searches, each"} for the less common words of one missing-history question; ${matched} matching passages${usable}, counted for each question${none}; ${returned} exact quotations added.`
+    : `One ranked search for the message's less common words; ${matched} matching passages${usable}${none}; ${returned} exact quotations returned.`;
+  return `${search} Sharing words doesn't make a quotation relevant to the ${expansion ? "question" : "message"}, and wording cues are found for English wording only. Coverage is limited to ${expansion ? "these searches" : "this search"} and the published generation; no review of the whole journal and no independent verification of events is claimed.`;
 }
 
 // Opt-in reader only: the runner trial's journal gate constructs it; no server or CLI does. Cached entries are identifiers and counts,
@@ -46,14 +56,15 @@ export function createSessionUseJournalEvidenceProvider({
       // This check precedes even corpus inspection and argument-dependent retrieval. A grant for search alone is insufficient.
       try { await caseAccessService.verifyCaseAccess(caseId, access, authContext); }
       catch (error) { if (refused.has(error?.code)) return empty("not_authorized"); throw error; }
-      if (!searchable(query) || (questions !== null && (!Array.isArray(questions) || !questions.length || !questions.every(searchable)))
+      if (!(questions === null ? searchable(query) : bounded(query)) || (questions !== null && (!Array.isArray(questions) || !questions.length || !questions.every(bounded)))
           || (addsTo !== null && (questions === null || !Array.isArray(addsTo?.source_items) || !Array.isArray(addsTo.receipts) || !Array.isArray(addsTo.omissions)))
           || !Number.isSafeInteger(maximumTokens) || maximumTokens < 0 || maximumTokens > 8000
           || !Number.isSafeInteger(maximumBytes) || maximumBytes < 0 || maximumBytes > 64000) {
         throw new ValidationError("Response evidence journal request invalid.", { code: "RESPONSE_EVIDENCE_INVALID" });
       }
       const expansion = questions !== null;
-      const searches = expansion ? questions.slice(0, SESSION_USE_READER_LIMITS.questions) : [query];
+      const asked = expansion ? questions.filter(searchable) : [query];
+      const searches = expansion ? asked.slice(0, SESSION_USE_READER_LIMITS.questions) : asked;
       const limit = Math.min(maximumResults, expansion ? SESSION_USE_READER_LIMITS.expanded : SESSION_USE_READER_LIMITS.message);
       try {
         const inspected = await caseAccessService.inspectJournalCorpus(caseId, corpusId, access, authContext);
@@ -87,22 +98,25 @@ export function createSessionUseJournalEvidenceProvider({
             };
             // What an expansion adds to stays as it was: its quotations under their ids, so that a draft resting on one still can, the
             // receipts that returned them, its coverage and what it left out. Only what belongs to this very publication stays, and each
-            // quotation's words are checked again against the stored bytes.
+            // quotation is checked again as a search checks one; one that may no longer be used is left out, not the others.
             const prior = addsTo?.availability === "available" ? addsTo : null;
             const published = (entry) => entry?.corpus_id === corpusId && entry.generation === reference.active_generation && entry.visibility_epoch === reference.visibility_epoch;
             const receipts = (prior?.receipts ?? []).filter((receipt) => published(receipt) && receipt.manifest_object_id === reference.manifest_object_id);
-            const kept = (prior?.source_items ?? []).filter((item) => published(item.locator) && receipts.some((receipt) => receipt.returned_source_ids.includes(item.id)));
-            if (kept.length) {
-              const { exact_spans: spans } = await reader.resolveEvidence(kept.map((item) => item.locator.record_id));
-              if (spans.length !== kept.length || spans.some((span, index) => span.quote !== kept[index].exact_excerpt)) return empty("unavailable", "failed");
-              for (const item of kept) admit(structuredClone(item));
-            }
-            // One ranked search for the message, or one for each question. The search's result cache includes case, corpus, purpose,
-            // generation, epoch, the words searched and the method with its numbers.
+            const bound = (prior?.source_items ?? []).filter((item) => published(item.locator) && receipts.some((receipt) => receipt.returned_source_ids.includes(item.id)));
+            const texts = bound.length ? await reader.checkEvidenceQuotes(bound.map((item) => item.locator.record_id)) : [];
+            const kept = bound.filter((item, index) => texts[index] === item.exact_excerpt);
+            for (const item of kept) admit(structuredClone(item));
+            // One ranked search for the message, or one for each question, for as many quotations as there is room for beside those the
+            // snapshot has. The search's result cache includes case, corpus, purpose, generation, epoch, the words searched and the method
+            // with its numbers.
             const found = [];
-            for (const search of searches) found.push(await reader.findEvidenceQuotes({ query: search, limit }));
-            for (const { omitted } of found) for (const { reason, count } of omitted) omit(reason, count);
-            if (expansion && questions.length > searches.length) omit("question_limit", questions.length - searches.length);
+            const room = limit - result.source_items.length;
+            const exclude = result.source_items.map((item) => item.locator.record_id);
+            if (room > 0) for (const search of searches) found.push(await reader.findEvidenceQuotes({ query: search, limit: room, exclude }));
+            // Why a passage may not be used (restricted, deleted, revoked) isn't told, only that some can't be.
+            for (const { omitted } of found) for (const { count } of omitted) omit("quotation_not_usable", count);
+            if (expansion && asked.length < questions.length) omit("question_not_searchable", questions.length - asked.length);
+            if (expansion && asked.length > found.length) omit("question_limit", asked.length - found.length);
             // The best of each search in turn, without repeats.
             const taken = new Set(result.source_items.map((item) => item.locator.record_id));
             const queues = found.map(({ quotes }) => [...quotes]);
@@ -116,7 +130,9 @@ export function createSessionUseJournalEvidenceProvider({
                 if (result.source_items.length + picked.length < limit) picked.push(quote);
               }
             }
-            const firstNumber = 1 + Math.max(0, ...result.source_items.map((item) => Number(/^src:journal:(\d+)$/u.exec(item.id)?.[1] ?? 0)));
+            // A new quotation never takes an id that any earlier part, or a receipt of one, gave to other words.
+            const usedIds = [...(addsTo?.source_items ?? []).map((item) => item.id), ...(addsTo?.receipts ?? []).flatMap((receipt) => receipt.returned_source_ids ?? [])];
+            const firstNumber = 1 + Math.max(0, ...usedIds.map((id) => Number(/^src:journal:(\d+)$/u.exec(id)?.[1] ?? 0)));
             const before = { ...result.budget };
             for (const quote of picked) {
               const item = {
@@ -131,7 +147,9 @@ export function createSessionUseJournalEvidenceProvider({
             }
             const omitted = result.omissions.reduce((sum, entry) => sum + entry.count, 0);
             const included = new Set(result.source_items.map((item) => item.locator.record_id));
-            const more = omitted > 0 || found.some((search) => search.kept > search.returned || search.quotes.some((quote) => !included.has(quote.record_id)));
+            // More was there to return: what the budget or the number of quotations or questions left out, never a passage that may not be used.
+            const more = result.omissions.some((entry) => entry.reason !== "quotation_not_usable")
+              || found.some((search) => search.kept - search.excluded > search.examined || search.quotes.some((quote) => !included.has(quote.record_id)));
             result.receipts = [{ operation_id: `journal-evidence:${randomUUID()}`, corpus_id: corpusId, generation: reference.active_generation,
               visibility_epoch: reference.visibility_epoch, manifest_object_id: reference.manifest_object_id,
               purpose: "session_use", query_sha256: sha256Text(searches.join("\n")), filters_sha256: sha256Json({ reader: SESSION_USE_READER_VERSION, limit }),
@@ -143,7 +161,7 @@ export function createSessionUseJournalEvidenceProvider({
             result.more_available = more || prior?.more_available === true || lost > 0;
             result.retrieval_status = result.source_items.length ? (result.more_available ? "partial" : "returned")
               : result.omissions.some((entry) => entry.reason === "journal_budget") ? "budget_exhausted" : result.more_available ? "partial" : "no_match";
-            result.coverage = [prior?.coverage, coverageOf({ questions: expansion ? searches.length : 0, matched: found.reduce((sum, search) => sum + search.kept, 0), returned: returned.length })]
+            result.coverage = [prior?.coverage, coverageOf({ expansion, searches: found.length, found, returned: returned.length })]
               .filter(Boolean).join(" ");
             if (!await assertSnapshotCurrent()) return empty("unavailable", "failed");
             return result;

@@ -351,9 +351,17 @@ test("a message of common words only, of no known word, of one word or of none i
   for (const query of ["I feel so tired today and I don't know what I want.", "zxqnonexistent", "yes", "why me", "…", "!!!"]) {
     const result = await env.retrieve({ query });
     assert.deepEqual([result.availability, result.retrieval_status, result.more_available, result.source_items, result.omissions], ["available", "no_match", false, [], []], query);
-    assert.match(result.coverage, /; 0 matching passages; 0 exact quotations returned\./u);
+    assert.match(result.coverage, /; 0 matching passages; (?:every word of it that the journal holds is in too many passages to search by|no passage holds any of them); 0 exact quotations returned\./u, query);
     assert.deepEqual(result.receipts[0].returned_source_ids, []);
   }
+  // What the models are told when nothing comes back is why: every word too common, no passage with any of them, or some that share one
+  // that many passages hold, so that a subject of the journal isn't told as one it says nothing about.
+  assert.match((await env.retrieve({ query: "yes" })).coverage, /no passage holds any of them/u);
+  assert.match((await env.retrieve({ query: "I feel so tired today and I don't know what I want." })).coverage, /every word of it that the journal holds is in too many passages to search by/u);
+  const mid = await environment(t, { journal: { pages: inventedPages(numbered(360, { anxious1: range(0, 15) })) } });
+  const shared = await mid.retrieve({ query: "I feel so anxious1 today" });
+  assert.deepEqual([shared.retrieval_status, shared.source_items], ["no_match", []]);
+  assert.match(shared.coverage, /; 0 matching passages; 15 passages share one of those words, none specifically enough to be returned; 0 exact quotations returned\./u);
   await env.store.freezeResponseEvidence(CASE, freezeInput(await env.retrieve({ query: "…" })));
 });
 
@@ -381,7 +389,7 @@ test("an expansion searches each question on its own and takes the best of each 
   }
   assert.deepEqual(order, turns);
   assert.deepEqual([result.retrieval_status, result.more_available, result.omissions], ["returned", false, []]);
-  assert.match(result.coverage, /^3 ranked searches, one for each missing-history question, for its less common words; 8 matching passages, counted for each question; 7 exact quotations added\./u);
+  assert.match(result.coverage, /^3 ranked searches, each for the less common words of one missing-history question; 8 matching passages, counted for each question; 7 exact quotations added\./u);
   assert.equal(result.receipts[0].query_sha256, sha256Text(questions.join("\n")));
   // Joined into one search, as before, the three questions' words would compete for one ranking; each is searched for itself.
   assert.notDeepEqual((await env.retrieve({ query: questions.join("\n") })).source_items.map(placeOf), order);
@@ -415,14 +423,14 @@ test("an expansion adds to the part the turn has: its quotations keep their ids 
   assert.deepEqual(result.receipts.slice(1), first.receipts);
   assert.deepEqual([result.receipts[0].returned_source_ids, result.receipts[0].packet_sha256, result.receipts[0].budget_used_bytes],
     [result.source_items.slice(6).map((item) => item.id), sha256Json(result.source_items.slice(6)), bytes(result.source_items.slice(6))]);
-  assert.equal(result.coverage.startsWith(`${first.coverage} 2 ranked searches, one for each missing-history question, for its less common words; 19 matching passages, counted for each question; 6 exact quotations added.`), true, result.coverage);
+  assert.equal(result.coverage.startsWith(`${first.coverage} 2 ranked searches, each for the less common words of one missing-history question; 19 matching passages, counted for each question; 6 exact quotations added.`), true, result.coverage);
   const expanded = await env.store.freezeResponseEvidence(CASE, { ...freezeInput(result), snapshotId: "snapshot:journal:supervisor:r2", revision: 2, parentSnapshotId: initial.id, revisionReason: "evidence_expansion" });
   assert.deepEqual(expanded.source_items.filter((item) => item.kind === "journal_quotation"), result.source_items);
   assert.deepEqual(expanded.journal.receipts, result.receipts);
   // Nothing new found: what the turn had stays, and the coverage says nothing was added.
   const nothing = await expand(env, ["zxqnonexistent?"], first);
   assert.deepEqual([nothing.source_items, nothing.retrieval_status], [first.source_items, "returned"]);
-  assert.match(nothing.coverage, /; 0 matching passages, counted for each question; 0 exact quotations added\./u);
+  assert.match(nothing.coverage, / 1 ranked search for the less common words of one missing-history question; 0 matching passages, counted for each question; no passage holds any of them; 0 exact quotations added\./u);
   // What the message's own search left out is still left out.
   const limited = await expand(env, ["zxqnonexistent?"], { ...first, more_available: true, omissions: [{ reason: "restricted_quotation", count: 2 }] });
   assert.deepEqual([limited.more_available, limited.retrieval_status, limited.omissions, limited.receipts[0].omitted_count], [true, "partial", [{ reason: "restricted_quotation", count: 2 }], 0]);
@@ -435,15 +443,45 @@ test("an expansion adds to the part the turn has: its quotations keep their ids 
   assert.deepEqual((await expand(env, ["zxqnonexistent?"], { ...first, availability: "not_authorized" })).source_items, []);
   assert.deepEqual((await expand(env, ["question1?"], first, { authContext: { bearerToken: "search-only-grant" } })).source_items, []);
   const altered = { ...first, source_items: first.source_items.map((item, index) => (index ? item : { ...item, exact_excerpt: "Other words." })) };
-  assert.deepEqual([(await expand(env, ["question1?"], altered)).availability, (await expand(env, ["question1?"], altered)).source_items], ["unavailable", []]);
+  const without = await expand(env, ["question1?"], altered);
+  assert.deepEqual([without.source_items.slice(0, 5), without.omissions.find((entry) => entry.reason === "journal_binding_changed")], [first.source_items.slice(1), { reason: "journal_binding_changed", count: 1 }], "the one whose words aren't the stored bytes is left out, not the others");
+  // A new quotation never takes an id an earlier part, or a receipt of one, gave to other words.
+  assert.deepEqual(without.source_items.slice(5).map((item) => item.id), range(7, 14).map((number) => `src:journal:${number}`));
+  const fewer = await expand(env, ["question2?"], { ...first, source_items: first.source_items.slice(0, 2) });
+  assert.equal(fewer.source_items[2].id, "src:journal:7", "the receipt names six");
+  // A question that can't be searched is left out; the others are searched, and what the turn had stays.
+  const blank = await expand(env, ["  ", "question2?"], first);
+  assert.deepEqual([blank.source_items.length, blank.omissions.find((entry) => entry.reason === "question_not_searchable")], [12, { reason: "question_not_searchable", count: 1 }]);
+  const blankOnly = await expand(env, [" "], first);
+  assert.deepEqual([blankOnly.availability, blankOnly.source_items, blankOnly.omissions], ["available", first.source_items, [{ reason: "question_not_searchable", count: 1 }]]);
   // One budget for the whole snapshot.
   const tight = await expand(env, ["question1?"], first, { maximumBytes: first.budget.used_bytes });
   assert.deepEqual([tight.source_items, tight.omissions[0].reason], [first.source_items, "journal_budget"]);
 });
 
+test("an expansion looks past the quotations the snapshot has: what ranks after them is added, and counted as before", async (t) => {
+  const env = await environment(t, { journal: { pages: inventedPages(numbered(60, { lantern1: range(0, 7), kettle1: range(20, 35), spout1: range(20, 35) })) } });
+  const lantern = await env.retrieve({ query: "lantern1" });
+  assert.deepEqual([lantern.source_items.length, lantern.more_available], [6, true]);
+  // Twice, so that the second goes by the cached search, which is one for any quotations the snapshot has.
+  for (const cached of [false, true]) {
+    const { cacheHits } = env.counts;
+    const result = await expand(env, ["What happened to the lantern1?"], lantern);
+    assert.equal(env.counts.cacheHits > cacheHits, cached);
+    assert.deepEqual(result.source_items.slice(0, 6), lantern.source_items);
+    assert.deepEqual([result.source_items.length, [...result.source_items.map(placeOf)].sort((left, right) => left - right)], [7, range(0, 7)], "the seventh, though all six the message found rank before it");
+    assert.match(result.coverage, / 1 ranked search for the less common words of one missing-history question; 7 matching passages, counted for each question; 1 exact quotations added\./u);
+    assert.equal(result.receipts[0].more_available, false, "nothing that matches is left");
+  }
+  // Two questions with the same matches fill the snapshot between them, and the rest is more to be had.
+  const kettle = await env.retrieve({ query: "kettle1 spout1" });
+  const more = await expand(env, ["And the kettle1 spout1?", "The spout1 of which kettle1?"], kettle);
+  assert.deepEqual([kettle.source_items.length, more.source_items.length, new Set(more.source_items.map(placeOf)).size, more.receipts[0].more_available], [6, 12, 12, true]);
+});
+
 test("the purpose is checked before the arguments are looked at, and arguments out of bounds are refused then", async (t) => {
   const env = await environment(t);
-  const bad = [{ query: "" }, { query: "  " }, { query: null }, { query: "x".repeat(40_001) }, { questions: [] }, { questions: "help" }, { questions: ["help", ""] }, { questions: ["x".repeat(40_001)] },
+  const bad = [{ query: "" }, { query: "  " }, { query: null }, { query: "x".repeat(40_001) }, { questions: [] }, { questions: "help" }, { questions: ["help", null] }, { questions: ["x".repeat(40_001)] },
     { addsTo: { source_items: [], receipts: [], omissions: [] } }, { questions: ["help"], addsTo: "part" }, { questions: ["help"], addsTo: { source_items: [] } }, { maximumTokens: 8001 }, { maximumBytes: -1 }];
   for (const extra of bad) {
     const before = { ...env.counts };
@@ -453,8 +491,8 @@ test("the purpose is checked before the arguments are looked at, and arguments o
   }
 });
 
-test("a quotation that may not be used is an omission with its reason; one a later entry corrected is a quotation that says so", async (t) => {
-  const pages = inventedPages(numbered(30, { lantern1: range(0, 4) }));
+test("a quotation that may not be used is an omission that doesn't say why; one marked superseded is a quotation that says so", async (t) => {
+  const pages = inventedPages(numbered(30, { lantern1: range(0, 4), gone1: range(0, 2) }));
   const at = (place) => (node) => node.data.quote?.startsWith(`own${place}a `);
   const env = await environment(t, { journal: { pages, change: (node) => {
     if (at(0)(node)) node.lifecycle = "revoked";
@@ -464,9 +502,16 @@ test("a quotation that may not be used is an omission with its reason; one a lat
   const provider = createSessionUseJournalEvidenceProvider({ ...env.providerOptions, journalNotes: true });
   const result = await provider.freezeResponseEvidenceJournal({ caseId: CASE, query: "lantern1", authContext: AUTH });
   assert.deepEqual(result.source_items.map((item) => [placeOf(item), item.journal_note.lifecycle]).sort(), [[2, "superseded"], [3, "active"]]);
-  assert.deepEqual([...result.omissions].sort((left, right) => left.reason.localeCompare(right.reason)), [{ reason: "deleted_or_revoked_quotation", count: 1 }, { reason: "restricted_quotation", count: 1 }]);
-  assert.deepEqual([result.retrieval_status, result.more_available, result.receipts[0].omitted_count], ["partial", true, 2]);
+  assert.deepEqual(result.omissions, [{ reason: "quotation_not_usable", count: 2 }]);
+  assert.deepEqual([result.retrieval_status, result.more_available, result.receipts[0].omitted_count], ["returned", false, 2], "nothing more could be returned");
+  assert.match(result.coverage, /; 2 matching passages; 2 exact quotations returned\./u, "the two that may be used");
   await env.store.freezeResponseEvidence(CASE, freezeInput(result));
+  // When none of the passages found may be used, that is what is said, not that they weren't specific enough.
+  const none = await provider.freezeResponseEvidenceJournal({ caseId: CASE, query: "gone1", authContext: AUTH });
+  assert.deepEqual([none.source_items, none.omissions, none.retrieval_status, none.more_available], [[], [{ reason: "quotation_not_usable", count: 2 }], "no_match", false]);
+  assert.match(none.coverage, /; 0 matching passages that may be used; 0 exact quotations returned\./u);
+  const asked = await provider.freezeResponseEvidenceJournal({ caseId: CASE, query: "gone1", questions: ["And gone1?"], authContext: AUTH });
+  assert.match(asked.coverage, /; 0 matching passages that may be used, counted for each question; 0 exact quotations added\./u);
 });
 
 test("with notes asked for, each quotation says when it was written, its cues and its lifecycle, in the snapshot and the models' view; without, none does", async (t) => {

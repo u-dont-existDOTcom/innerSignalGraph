@@ -211,13 +211,16 @@ Short of any of them, the turn's evidence records why (`journal_consent_missing`
 **How a journal is searched** (`docs/superpowers/specs/2026-11-24-runner-journal-search-design.md`). The readers read the message first,
 and its first words (a provisional reply, the emergency line) wait for no search. Then one ranked search goes by the message's less common
 words (of the whole message, up to 40,000 characters): at most six quotations come back, each with when its entry says it was written,
-its wording cues (found for English wording only) and whether a later entry corrected it. Sharing words doesn't make a quotation relevant: the writer is told to use one only when it helps,
+its wording cues (found for English wording only) and its lifecycle. Sharing words doesn't make a quotation relevant: the writer is told to use one only when it helps,
 and the checker checks every claim against its source. A repair whose check asked for history searches each of its questions (at most four)
 and adds to the quotations, up to twelve. A message that shares no less common word with the journal finds nothing.
 
-**A conversation about wanting to die gets no journal.** When the message is read as someone who wants to die, has acted or is about to, or
-(with the number now on) needs the emergency number now, or isn't read at all, or its conversation has been read as one about wanting to
-die by any reader or checker, no search is made, and the turn's evidence says `crisis_turn`. The reply is made from the conversation alone; a new conversation gets the journal again.
+**A conversation about wanting to die gets no journal.** When the message isn't read, or is read as anything but none (wanting to die, having
+acted or being about to, thoughts of death with no wish to act, or something that could mean either), or, with the number now on, as needing
+the emergency number now, or its conversation has been read as one about wanting to die by any reader or checker, no search is made, and the
+turn's evidence says `journal_withheld`. When only the checker reads it as one, after a draft was written with quotations in view, that draft
+isn't sent, and its repair gets neither them nor the draft. An unsent draft that was written with the journal is never a source of a later
+turn. The reply is made from the conversation alone; a new conversation gets the journal again.
 
 **Once a client's case has read its journal, the case is used only while the gate is open.** The gate is open when the owner's
 confirmation of the consent stands, the client list names the copy, the client's current grant opens it for session use, and a
