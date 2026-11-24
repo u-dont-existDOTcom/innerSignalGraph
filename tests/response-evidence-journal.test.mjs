@@ -472,7 +472,7 @@ test("the purpose is checked before the arguments are looked at, and arguments o
 });
 
 test("a quotation that may not be used is an omission that doesn't say why; one marked superseded is a quotation that says so", async (t) => {
-  const pages = inventedPages(numbered(30, { lantern1: range(0, 4) }));
+  const pages = inventedPages(numbered(30, { lantern1: range(0, 4), gone1: range(0, 2) }));
   const at = (place) => (node) => node.data.quote?.startsWith(`own${place}a `);
   const env = await environment(t, { journal: { pages, change: (node) => {
     if (at(0)(node)) node.lifecycle = "revoked";
@@ -486,6 +486,10 @@ test("a quotation that may not be used is an omission that doesn't say why; one 
   assert.deepEqual([result.retrieval_status, result.more_available, result.receipts[0].omitted_count], ["returned", false, 2], "nothing more could be returned");
   assert.match(result.coverage, /; 2 matching passages; 2 exact quotations returned\./u, "the two that may be used");
   await env.store.freezeResponseEvidence(CASE, freezeInput(result));
+  // When none of the passages found may be used, that is what is said, not that they weren't specific enough.
+  const none = await provider.freezeResponseEvidenceJournal({ caseId: CASE, query: "gone1", authContext: AUTH });
+  assert.deepEqual([none.source_items, none.omissions, none.retrieval_status, none.more_available], [[], [{ reason: "quotation_not_usable", count: 2 }], "no_match", false]);
+  assert.match(none.coverage, /; 0 matching passages that may be used; 0 exact quotations returned\./u);
 });
 
 test("with notes asked for, each quotation says when it was written, its cues and its lifecycle, in the snapshot and the models' view; without, none does", async (t) => {

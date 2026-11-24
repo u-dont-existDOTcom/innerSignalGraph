@@ -573,7 +573,7 @@ const ACTED_PROVISIONAL = "I'm here with you. Please call your local emergency n
 const wantsToDieReading = () => ({ ...quietReader(), level: "wants_to_die", wish_or_intent: "wish", reason: "says they want to die" });
 const actedReading = () => ({ ...quietReader(), level: "acted_or_about_to", reason: "says they took something", provisional_reply: ACTED_PROVISIONAL });
 const journalPartOf = (record) => snapshotsOf(record).at(-1).journal;
-const WITHHELD = ["unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }]];
+const WITHHELD = ["unavailable", "not_attempted", [{ reason: "journal_withheld", count: 1 }]];
 const partSummary = (part) => [part.availability, part.retrieval_status, part.omissions];
 
 test("the readers read before any journal search starts", async (t) => {
@@ -679,6 +679,81 @@ test("a reply written with the journal in view isn't sent once this turn's check
   const other = await journalTrial(t, { workers: script({ CW: (count, request) => ({ ...wholeChecker(count, request), level: "thoughts_no_intent" }) }) });
   await other.turns().run("exchange-checker-other", MESSAGE);
   assert.deepEqual((await other.record(other.clientA)).candidate_responses.map((candidate) => candidate.status), ["sent"]);
+});
+
+// What a request holds of some words, wherever they stand in it.
+const holdsWords = (request, words) => [request.system, packetOf(request)].some((part) => JSON.stringify(part).includes(JSON.stringify(words).slice(1, -1)));
+
+test("once a turn may have no journal, its repair and the check of that get neither the draft written with one nor what was said of its words", async (t) => {
+  const repaired = "Please call 112 now. I'm here with you. What makes asking hard for you?";
+  let quoted = null;
+  const CW = (count, request) => {
+    const value = wholeChecker(count, request);
+    if (count > 1) return { ...value, level: "wants_to_die", repair_induced_checks: [...REPAIR_INDUCED_ERROR_CHECKS] };
+    quoted = journalItems(packetOf(request))[0].exact_excerpt;
+    return { ...value, level: "wants_to_die", findings: [{ code: "CRISIS_FIRST_REPLY_SHAPE", severity: "high", summary: `synthetic: it opens with "${quoted}"`, evidence_turn_ids: [] }],
+      evidence_review: { ...value.evidence_review, items: value.evidence_review.items.map((item) => ({ ...item, assessment: "unsupported" })),
+        missing_material_history: [{ id: "missing-1", question: `When was that: ${quoted}`, why_material: `It says ${quoted}`, candidate_quote: quoted, quote_occurrence: 1 }] } };
+  };
+  const j = await journalTrial(t, { workers: script({ CW, "W-repair": () => ({ reply: repaired, answered_level: "wants_to_die", quotes: [] }) }) });
+  const result = await j.turns().run("exchange-draft-1", MESSAGE);
+  assert.deepEqual([result.deliveryKind, result.answer], ["candidate", repaired]);
+  assert.ok(quoted.length > 10 && holdsWords(j.calls.find((call) => call.role === "CW").request, quoted), "the first check got the draft and the quotation it was written with");
+  const repair = packetOf(lastRequest(j.calls, "W-repair"));
+  assert.deepEqual(repair.findings.map((finding) => finding.code).sort(), ["CRISIS_FIRST_REPLY_SHAPE", "PROGRAM_JOURNAL_IN_CRISIS", "RESPONSE_EVIDENCE_MISSING_HISTORY", "RESPONSE_EVIDENCE_UNSUPPORTED"], "what was found is told");
+  assert.match(repair.findings.find((finding) => finding.code === "PROGRAM_JOURNAL_IN_CRISIS").summary, /read the latest message as wants_to_die.*from the conversation alone/u);
+  for (const role of ["W-repair", "CW"]) {
+    assert.equal(holdsWords(lastRequest(j.calls, role), quoted), false, `${role} gets no words of the journal`);
+    assert.match(packetOf(lastRequest(j.calls, role)).previous_candidate, /^Not shown: /u);
+  }
+  // The draft stays stored as it was.
+  assert.ok((await j.record(j.clientA)).candidate_responses[0].exact_text.includes(quoted));
+});
+
+test("a repair written from a draft that had the journal, while its own retrieval failed, is stopped too when its check reads someone who wants to die", async (t) => {
+  // The first check asks for history and reads nothing of the kind; the repair's search fails, so its evidence holds no quotation, but
+  // it is given the draft it corrects, which quotes one.
+  const asksForHistory = (value) => ({ ...value, evidence_review: { ...value.evidence_review, missing_material_history: [{ id: "missing-1", question: "When did asking for help start to feel hard?", why_material: "Synthetic.", candidate_quote: "What was different that day?", quote_occurrence: 1 }] } });
+  const CW = (count, request) => {
+    const value = wholeChecker(count, request);
+    if (count === 1) return asksForHistory(value);
+    return { ...value, level: "wants_to_die", repair_induced_checks: [...REPAIR_INDUCED_ERROR_CHECKS] };
+  };
+  const drafts = [];
+  const j = await journalTrial(t, { workers: script({ CW, "W-repair": (count, request) => {
+    drafts.push(packetOf(request).previous_candidate);
+    return { reply: count === 1 ? "You wrote about a colleague. What was different that day?" : "Please call 112 now. I'm here with you.", answered_level: count === 1 ? "none" : "wants_to_die", quotes: [] };
+  } }) });
+  const { happened, run } = j.turns({ onSearch: (steps) => { if (steps.filter((step) => step === "search").length > 1) throw new Error("A synthetic retrieval failure."); } });
+  const result = await run("exchange-draft-2", MESSAGE);
+  assert.equal(happened.filter((step) => step === "search").length, 2);
+  assert.deepEqual([result.deliveryKind, result.answer], ["candidate", "Please call 112 now. I'm here with you."]);
+  const record = await j.record(j.clientA);
+  assert.deepEqual(snapshotsOf(record).map((snapshot) => [snapshot.revision_reason, snapshot.source_items.some((item) => item.kind === "journal_quotation")]), [["initial", true], ["evidence_expansion", false]]);
+  assert.deepEqual(record.candidate_responses.map((candidate) => candidate.audit_history.at(-1).findings.some((finding) => finding.code === "PROGRAM_JOURNAL_IN_CRISIS")), [false, true, false]);
+  assert.equal(drafts[0], record.candidate_responses[0].exact_text, "nobody had read it as one yet: the repair corrects the draft");
+  assert.match(drafts[1], /^Not shown: /u);
+});
+
+test("a turn that gets no journal isn't given an earlier turn's unsent draft that was written with one", async (t) => {
+  // The first turn's draft quotes the journal and is stopped; its repair, which quotes nothing, is sent. Then the person says they want to die.
+  const CW = (count, request) => ({ ...wholeChecker(count, request), findings: count === 1 ? [{ code: "VERBOSITY", severity: "substantive", summary: "synthetic: too long", evidence_turn_ids: [] }] : [], repair_induced_checks: count === 2 ? [...REPAIR_INDUCED_ERROR_CHECKS] : [] });
+  for (const [name, second, shown] of [["wants to die", wantsToDieReading, false], ["quiet", quietReader, true]]) {
+    const j = await journalTrial(t, { workers: script({ CW, R1: (count) => (count === 1 ? quietReader() : second()), W: (count, request) => (count === 1 ? writer(count, request) : { reply: "I'm here with you.", answered_level: "unclear", quotes: [] }),
+      "W-repair": () => ({ reply: "What makes asking hard for you?", answered_level: "none", quotes: [] }) }) });
+    const { run } = j.turns();
+    assert.equal((await run("exchange-unsent-1", MESSAGE)).answer, "What makes asking hard for you?", name);
+    const [stopped] = (await j.record(j.clientA)).candidate_responses;
+    const quoted = journalItems(packetOf(j.calls.find((call) => call.role === "W").request))[0].exact_excerpt;
+    assert.ok(stopped.exact_text.includes(quoted) && stopped.status !== "sent");
+    assert.equal((await run("exchange-unsent-2", "I can't do this any more.")).deliveryKind, "candidate", name);
+    for (const role of ["W", "CW"]) {
+      const request = lastRequest(j.calls, role), packet = packetOf(request);
+      assert.equal(packet.response_evidence.source_items.some((item) => item.kind === "unsent_draft" && item.exact_excerpt === stopped.exact_text), shown, `${name}: ${role}`);
+      assert.deepEqual(packet.response_evidence.communication_projection.omitted.source_items, shown ? [] : [{ reason: "draft_written_with_the_journal", count: 1 }], `${name}: ${role}`);
+      if (!shown) assert.equal(holdsWords(request, quoted), false, `${name}: ${role} gets no words of the journal`);
+    }
+  }
 });
 
 test("a repair gets no journal, and no search is made for it, once this turn's checker has read someone who wants to die", async (t) => {

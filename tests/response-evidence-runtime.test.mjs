@@ -619,11 +619,11 @@ test("with response evidence off nothing is read first", async (t) => {
 });
 
 test("a turn that gets no journal makes no search, its own or the repair's, and each snapshot says why", async (t) => {
-  const env = await setup(t, { auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => "crisis_turn" });
+  const env = await setup(t, { auditReview: (text, n) => n === 0 ? missing(text) : emptyReview() }), h = hooked(env, { withheld: () => "journal_withheld" });
   await h.controller({ journalEvidenceProvider: h.journal() }).run(request());
   const record = await assertDelivered(env.store);
   assert.deepEqual(record.response_evidence_snapshots.map((snapshot) => [snapshot.revision_reason, ...withheldPart(snapshot)]), [
-    ["initial", "unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }], []], ["evidence_expansion", "unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }], []]
+    ["initial", "unavailable", "not_attempted", [{ reason: "journal_withheld", count: 1 }], []], ["evidence_expansion", "unavailable", "not_attempted", [{ reason: "journal_withheld", count: 1 }], []]
   ]);
   assert.deepEqual(h.happened, ["read", "withheld?", "freeze", "write, read before", "withheld?", "freeze", "repair"]);
 });
@@ -698,13 +698,13 @@ test("the expansion hands the reader each question and the part it adds to", asy
 
 test("a repair whose turn gets no journal any more goes on without: the snapshot it would use is frozen again without its quotations", async (t) => {
   let withhold = null;
-  const env = await setup(t, { alwaysFail: true, onAudit: async () => { withhold = "crisis_turn"; } }), h = hooked(env, { withheld: () => withhold });
+  const env = await setup(t, { alwaysFail: true, onAudit: async () => { withhold = "journal_withheld"; } }), h = hooked(env, { withheld: () => withhold });
   const { item, found } = await publishedCorpus(env);
   await h.controller({ journalEvidenceProvider: h.journal(() => found([item(1), item(2)])) }).run(request());
   const { response_evidence_snapshots: snapshots } = await env.store.load(CASE);
   assert.ok(env.calls.some((entry) => entry.stage === "repair"));
   assert.deepEqual(snapshots.slice(0, 2).map((snapshot) => [snapshot.revision_reason, quotationIds(snapshot)]), [["initial", ["src:journal:1", "src:journal:2"]], ["dependency_refresh", []]]);
-  assert.deepEqual(withheldPart(snapshots[1]).slice(0, 3), ["unavailable", "not_attempted", [{ reason: "crisis_turn", count: 1 }]]);
+  assert.deepEqual(withheldPart(snapshots[1]).slice(0, 3), ["unavailable", "not_attempted", [{ reason: "journal_withheld", count: 1 }]]);
   assert.equal(h.searches.length, 1);
   for (const repair of env.calls.filter((entry) => entry.stage === "repair")) assert.equal(JSON.stringify(repair.responseEvidence.view).includes("Exact synthetic journal quotation"), false);
 });
@@ -712,7 +712,7 @@ test("a repair whose turn gets no journal any more goes on without: the snapshot
 test("a refresh of a turn's evidence carries no quotation over into a turn that gets no journal any more", async (t) => {
   // The case changes while the turn's evidence is frozen, so it is frozen again before the writer is called. By then the turn gets no
   // journal, or (the control) still does, and the refresh carries its quotation over.
-  for (const later of ["crisis_turn", null]) {
+  for (const later of ["journal_withheld", null]) {
     let withhold = null;
     const env = await setup(t), h = hooked(env, { withheld: () => withhold });
     const { item, found } = await publishedCorpus(env);
@@ -751,7 +751,7 @@ test("a repair that may have no journal and no further snapshot isn't made: the 
     return frozen;
   } };
   env.runtime.auditCandidate = ((original) => async (input) => {
-    if ((await env.store.load(CASE)).response_evidence_snapshots.length === 3) withhold = "crisis_turn";
+    if ((await env.store.load(CASE)).response_evidence_snapshots.length === 3) withhold = "journal_withheld";
     return original(input);
   })(env.runtime.auditCandidate);
   const run = h.controller({ privateCaseSource: source, journalEvidenceProvider: h.journal(({ addsTo }) => found(addsTo ? [...addsTo.source_items, item(3)] : [item(1), item(2)])) }).run(request());

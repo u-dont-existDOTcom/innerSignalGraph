@@ -55,8 +55,8 @@ with its reason, a receipt, no retry by another route.
 
 - A message gets at most six quotations. A message with no letters or digits is `no_match`, like one of common words only.
 - What the models are told when nothing comes back is why: no passage holds any of the words, every word is in too many passages to search
-  by, or so many passages share one, none specifically enough. Why a passage may not be used (restricted, deleted, revoked) isn't told, only
-  that some can't be, and such a passage counts neither as a match nor as more to be had.
+  by, so many passages share one, none specifically enough, or none of those found may be used. Why a passage may not be used (restricted,
+  deleted, revoked) isn't told, only that some can't be, and one that was looked at counts neither as a match nor as more to be had.
 - The repair's evidence expansion searches each missing-history question on its own (at most four; a further one, or one that can't be
   searched, is an omission) and takes the best of each in turn, without repeats. It **adds to** the turn's part: the quotations the draft may
   rest on keep their ids, the receipts that returned them, the coverage and what was left out; the snapshot holds at most twelve. Each kept
@@ -79,8 +79,8 @@ with its reason, a receipt, no retry by another route.
 When a turn's evidence holds a journal quotation, the writer's, the repair's and the checker's notes also say that a journal quotation was
 found by shared words and may have nothing to do with the message; that it belongs in the reply only when it helps with what the person
 says now, and is never a reason for crisis text and never raises or lowers the level; that `written` is when the entry says it was
-written, never when something happened, and an interval or an inferred year is not a day; that a dream, plan, wish or denial stays one;
-and what "superseded" means. A turn without a quotation, so every turn without a journal reader, gets the notes it always got.
+written, never when something happened, and an interval or an inferred year is not a day; and that a dream, plan, wish or denial stays one.
+A turn without a quotation, so every turn without a journal reader, gets the notes it always got.
 
 ## 4. No journal in a conversation about wanting to die
 
@@ -94,12 +94,20 @@ and what "superseded" means. A turn without a quotation, so every turn without a
   read as anything but none (wanting to die, having acted or being about to, thoughts of death with no wish to act, or something that could
   mean either), or, with the number now on, as needing the emergency number now; or its conversation has been read as one about wanting to die
   by any reader or checker. **Every snapshot of a turn asks it as it is frozen** (`freezeSnapshot`), the message's own, the repair's expansion
-  and a refresh alike: the part is then closed, `unavailable` and `not_attempted` with the reason `crisis_turn`, no search is made and nothing
-  is carried over. A decision that can't be made is a failed retrieval. A journal read earlier in the case still needs the open gate.
+  and a refresh alike: the part is then closed, `unavailable` and `not_attempted` with the reason `journal_withheld`, no search is made and
+  nothing is carried over. The models read that reason, so it says nothing of the level: it also stands for a message read as thoughts of
+  death, as unclear or not at all. A decision that can't be made is a failed retrieval. A journal read earlier in the case still needs the
+  open gate.
+- **Earlier drafts.** An unsent draft of an earlier turn that was written with a quotation in view, or any version of it, may hold the
+  journal's words. It is a source only in a snapshot whose own journal part is available; every other one leaves it out
+  (`draft_written_with_the_journal`), whatever the reason it has no journal.
 - **When only the checker reads it.** A draft written with quotations in view, before anyone had read the conversation as one about wanting to
   die, isn't sent once this turn's checker does: the program adds `PROGRAM_JOURNAL_IN_CRISIS` (high), and the repair goes on with a snapshot
   frozen again without its quotations; with no further snapshot left (three a turn), the turn ends without a checked reply, so its fixed
-  message or notice shows.
+  message or notice shows. The repair isn't shown the draft either, nor what was found of its words (it gets the codes, and the program's own
+  sentences), and neither is the check of the repaired reply: a reply written anew, from the conversation alone. The repair's stored result
+  says so (`draftHidden`), so the reply doesn't count as one written from that draft. One that was written from such a draft, its own
+  evidence holding no quotation (its expansion's search failed), counts as written with the journal in view.
 - With response evidence off, or with no journal reader (a trial without clients), nothing is read first and every packet, prompt, order
   of calls and stored record is as it was.
 
@@ -118,6 +126,8 @@ and what "superseded" means. A turn without a quotation, so every turn without a
   words are English and French; in any other language only the common-words rule leaves everyday words out, and words that are spelled alike
   in two languages find each other ("pain").
 - A new conversation gets the journal again, also right after one about wanting to die, when its message is read as none.
+- What the person has been sent stays in the conversation the models read, a reply that quoted the journal included. The check that is the
+  first to read someone who wants to die has the quotations in view, since nobody had read the message as one when it was searched for.
 - On an invented journal of 6,000 entries in the encrypted store a search takes about 0.4 s on the laptop, also for a message of 40,000
   characters; a real journal hasn't been timed.
 - Whether a quotation helps is the models' judgment; the search can't make it.

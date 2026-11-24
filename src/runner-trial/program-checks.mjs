@@ -210,7 +210,7 @@ const finding = (code, severity, summary, extra = {}) => Object.freeze({ id: `pr
  * - firstCrisisTurn: this is the first turn of the conversation read at a crisis level by C1, or whose provisional was shown;
  * - crisisConversation: any turn of this conversation was read at a crisis level by R1 or C1;
  * - provisional: the provisional reply shown this turn, or null;
- * - journalInView: the evidence the draft was written with holds a journal quotation.
+ * - journalInView: the draft may hold the journal's words (it was written with a journal quotation in view, or from a draft that was);
  * - childContactPatternHits: what the child-contact word patterns matched while the gate is HOLD or BLOCKED.
  */
 export function runProgramChecks({ reply, checkerLevel = "none", firstActedTurn = false, firstCrisisTurn = false, crisisConversation = false, journalInView = false, provisional = null, quotes = [], quoteSources = new Map(), childContactPatternHits = [] }) {
@@ -225,9 +225,10 @@ export function runProgramChecks({ reply, checkerLevel = "none", firstActedTurn 
     if (hasDetox(reply)) findings.push(finding("PROGRAM_DETOX_WORD", "high", "The word \"detox\" in a conversation where someone said they want to die or might act."));
   }
   // The journal is kept out of a conversation about wanting to die before anything is searched, by the crisis reader's reading; when the
-  // checker alone reads it as one, the reply was written with quotations in view, and it isn't sent: the repair gets none.
+  // checker alone reads it as one, the reply was written with quotations in view, and it isn't sent: the repair gets neither them nor it.
   if (journalInView && (crisisConversation || isCrisisLevel(checkerLevel))) {
-    findings.push(finding("PROGRAM_JOURNAL_IN_CRISIS", "high", "Journal quotations were in view when this reply was written, in a conversation where someone said they want to die or might act. Write the reply from the conversation alone: no journal quotation, and nothing taken from one."));
+    const read = isCrisisLevel(checkerLevel) ? ` (this check read the latest message as ${checkerLevel})` : "";
+    findings.push(finding("PROGRAM_JOURNAL_IN_CRISIS", "high", `Journal quotations were in view when this reply was written, in a conversation where someone said they want to die or might act${read}. Write the reply from the conversation alone: no journal quotation, and nothing taken from one.`));
   }
   if (firstCrisisTurn) {
     const shape = shapeProblems(reply);

@@ -19,13 +19,14 @@ const bounded = (value) => typeof value === "string" && value.length <= EVIDENCE
 const searchable = (value) => bounded(value) && value.trim().length > 0;
 
 // What was searched and what that can't show, for the models that read the quotations. `matched` counts the passages kept, without those
-// that may not be used; when none was kept, it says why, so that a message whose words many passages hold isn't told as one the journal
-// says nothing about.
+// looked at that may not be used; with none left, it says why, so that a message whose words many passages hold isn't told as one the
+// journal says nothing about.
 function coverageOf({ expansion, searches, found, returned }) {
-  const matched = found.reduce((sum, search) => sum + search.kept - search.omitted.reduce((count, entry) => count + entry.count, 0), 0);
+  const kept = found.reduce((sum, search) => sum + search.kept, 0);
+  const matched = kept - found.reduce((sum, search) => sum + search.omitted.reduce((count, entry) => count + entry.count, 0), 0);
   const shared = found.reduce((sum, search) => sum + search.shared, 0);
   const onlyCommon = found.length > 0 && found.every((search) => search.terms.chosen.length === 0 && search.terms.dropped.some((entry) => entry.reason === "common"));
-  const none = matched > 0 || found.length === 0 ? "" : shared > 0 ? `; ${shared} passages share one of those words, none specifically enough to be returned`
+  const none = matched > 0 || found.length === 0 ? "" : kept > 0 ? " that may be used" : shared > 0 ? `; ${shared} passages share one of those words, none specifically enough to be returned`
     : onlyCommon ? "; every word of it that the journal holds is in too many passages to search by" : "; no passage holds any of them";
   const search = expansion
     ? `${searches} ranked ${searches === 1 ? "search" : "searches"}, one for each missing-history question, for its less common words; ${matched} matching passages, counted for each question${none}; ${returned} exact quotations added.`
