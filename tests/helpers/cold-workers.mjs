@@ -4,21 +4,27 @@
 //
 // The consumer's stand-in sees only its packet: it says "supported" and cites every passage it was given, or "not_found" when it was given
 // none, except for the questions `script` answers otherwise, by their words (a model judges a false premise itself); `words` gives the answer
-// to a question, by its words. The judge's says "right", or what `verdict` returns for a packet. `prepare(count, request)` is the
-// preparation and `reply(count, request, usual)` the answer, where `count` numbers the calls of both and `usual()` gives the stand-in's own.
+// to a question, by its words. The judge's says "right", or what `verdict` returns for a packet, and for a planted answer (one that begins as
+// PLANTED does) "wrong", or what `planted` returns for its packet. `prepare(count, request)` is the preparation and `reply(count, request,
+// usual)` the answer, where `count` numbers the calls of both and `usual()` gives the stand-in's own.
+
+import { PLANTED_KINDS } from "../../src/runner-trial/cold-test-rule.mjs";
 
 export const JUDGE_REASON = "A synthetic reason that stays with the judge.";
 export const ANSWER = "A synthetic answer.";
+export const PLANTED = "A planted wrong answer";
+/** The wrong answer planted on a question, by its place: the kinds in turn. */
+export const plantOn = (place) => Object.freeze({ kind: PLANTED_KINDS[place % PLANTED_KINDS.length], answer: `${PLANTED} ${place}.` });
 export const RECEIPTS = Object.freeze({ W: Object.freeze({ provider: "stand-in-w", model: "consumer 1.5" }), CW: Object.freeze({ provider: "stand-in-c", model: "judge-2" }) });
 
-export function coldWorkers({ script = {}, words = {}, verdict = () => "right", prepare = null, reply = null } = {}) {
+export function coldWorkers({ script = {}, words = {}, verdict = () => "right", planted = () => "wrong", prepare = null, reply = null } = {}) {
   const sent = [];
   let count = 0;
   const consumer = ({ question_id, question, passages }) => {
     const answerability = script[question] ?? (passages.length ? "supported" : "not_found");
     return { question_id, answerability, answer: words[question] ?? ANSWER, evidence_ids: answerability === "not_found" ? [] : passages.map(({ id }) => id) };
   };
-  const judge = (packet) => ({ question_id: packet.question_id, verdict: verdict(packet, sent), reason: JUDGE_REASON });
+  const judge = (packet) => ({ question_id: packet.question_id, verdict: packet.answer.startsWith(PLANTED) ? planted(packet, sent) : verdict(packet, sent), reason: JUDGE_REASON });
   return {
     sent,
     // What left for one role, as packets.
@@ -37,4 +43,4 @@ export function coldWorkers({ script = {}, words = {}, verdict = () => "right", 
   };
 }
 
-export const questionsFile = (questions) => ({ schema_version: 1, kind: "journal_cold_questions", questions });
+export const questionsFile = (questions, author = "person") => ({ schema_version: 1, kind: "journal_cold_questions", author, questions });

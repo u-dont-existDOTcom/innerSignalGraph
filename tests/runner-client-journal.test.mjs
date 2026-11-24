@@ -21,6 +21,7 @@ import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
 import { RUNNER_UNAVAILABLE_NOTICE } from "../src/runner-trial/notices.mjs";
 import { CHECKER_EVIDENCE_NOTE, CHECKER_EVIDENCE_NOTE_NO_QUOTATION, WRITER_EVIDENCE_NOTE, WRITER_EVIDENCE_NOTE_NO_QUOTATION } from "../src/runner-trial/worker-prompts.mjs";
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
+import { COLD_TEST_RULE } from "../src/runner-trial/cold-test-rule.mjs";
 import { RESPONSE_EVIDENCE_DIMENSIONS } from "../src/supervisor/response-evidence-contract.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import { addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
@@ -140,14 +141,14 @@ async function journalTrial(t, { evidence = true, consent = true, receipt = "mat
     await fs.mkdir(folder, { recursive: true, mode: 0o700 });
     await fs.writeFile(path.join(folder, COLD_TEST_RECEIPT_FILE), JSON.stringify({ schema_version: 2, kind: "journal_cold_test", result: "pass", case_id: clientA, corpus_id: CORPUS,
       generation: reference.active_generation, manifest_object_id: reference.manifest_object_id, visibility_epoch: reference.visibility_epoch, tested_at: "2026-11-24T08:00:00.000Z",
-      reader_version: SESSION_USE_READER_VERSION, rule: "journal-cold-test-rule-v2", questions: { answerable: 40, unanswerable: 20 },
-      consumer: { provider: "openai", model: "codex default" }, judge: { provider: "anthropic", model: "claude-opus-5-5" }, ...overrides }), { mode: 0o600 });
+      reader_version: SESSION_USE_READER_VERSION, rule: COLD_TEST_RULE.version, questions: { answerable: 40, unanswerable: 20, planted: 20 }, author: "person",
+      consumer: { provider: "openai", model: "codex default" }, judge: { provider: "anthropic", model: "claude-opus-5-5" }, run: 1, ...overrides }), { mode: 0o600 });
   };
   // A receipt of the cold test's first design, which names no reader: with it, the journal is as if it weren't tested.
   const plantFirstReceipt = async () => {
     await plantReceipt();
     const file = path.join(clientJournalFolder(home, clientA), COLD_TEST_RECEIPT_FILE);
-    const { reader_version: _reader, rule: _rule, questions: _questions, consumer: _consumer, judge: _judge, ...first } = JSON.parse(await fs.readFile(file, "utf8"));
+    const { reader_version: _reader, rule: _rule, questions: _questions, author: _author, consumer: _consumer, judge: _judge, run: _run, ...first } = JSON.parse(await fs.readFile(file, "utf8"));
     await fs.writeFile(file, JSON.stringify({ ...first, schema_version: 1 }), { mode: 0o600 });
   };
   if (receipt === "match") await plantReceipt();
@@ -238,6 +239,8 @@ test("the journal gate: no quotation without the owner's confirmation of consent
   assert.deepEqual(reason(await ask(j.clientA)), ["unavailable", "cold_test_receipt_mismatch", 0], "a receipt that names no reader");
   await j.plantReceipt({ reader_version: "session-use-reader-v1:every-word" });
   assert.deepEqual(reason(await ask(j.clientA)), ["unavailable", "cold_test_receipt_mismatch", 0], "nor a pass of what another reader gives");
+  await j.plantReceipt({ rule: "journal-cold-test-rule-v2" });
+  assert.deepEqual(reason(await ask(j.clientA)), ["unavailable", "cold_test_receipt_mismatch", 0], "nor a pass by an earlier rule");
   await j.plantReceipt();
   const open = await ask(j.clientA);
   assert.equal(open.availability, "available");
@@ -262,6 +265,8 @@ test("the journal gate: no quotation without the owner's confirmation of consent
   assert.equal(await openNow(), false, "a receipt that names no reader");
   await j.plantReceipt({ reader_version: "session-use-reader-v1:every-word" });
   assert.equal(await openNow(), false, "a receipt for another reader");
+  await j.plantReceipt({ rule: "journal-cold-test-rule-v2" });
+  assert.equal(await openNow(), false, "a receipt by an earlier rule");
   await j.plantReceipt();
   assert.equal(await openNow(), true);
   await setJournalConsent({ home: j.home, number: 1, action: "withdraw" });
@@ -320,6 +325,9 @@ test("a reader other than the one tested closes the gate of a case that has read
   await j.plantFirstReceipt();
   await closed("exchange-reader-3");
   assert.equal(await listed(), false, "a receipt that names no reader is no passed test");
+  await j.plantReceipt({ rule: "journal-cold-test-rule-v2" });
+  await closed("exchange-rule");
+  assert.equal(await listed(), false, "nor is one by an earlier rule");
   await j.plantReceipt();
   assert.equal((await respond(base, j.clientA, "exchange-reader-4")).json.closing ?? null, null, "with a test of this reader, the case replies");
 });

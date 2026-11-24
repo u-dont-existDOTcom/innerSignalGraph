@@ -20,7 +20,8 @@ import { createJournalCopyKeyPair, exportJournalCopy, importJournalCopy, journal
 import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
 import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, RUNNER_CLIENTS_FILE, clientJournalFolder, readColdTestAttempt, readColdTestReceipt, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { acquireTrialFolderLock as acquireFolderLock, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
-import { COLD_TEST_RULE, createSealedColdTestPort, runJournalColdTest } from "../src/runner-trial/journal-cold-test.mjs";
+import { COLD_TEST_RULE } from "../src/runner-trial/cold-test-rule.mjs";
+import { createSealedColdTestPort, runJournalColdTest } from "../src/runner-trial/journal-cold-test.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
@@ -28,7 +29,7 @@ import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordin
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { StartError, acquireTrialFolderLock, addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
 import { CLIENT_COPY_KEY_FILE, IMPORT_PURPOSES, USAGE, ensureJournalCopyKey, importClientJournal, oneTimeGrant, parseJournalArguments, runClientColdTest, runMain } from "../scripts/runner-trial-journal.mjs";
-import { ANSWER, JUDGE_REASON, RECEIPTS, coldWorkers, questionsFile } from "./helpers/cold-workers.mjs";
+import { ANSWER, JUDGE_REASON, PLANTED, RECEIPTS, coldWorkers, plantOn, questionsFile } from "./helpers/cold-workers.mjs";
 import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
 // The copy step for a client's journal (design for clients, point 4) and the command of its cold test (point 5c): exported where the journal
@@ -180,7 +181,7 @@ test("a client's journal is exported sealed for one key, imported into the clien
   await fs.mkdir(folder, { recursive: true, mode: 0o700 });
   await fs.writeFile(path.join(folder, COLD_TEST_RECEIPT_FILE), JSON.stringify({ schema_version: 2, kind: "journal_cold_test", result: "pass", case_id: clientCase, corpus_id: corpusId,
     generation: result.generation, manifest_object_id: result.manifest_object_id, visibility_epoch: result.visibility_epoch, tested_at: "2026-11-24T08:00:00.000Z",
-    reader_version: SESSION_USE_READER_VERSION, rule: COLD_TEST_RULE.version, questions: { answerable: 40, unanswerable: 20 }, consumer: RECEIPTS.W, judge: RECEIPTS.CW }), { mode: 0o600 });
+    reader_version: SESSION_USE_READER_VERSION, rule: COLD_TEST_RULE.version, questions: { answerable: 40, unanswerable: 20, planted: 20 }, author: "person", consumer: RECEIPTS.W, judge: RECEIPTS.CW, run: 1 }), { mode: 0o600 });
   const gate = createRunnerJournalGate({ trialDir: trial.home, caseAccessService: service });
   const part = await gate.freezeResponseEvidenceJournal({ caseId: clientCase, query: "help", authContext: { bearerToken: trial.prepared.clientTokens[clientCase] } });
   assert.equal(part.availability, "available");
@@ -354,16 +355,22 @@ test("a quote generation, as the journal import builds and publishes it, finds t
 
 // ---- The cold test's stand-ins and questions -----------------------------------------------------------------------------------
 
-// Questions on the synthetic fixture, as many as the rule asks for: forty it answers, with the key naming its evidence by exact words of the
-// journal, ten that take a false premise and ten about an absent thing. One test makes 120 calls when the judge finds nothing wrong: the
-// consumer's and the judge's for each question in turn, so a question's are the calls 2n - 1 and 2n.
+// A generated journal of twenty lines, each about a thing of its own, and questions on it, as many as the rule asks for: forty it answers (two
+// a line, with the key naming its evidence by exact words of the journal), the first twenty with a planted wrong answer; twenty that take a
+// false premise about a line, so that the search returns it; and one about an absent thing. One test makes 162 calls when the judge finds
+// nothing wrong but the planted answers: the consumer's and the judge's for each question in turn, and two more of the judge's for a planted
+// answer, so the first twenty questions' are the calls 4n - 3 to 4n.
+const THINGS = Object.freeze("abacus anvil bassoon beehive bellows birdcage bobbin brazier cello chisel cogwheel crowbar dulcimer easel gargoyle goblet hammock hourglass jigsaw kiln".split(" "));
+const coldJournal = (caseId = SERVER_CASE) => generatedJournal([{ sourceId: "source:repr", representationId: "repr", lines: THINGS.map((thing) => `That day I asked a colleague for help with the ${thing}.`) }], SERVER_CORPUS, caseId);
+const coldServer = (t, options = {}) => serverJournal(t, { journal: coldJournal(options.caseId), ...options });
 const PREMISE = "refuse to help";
 const QUESTIONS = Object.freeze(questionsFile([
-  ...Array.from({ length: 40 }, (_, place) => ({ id: `q-colleague-${place}`, question: `Synthetic question ${place}: what did I do about my colleague?`, answerable: true, evidence_quotes: ["ask a colleague for help", "asked a  colleague\nfor help"] })),
-  ...Array.from({ length: 10 }, (_, place) => ({ id: `q-premise-${place}`, question: `Synthetic question ${40 + place}: when did the colleague ${PREMISE}?`, answerable: false })),
-  ...Array.from({ length: 10 }, (_, place) => ({ id: `q-absent-${place}`, question: `Synthetic question ${50 + place}: and the zebra?`, answerable: false }))
+  ...Array.from({ length: 40 }, (_, place) => ({ id: `q-colleague-${place}`, question: `Synthetic question ${place}: what did I do about my colleague and the ${THINGS[place % 20]}?`, answerable: true,
+    evidence_quotes: [`help with  the\n${THINGS[place % 20]}`], ...(place < 20 ? { planted: plantOn(place) } : {}) })),
+  ...Array.from({ length: 20 }, (_, place) => ({ id: `q-premise-${place}`, question: `Synthetic question ${40 + place}: when did the colleague ${PREMISE} with the ${THINGS[place]}?`, answerable: false })),
+  { id: "q-absent", question: "Synthetic question 60: and the zebra?", answerable: false }
 ]));
-const CALLS = 120;
+const CALLS = 162;
 const withQuestions = (questions) => ({ ...QUESTIONS, questions });
 const snapshotOf = (reference) => sha256(`${reference.active_generation}|${reference.manifest_object_id}|${reference.visibility_epoch}`).slice(0, 16);
 const SCRIPT = Object.freeze(Object.fromEntries(QUESTIONS.questions.filter(({ question }) => question.includes(PREMISE)).map(({ question }) => [question, "false_premise"])));
@@ -503,7 +510,7 @@ test("the sealed copy is written whole or not at all, never over another file, a
 });
 
 test("the laptop commands: each client's key, an import that leaves every file where it was, and a cold test whose receipt opens the gate", async (t) => {
-  const server = await serverJournal(t);
+  const server = await coldServer(t);
   const trial = await trialWith(t, 2);
   const { home } = trial;
   const [clientOne, clientTwo] = trial.cases;
@@ -603,9 +610,14 @@ test("the laptop commands: each client's key, an import that leaves every file w
   const missed = await coldTest(misses);
   assert.deepEqual([missed.passed, missed.report.not_met, missed.report.found.same_words], [false, ["too_few_right"], { found: 40, of: 40 }], "found, and answered as if it weren't");
   await absent(receiptPath);
-  const invents = standIns({ reply: async (count, request, usual) => { const value = await usual(); return count === 1 ? { ...value, evidence_ids: [...value.evidence_ids, "src:journal:9"] } : value; } });
+  // One answer in thirty may be wrong, so two of these sixty-one: an answer that cites what it wasn't given is one.
+  const inventing = (questions) => standIns({ reply: async (count, request, usual) => { const value = await usual(); return !isJudge(request) && questions.includes(value.question_id) ? { ...value, evidence_ids: [...value.evidence_ids, "src:journal:9"] } : value; } });
+  for (const [questions, passes] of [[["question-1", "question-2"], true], [["question-1", "question-2", "question-3"], false]]) {
+    const result = await coldTest(inventing(questions));
+    assert.deepEqual([result.passed, result.report.wrong, result.report.not_met], [passes, questions.length, passes ? [] : ["wrong_answers"]]);
+  }
   const overclaims = standIns({ script: {}, verdict: (packet) => (packet.question.includes(PREMISE) ? "wrong" : "right") });
-  for (const failing of [invents, overclaims, standIns({ reply: judged("wrong") })]) {
+  for (const failing of [overclaims, standIns({ reply: judged("wrong") }), standIns({ planted: () => "right" })]) {
     assert.equal((await coldTest()).passed, true);
     assert.equal(await modeOf(receiptPath), 0o600);
     assert.equal((await coldTest(failing)).passed, false);
@@ -633,7 +645,9 @@ test("the laptop commands: each client's key, an import that leaves every file w
   // The receipt names what was tested and who answered and judged.
   const receipt = JSON.parse(receiptText);
   assert.deepEqual([receipt.case_id, receipt.corpus_id, receipt.reader_version, receipt.rule, receipt.questions, receipt.consumer, receipt.judge],
-    [clientOne, imported.corpus_id, SESSION_USE_READER_VERSION, COLD_TEST_RULE.version, { answerable: 40, unanswerable: 20 }, RECEIPTS.W, RECEIPTS.CW]);
+    [clientOne, imported.corpus_id, SESSION_USE_READER_VERSION, COLD_TEST_RULE.version, { answerable: 40, unanswerable: 20, planted: 20 }, RECEIPTS.W, RECEIPTS.CW]);
+  // It also says who wrote the questions, and which of the tests started on this copy it was: the count begins anew with an import.
+  assert.deepEqual([receipt.author, receipt.run], ["person", 1]);
   const attempt = await readColdTestAttempt(home, clientOne);
   assert.match(attempt, /^[0-9a-f-]{36}$/u);
   await fs.chmod(questionsPath, 0o644);
@@ -663,7 +677,7 @@ test("the laptop commands: each client's key, an import that leaves every file w
 
 // A client whose journal copy the import made, with the questions file of its cold test; client one consented.
 async function copiedClient(t, { clients = 1, server = null } = {}) {
-  const from = server ?? await serverJournal(t);
+  const from = server ?? await coldServer(t);
   const trial = await trialWith(t, clients, { consent: true });
   const { home } = trial;
   const outside = await temporaryFolder(t, "transfer");
@@ -923,8 +937,8 @@ test("no receipt survives an import that starts: it goes with its test's marker,
 });
 
 test("Delete this case of a client takes their copies, their key and their place on the list: then another server case can be theirs, and theirs another client's", async (t) => {
-  const first = await serverJournal(t);
-  const second = await serverJournal(t, { caseId: OTHER_SERVER_CASE });
+  const first = await coldServer(t);
+  const second = await coldServer(t, { caseId: OTHER_SERVER_CASE });
   const trial = await copiedClient(t, { clients: 2, server: first });
   const { home, outside } = trial;
   const [clientOne, clientTwo] = trial.cases;
@@ -1425,27 +1439,29 @@ test("a start that can't let go of the trial folder's lock once its server answe
 });
 
 test("a cold test that starts removes the copy's receipt and only a pass gives a new one: an error, a wrong or malformed answer, a file too small to pass, a judge's no, a failed judge leave none", async (t) => {
-  const { home, cases: [clientOne], imported, outside, receiptPath, coldTest } = await copiedClient(t);
+  const { home, cases: [clientOne], imported, outside, receiptPath, coldTest, sealedPath } = await copiedClient(t);
   const pass = async () => {
     assert.equal((await coldTest(using())).passed, true);
     assert.equal((await readColdTestReceipt(home, clientOne)).corpus_id, imported.corpus_id);
   };
   // Through the real port and the stand-in workers: the consumer's call and the judge's for each question in turn.
   const replying = (reply, options = {}) => using(standIns({ reply, ...options }));
-  const failingAt = (at, error) => replying(async (count, request, usual) => { if (count === at) throw error; return usual(); });
-  const answeringAt = (at, change) => replying(async (count, request, usual) => (count === at ? change(await usual()) : usual()));
+  // From a call on, so that making it again doesn't help.
+  const failingFrom = (at, error) => replying(async (count, request, usual) => { if (count >= at) throw error; return usual(); });
+  const answeringFrom = (at, change) => replying(async (count, request, usual) => (count >= at ? change(await usual()) : usual()));
   const miss = (usual) => ({ ...usual, answerability: "not_found", evidence_ids: [] });
   const stopped = (code) => (error) => error.code === code;
   for (const [what, options, code] of [
-    ["a later call that timed out", failingAt(5, timedOut()), "TIMEOUT"],
+    ["a later call that timed out", failingFrom(5, timedOut()), "TIMEOUT"],
     ["a missed first answer, then a call that timed out", replying(async (count, request, usual) => { if (count > 1) throw timedOut(); return miss(await usual()); }), "TIMEOUT"],
-    ["a malformed answer, as the worker reports it", failingAt(3, new ProviderError("A synthetic malformed answer.", { code: "PROVIDER_MALFORMED" })), "PROVIDER_MALFORMED"],
-    ["an answer outside its schema", answeringAt(5, () => ({ answer: ANSWER })), "COLD_CONSUMER_ANSWER_INVALID"],
-    ["an answer to another question", answeringAt(5, (usual) => ({ ...usual, question_id: "question-1" })), "COLD_CONSUMER_ANSWER_INVALID"],
-    ["a judge's call that timed out", failingAt(2, timedOut()), "TIMEOUT"],
-    ["a judge's call that timed out, of a question the journal doesn't answer", failingAt(CALLS, timedOut()), "TIMEOUT"],
-    ["a judge's second call that timed out", replying(async (count, request, usual) => { if (count === 3) throw timedOut(); return { ...(await usual()), ...(count === 2 ? { verdict: "wrong" } : {}) }; }), "TIMEOUT"],
-    ["a judge's answer outside its schema", answeringAt(2, (usual) => ({ ...usual, verdict: "maybe" })), "COLD_JUDGE_ANSWER_INVALID"],
+    ["a malformed answer, as the worker reports it", failingFrom(3, new ProviderError("A synthetic malformed answer.", { code: "PROVIDER_MALFORMED" })), "PROVIDER_MALFORMED"],
+    ["a plan limit, at once", failingFrom(5, new ProviderError("A synthetic plan limit.", { code: "PLAN_LIMIT" })), "PLAN_LIMIT"],
+    ["an answer outside its schema", answeringFrom(5, () => ({ answer: ANSWER })), "COLD_CONSUMER_ANSWER_INVALID"],
+    ["an answer to another question", answeringFrom(5, (usual) => ({ ...usual, question_id: "question-1" })), "COLD_CONSUMER_ANSWER_INVALID"],
+    ["a judge's call that timed out", failingFrom(2, timedOut()), "TIMEOUT"],
+    ["a judge's call that timed out, of a question the journal doesn't answer", failingFrom(CALLS, timedOut()), "TIMEOUT"],
+    ["a judge's second call that timed out", replying(async (count, request, usual) => { if (count >= 3) throw timedOut(); return { ...(await usual()), ...(count === 2 ? { verdict: "wrong" } : {}) }; }), "TIMEOUT"],
+    ["a judge's answer outside its schema", answeringFrom(2, (usual) => ({ ...usual, verdict: "maybe" })), "COLD_JUDGE_ANSWER_INVALID"],
     ["no judge", { workerFor: (role) => (role === "W" ? standIns().workerFor(role) : null) }, "COLD_PORT_INVALID"]
   ]) {
     await pass();
@@ -1454,14 +1470,19 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   }
   const small = path.join(outside, "small-questions.json");
   await fs.writeFile(small, JSON.stringify(withQuestions(QUESTIONS.questions.slice(1))), { mode: 0o600 });
+  // Three wrong answers of sixty-one are more than one in thirty.
+  const numbered = (packet) => Number(packet.question_id.slice("question-".length));
+  const consuming = (change) => replying(async (count, request, usual) => { const value = await usual(); return !isJudge(request) && numbered(value) <= 3 ? change(value) : value; });
+  const judging = (wrong) => using(standIns({ verdict: (packet) => (wrong(numbered(packet)) ? "wrong" : "right") }));
   for (const [what, options, notMet] of [
-    ["an answer that cites what it wasn't given", answeringAt(1, (usual) => ({ ...usual, evidence_ids: ["src:journal:9"] })), ["wrong_answer"]],
-    ["an answer declared supported that cites nothing", answeringAt(1, (usual) => ({ ...usual, evidence_ids: [] })), ["wrong_answer"]],
-    ["a judge that finds an answer wrong, twice", replying(async (count, request, usual) => ({ ...(await usual()), ...(count === 2 || count === 3 ? { verdict: "wrong" } : {}) })), ["wrong_answer"]],
-    ["a judge that finds an answer invented, to a false premise", using(standIns({ verdict: (packet) => (packet.question_id === "question-41" ? "wrong" : "right") })), ["wrong_answer"]],
-    ["a judge that finds an answer invented, about an absent thing", using(standIns({ verdict: (packet) => (packet.question_id === "question-60" ? "wrong" : "right") })), ["wrong_answer"]],
-    ["too few right", using(standIns({ verdict: (packet) => (Number(packet.question_id.slice("question-".length)) <= 14 ? "incomplete" : "right") })), ["too_few_right"]],
-    ["a file too small to pass, every answer right", { ...using(), questionsPath: small }, ["too_few_questions"]]
+    ["answers that cite what they weren't given", consuming((usual) => ({ ...usual, evidence_ids: ["src:journal:9"] })), ["wrong_answers"]],
+    ["answers declared supported that cite nothing", consuming((usual) => ({ ...usual, evidence_ids: [] })), ["wrong_answers"]],
+    ["a judge that finds answers wrong", judging((n) => n <= 3), ["wrong_answers"]],
+    ["a judge that finds answers invented, to false premises", judging((n) => n >= 41 && n <= 43), ["wrong_answers"]],
+    ["a judge that finds an answer invented, about an absent thing too", judging((n) => n >= 59), ["wrong_answers"]],
+    ["a judge that misses planted wrong answers", using(standIns({ planted: (packet) => (numbered(packet) <= 5 ? "right" : "wrong") })), ["judge_missed"]],
+    ["too few right", using(standIns({ verdict: (packet) => (numbered(packet) <= 14 ? "incomplete" : "right") })), ["too_few_right"]],
+    ["a file too small to pass, every answer right", { ...using(), questionsPath: small }, ["too_few_questions", "too_few_planted"]]
   ]) {
     await pass();
     const result = await coldTest(options);
@@ -1474,7 +1495,7 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   assert.equal((await coldTest(using(standIns({ prepare: async () => { checked += 1; await absent(receiptPath, "before any packet leaves"); } })))).passed, true);
   assert.equal(checked, CALLS);
   await fs.writeFile(receiptPath, JSON.stringify({ ...(await readColdTestReceipt(home, clientOne)), corpus_id: "another-copy" }), { mode: 0o600 });
-  await assert.rejects(coldTest(failingAt(1, timedOut())), { code: "TIMEOUT" });
+  await assert.rejects(coldTest(failingFrom(1, timedOut())), { code: "TIMEOUT" });
   await absent(receiptPath, "a receipt of another copy too");
   // One that's there all the same when the test started last doesn't pass (put there here) goes as well, whatever copy it names.
   await pass();
@@ -1482,8 +1503,8 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   for (const planted of [earlier, { ...earlier, corpus_id: "another-copy" }]) {
     const plant = () => fs.writeFile(receiptPath, JSON.stringify(planted), { mode: 0o600 });
     for (const options of [
-      replying(async (count, request, usual) => { if (count !== 3) return usual(); await plant(); throw timedOut(); }),
-      replying(async (count, request, usual) => { if (count === 3) await plant(); return usual(); }, { verdict: (packet) => (packet.question_id === "question-1" ? "wrong" : "right") })
+      replying(async (count, request, usual) => { if (count < 3) return usual(); await plant(); throw timedOut(); }),
+      replying(async (count, request, usual) => { if (count === 3) await plant(); return usual(); }, { planted: () => "right" })
     ]) {
       await coldTest(options).then((result) => assert.deepEqual([result.passed, result.newerStarted], [false, false]), (error) => assert.equal(error.code, "TIMEOUT"));
       await absent(receiptPath, "a receipt put there meanwhile");
@@ -1501,13 +1522,35 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   assert.match(USAGE, /A test that starts removes the copy's receipt; only a pass gives a new one/u);
   assert.match(USAGE, /--cold-test FILE --provider mixed\|claude\|codex/u);
   assert.match(USAGE, /excerpts of the client's journal to the companies running those workers \(with --provider mixed,\s+Anthropic and OpenAI; claude, Anthropic; codex, OpenAI\)/u);
-  assert.match(USAGE, /at least 40 questions\s+the journal answers and 20 it doesn't, no answer is wrong, at least 2 of every 3 questions that share a\s+search word with their key quotes are right/u);
+  for (const said of [/at least 40 questions the journal answers \(in words of its passages\), 20 it doesn't \(and the\s+search returns something for\) and 20 planted wrong answers/u, /the judge catches at least 4 of every 5 of those/u,
+    /at\s+most 1 answer in 30 is wrong; at least 2 of every 3 of each kind are right; at most 1 question in 10 is\s+left out/u, /The file says who wrote it \(anthropic, openai or person\): not the company whose model judges\./u]) assert.match(USAGE, said);
+  // Questions by the company whose model judges are refused before anything: no call, and the receipt stays as it is.
+  await setJournalConsent({ home, number: 1, action: "confirm" });
+  const byOther = path.join(outside, "by-a-company.json");
+  for (const [author, provider, company] of [["anthropic", "mixed", "Anthropic"], ["anthropic", "claude", "Anthropic"], ["openai", "codex", "OpenAI"]]) {
+    await fs.writeFile(byOther, JSON.stringify({ ...QUESTIONS, author }), { mode: 0o600 });
+    const asked = standIns();
+    await assert.rejects(coldTest({ ...using(asked), provider, questionsPath: byOther }), { message: `The questions file says that a model of ${company}'s wrote it, and one of ${company}'s judges the answers with this --provider: choose another, or use questions another company's model or a person wrote. Nothing was changed.` });
+    assert.deepEqual([asked.sent.length, await fs.readFile(receiptPath, "utf8")], [0, receipt]);
+  }
+  for (const [author, provider] of [["openai", "mixed"], ["openai", "claude"], ["anthropic", "codex"], ["person", "mixed"]]) {
+    await fs.writeFile(byOther, JSON.stringify({ ...QUESTIONS, author }), { mode: 0o600 });
+    assert.equal((await coldTest({ ...using(), provider, questionsPath: byOther })).report.author, author, `${author} ${provider}`);
+  }
+  // Which of the tests started on this copy it was, whatever became of them; the count begins anew with an import.
+  await fs.writeFile(byOther, JSON.stringify(QUESTIONS), { mode: 0o600 });
+  const runs = async () => (await coldTest({ ...using(), questionsPath: byOther })).report.run;
+  const counted = await runs();
+  await assert.rejects(coldTest(failingFrom(1, timedOut())), { code: "TIMEOUT" });
+  assert.deepEqual([await runs(), JSON.parse(await fs.readFile(receiptPath, "utf8")).run], [counted + 2, counted + 2]);
+  await importClientJournal({ home, number: 1, sealedPath });
+  assert.equal(await runs(), 1);
 });
 
 test("the cold test's workers are the trial's writer's for the consumer and its checker's for the judge, with each provider choice: GPT's answers judged by Claude with mixed, both one company's otherwise", async (t) => {
   const { outside, coldTest } = await copiedClient(t);
   const small = path.join(outside, "two-questions.json");
-  await fs.writeFile(small, JSON.stringify(withQuestions([QUESTIONS.questions[0], QUESTIONS.questions.at(-1)])), { mode: 0o600 });
+  await fs.writeFile(small, JSON.stringify(withQuestions([QUESTIONS.questions[39], QUESTIONS.questions.at(-1)])), { mode: 0o600 });
   // Stand-ins for the two companies' command lines: each writes down how it was called and answers as a consumer or a judge, by its packet.
   const calls = path.join(outside, "calls.jsonl");
   const program = async (name, body) => {
@@ -1533,7 +1576,7 @@ ${body}
   for (const [provider, consumer, judge] of [["mixed", codex, claude], ["claude", claude, claude], ["codex", codex, codex]]) {
     await fs.rm(calls, { force: true });
     const { report } = await coldTest({ questionsPath: small, provider, environment });
-    assert.deepEqual([report.not_met, report.by_question.map(({ result }) => result)], [["too_few_questions"], ["right", "right"]], provider);
+    assert.deepEqual([report.not_met, report.by_question.map(({ result }) => result)], [["too_few_questions", "too_few_planted", "too_few_right"], ["right", "right"]], provider);
     // The writer's effort for the consumer, the checker's for the judge, as the trial's settings have them.
     const effort = ({ name }, level) => (name === "claude" ? level : `model_reasoning_effort="${level}"`);
     const call = [{ ...consumer, ...writer, effort: effort(consumer, "medium") }, { ...judge, ...checker, effort: effort(judge, "low") }];
@@ -1563,8 +1606,8 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
     if (count === 3) await during();
     return answer(await usual(), count, request);
   } }));
-  // The first question's answer, which cites what it wasn't given.
-  const wrong = (usual, count) => (count === 1 ? { ...usual, evidence_ids: ["src:journal:9"] } : usual);
+  // Every answer cites what it wasn't given.
+  const wrong = (usual, count, request) => (isJudge(request) ? usual : { ...usual, evidence_ids: ["src:journal:9"] });
 
   // One after the other: each marks its own start, and the second gives a receipt as the first did.
   await pass();
@@ -1594,9 +1637,9 @@ test("of cold tests of one copy that overlap, the one started last decides: an e
   // B passes while A runs: however A then ends, B's receipt stays as it is.
   for (const [what, answer, ended] of [
     ["a pass", (usual) => usual, newer],
-    ["a call that timed out", (usual, count) => { if (count === 5) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
-    ["a judge's call that timed out", (usual, count) => { if (count === CALLS) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
-    ["an answer outside its schema", (usual, count) => (count === 5 ? { answer: ANSWER } : usual), { code: "COLD_CONSUMER_ANSWER_INVALID" }],
+    ["a call that timed out", (usual, count) => { if (count >= 5) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
+    ["a judge's call that timed out", (usual, count) => { if (count >= CALLS) throw timedOut(); return usual; }, { code: "TIMEOUT" }],
+    ["an answer outside its schema", (usual, count) => (count >= 5 ? { answer: ANSWER } : usual), { code: "COLD_CONSUMER_ANSWER_INVALID" }],
     ["a wrong answer", wrong, null],
     ["a judge's no", (usual, count, request) => (isJudge(request) ? { ...usual, verdict: "incomplete" } : usual), null]
   ]) {
@@ -1778,17 +1821,18 @@ test("the commands print numbers and fixed texts only: no label, question id or 
   // The cold test: ids that are somebody's names, and the report's numbers in their place.
   const named = withQuestions(QUESTIONS.questions.map((question, index) => ({ ...question, id: `Synthetic-${["Alba", "Bruno", "Chloe"][index % 3]}-${index}` })));
   await fs.writeFile(questionsPath, JSON.stringify(named), { mode: 0o600 });
-  const hidden = ["Synthetic-", "Synthetic client", "Synthetic question", "colleague", "zebra", ANSWER, JUDGE_REASON, "q-", "question-", "src:journal", clientOne, imported.corpus_id, reference.active_generation, reference.manifest_object_id,
+  const hidden = ["Synthetic-", "Synthetic client", "Synthetic question", "colleague", "zebra", ANSWER, PLANTED, JUDGE_REASON, "q-", "question-", "src:journal", clientOne, imported.corpus_id, reference.active_generation, reference.manifest_object_id,
     ...server.sources.repr.split("\n").filter((line) => line.length > 8)];
   const passed = await coldTest(using());
   assert.equal(passed.code, 0, passed.text);
   const report = JSON.parse(passed.text.slice(passed.text.indexOf("{"), passed.text.lastIndexOf("}") + 1));
   assert.equal(report.snapshot, snapshotOf(reference));
-  assert.deepEqual([report.passed, report.not_met, report.by_question.length], [true, [], 60]);
+  assert.deepEqual([report.passed, report.not_met, report.by_question.length], [true, [], 61]);
+  assert.match(passed.text, /\nTests started on this copy so far: 1\.$/u);
   const failed = await coldTest(using(standIns({ reply: judged("wrong") })));
   assert.equal(failed.code, 1);
-  assert.match(failed.text, /"wrong": 60,/u);
-  assert.match(failed.text, /Not passed: client 1's copy has no cold-test receipt/u);
+  assert.match(failed.text, /"wrong": 61,/u);
+  assert.match(failed.text, /Not passed: client 1's copy has no cold-test receipt, so their journal stays out of their sessions\.\nTests started on this copy so far: 2\.$/u);
   const broken = await coldTest(using(standIns({ reply: async () => ({ answer: ANSWER }) })));
   assert.deepEqual([broken.code, broken.text.split("\n").at(-1)], [1, "The journal command failed: COLD_CONSUMER_ANSWER_INVALID."]);
   const malformedJudge = await coldTest(using(standIns({ reply: async (count, request, usual) => (isJudge(request) ? { ...(await usual()), reason: `${JUDGE_REASON}${"x".repeat(500)}` } : usual()) })));
@@ -1801,7 +1845,7 @@ test("the commands print numbers and fixed texts only: no label, question id or 
   const outdone = await coldTest(using(newerMeanwhile((usual) => usual)));
   assert.deepEqual([outdone.code, outdone.text.split("\n").at(-1)], [1, "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again."]);
   const outdoneFailing = await coldTest(using(newerMeanwhile((usual, request) => (isJudge(request) ? { ...usual, verdict: "incomplete" } : usual))));
-  assert.deepEqual([outdoneFailing.code, outdoneFailing.text.split("\n").at(-1)], [1, "Not passed. A newer cold test of client 1's copy has started, and that one decides whether the copy has a receipt."]);
+  assert.deepEqual([outdoneFailing.code, outdoneFailing.text.split("\n").at(-2)], [1, "Not passed. A newer cold test of client 1's copy has started, and that one decides whether the copy has a receipt."]);
   // An unexpected error: its code when it has one of that form, never its own text.
   const throwing = (error) => coldTest(using(standIns({ reply: async () => { throw error; } })));
   const unexpected = await throwing(new Error("Synthetic words the colleague wrote."));
@@ -1886,12 +1930,12 @@ test("the client list, the cold-test receipt and its test's marker are each open
   const markerPath = path.join(clientJournalFolder(home, clientOne), COLD_TEST_ATTEMPT_FILE);
   const marker = JSON.parse(await fs.readFile(markerPath, "utf8"));
   const attempt = await readColdTestAttempt(home, clientOne);
-  assert.deepEqual(marker, { schema_version: 1, attempt, started_at: "2026-11-24T09:30:00.000Z" });
+  assert.deepEqual(marker, { schema_version: 1, attempt, started_at: "2026-11-24T09:30:00.000Z", corpus_id: receipt.corpus_id, run: 1 });
   assert.match(attempt, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u);
   assert.equal(await modeOf(markerPath), 0o600);
   // A marker of another form names no test.
-  const changes = [{ schema_version: 2 }, { attempt: "synthetic" }, { attempt: null }, { attempt: `${attempt}0` }, { started_at: "yesterday" }, { extra: true }];
-  for (const malformed of ["", "not JSON", "null", "[]", JSON.stringify(attempt), JSON.stringify({ schema_version: 1, attempt }), ...changes.map((change) => JSON.stringify({ ...marker, ...change }))]) {
+  const changes = [{ schema_version: 2 }, { attempt: "synthetic" }, { attempt: null }, { attempt: `${attempt}0` }, { started_at: "yesterday" }, { corpus_id: null }, { corpus_id: "a copy" }, { run: 0 }, { run: "1" }, { extra: true }];
+  for (const malformed of ["", "not JSON", "null", "[]", JSON.stringify(attempt), JSON.stringify({ schema_version: 1, attempt, started_at: marker.started_at }), ...changes.map((change) => JSON.stringify({ ...marker, ...change }))]) {
     await fs.writeFile(markerPath, malformed);
     assert.equal(await readColdTestAttempt(home, clientOne), null, malformed);
   }
