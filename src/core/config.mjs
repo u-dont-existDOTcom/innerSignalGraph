@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
 import { readOnOffSetting, readResponseEvidenceSetting } from "./on-off-setting.mjs";
+import { RUNNER_RULES_ROOT, RUNNER_TRIAL_DIR, RUNNER_CLAUDE_CONFIG_DIR, RUNNER_FEEDBACK_LINK_SETTING, RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING, RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING, RUNNER_KEPT_PLAN_SETTING, RUNNER_NUMBER_NOW_SETTING, RUNNER_TRIAL_CASE_ID_SETTING, RUNNER_TRIAL_SETTING, RUNNER_TRIAL_SETTINGS_FILE, readRunnerFeedbackLinkSwitch, readRunnerFixedMessageOnAnyFailureSwitch, readRunnerFixedMessageOnFailureSwitch, readRunnerKeptPlanSwitch, readRunnerNumberNowSwitch, readRunnerTrialCaseId, readRunnerTrialSwitch } from "../runner-trial/switch.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -80,6 +81,32 @@ export function loadConfig(overrides = {}, { providers = ["openai", "anthropic"]
     requestTimeoutMs: integerEnv("REQUEST_TIMEOUT_MS", 900000, { min: 1000, max: 3600000 }),
     privateRuntimeInvocationAttempts: integerEnv("PRIVATE_RUNTIME_INVOCATION_ATTEMPTS", 2, { min: 1, max: 3 }),
     ownerFallbackEnabled: ownerFallbackEnabled(),
+    // The runner trial (src/runner-trial/settings.mjs): off unless switched on. The two paths are passed on as given and checked
+    // only when the trial is built, so they matter only while it is on.
+    runnerTrialEnabled: readRunnerTrialSwitch(process.env[RUNNER_TRIAL_SETTING]),
+    // The plan kept for next time (src/runner-trial/kept-plan.mjs): its own switch, off unless switched on, and meaningful only
+    // while the runner trial is on.
+    runnerKeptPlanEnabled: readRunnerKeptPlanSwitch(process.env[RUNNER_KEPT_PLAN_SETTING]),
+    // The emergency number at once for what the crisis section sends there now though the person hasn't said they've acted
+    // (src/runner-trial/runtime.mjs, design section 9b): its own switch, off unless switched on, and meaningful only while the
+    // runner trial is on.
+    runnerNumberNowEnabled: readRunnerNumberNowSwitch(process.env[RUNNER_NUMBER_NOW_SETTING]),
+    // The owner's fixed message also when the plan's limit, a lapsed sign-in or the time ends a turn in a conversation about wanting
+    // to die or getting safe (src/runner-trial/runtime.mjs, design section 7): its own switch, off unless switched on, and meaningful
+    // only while the runner trial and INNER_SIGNAL_OWNER_FALLBACK are both on.
+    runnerFixedMessageOnFailureEnabled: readRunnerFixedMessageOnFailureSwitch(process.env[RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING]),
+    // The owner's fixed message after every failure in such a conversation (a refusal, any other failed call and an interruption
+    // too; his question i68, part 2; design, section 7): its own switch, off unless switched on, and meaningful only while the runner
+    // trial, INNER_SIGNAL_OWNER_FALLBACK and INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE are all on.
+    runnerFixedMessageOnAnyFailureEnabled: readRunnerFixedMessageOnAnyFailureSwitch(process.env[RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING]),
+    // The trial page's link to the feedback page: its own switch, off until that page is released.
+    runnerFeedbackLinkEnabled: readRunnerFeedbackLinkSwitch(process.env[RUNNER_FEEDBACK_LINK_SETTING]),
+    // The case the trial's page uses (the one the trial vault's credentials grant), or null; a value of another form stops startup.
+    runnerTrialCaseId: readRunnerTrialCaseId(process.env[RUNNER_TRIAL_CASE_ID_SETTING]),
+    runnerRulesRoot: nonBlankEnv(RUNNER_RULES_ROOT, null),
+    runnerTrialDir: nonBlankEnv(RUNNER_TRIAL_DIR, null),
+    runnerTrialSettingsPath: nonBlankEnv(RUNNER_TRIAL_SETTINGS_FILE, null),
+    runnerClaudeConfigDir: nonBlankEnv(RUNNER_CLAUDE_CONFIG_DIR, null),
     responseEvidenceEnforced: readResponseEvidenceSetting(),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),
     guidePacketHeartbeatMs: integerEnv("GUIDE_PACKET_HEARTBEAT_MS", 5000, { min: 250, max: 60000 }),

@@ -17,34 +17,718 @@ const speechPlayback = createSpeechPlaybackController({
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 
+// ---- Runner trial (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 4, 7 and 8) ----------------------------
+// Everything below is used only while /health says runnerTrial is on. Model and person text is always set with textContent.
+// runner-trial-page:start
+// The trial's fixed words, copied from src/runner-trial/notices.mjs because the browser can't import server modules.
+// tests/runner-trial-server.test.mjs checks that they are byte-identical to the server's.
+const EMERGENCY_LINE = "In danger right now? Call your local emergency number: 112 in the EU (and from mobiles in many other countries), 911 in the US and Canada, 999 in the UK.";
+const PROVISIONAL_PREFIX = "Provisional urgent response: ";
+const THINKING_LINE = "Thinking more about the full response...";
+const CLOSING_REASONS = Object.freeze({
+  checks_failed: "No reply passed its checks.",
+  plan_limit: "The model plan's limit is reached.",
+  sign_in_needed: "A model sign-in needs renewing.",
+  timeout: "It took too long.",
+  refused: "A model declined to answer.",
+  provider_failed: "A model call failed.",
+  interrupted: "The app stopped before the reply was finished."
+});
+const RUNNER_PROGRESS_LABEL = "Writing and checking a reply…";
+const RUNNER_ONLY_KINDS = Object.freeze(["provisional", "emergency_line", "divider"]);
+// The plan kept for next time (design, section 9), used only while /health says runnerKeptPlan is on.
+const RESUME_QUESTION = "Pick up where we left off?";
+const RESUME_YES = "Yes";
+const RESUME_FRESH = "Start fresh";
+const KEPT_PLAN_DELETE_NOTE = "This removes the kept plan. Its words are still in the stored conversation, which can't be edited; deleting them too means deleting the case.";
+const KEPT_PLAN_KEPT_LINE = "Kept for next time: the lines of your plan and today's date, encrypted on this computer for 30 days.";
+const KEPT_PLAN_GONE_LINE = "No kept plan remains.";
+
+// Reads the trial's newline-delimited JSON answer. Every line before the last is an event of the turn and goes to onEvent; the
+// last is the reply ("final", returned) or why there is none ("error", thrown). A line split across chunks is joined first, and a
+// line that isn't JSON is skipped.
+async function readRunnerStream(response, onEvent) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let last = null;
+  const take = (line) => {
+    if (!line.trim()) return;
+    let event;
+    try { event = JSON.parse(line); } catch { return; }
+    if (!event || typeof event !== "object") return;
+    if (event.type === "final" || event.type === "error") last = event;
+    else onEvent(event);
+  };
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (value) buffer += decoder.decode(value, { stream: true });
+    if (done) buffer += decoder.decode();
+    let newline = buffer.indexOf("\n");
+    while (newline >= 0) {
+      take(buffer.slice(0, newline));
+      buffer = buffer.slice(newline + 1);
+      newline = buffer.indexOf("\n");
+    }
+    if (done) break;
+  }
+  take(buffer);
+  if (last?.type === "final") return last;
+  throw new Error(last?.type === "error" && last.error ? last.error : "The reply stream ended before the reply.");
+}
+
+// The conversation item an event of the turn adds, or null: the provisional reply, headed with its prefix and followed by the
+// thinking line until the full reply comes, or the emergency line, highlighted.
+function runnerEventEntry(event, exchangeId, at = new Date().toISOString()) {
+  if (event?.type === "provisional" && typeof event.text === "string") {
+    return { role: "assistant", kind: "provisional", exchangeId, content: PROVISIONAL_PREFIX + event.text, thinking: true, at };
+  }
+  if (event?.type === "emergency_line") return { role: "notice", kind: "emergency_line", exchangeId, content: EMERGENCY_LINE, at };
+  return null;
+}
+
+// What the stored turn showed before its reply, as conversation items, for an answer that came without live events (a JSON
+// answer, a replay of a finished turn, a turn the page gets back when it loads): the provisional reply with its prefix and the
+// highlighted emergency line, exactly as the live events add them. `shown` lists the kinds the live events already added.
+function runnerStoredEntries(result, exchangeId, shown = [], at = new Date().toISOString()) {
+  const entries = [];
+  if (typeof result?.provisional === "string" && result.provisional && !shown.includes("provisional")) {
+    entries.push({ ...runnerEventEntry({ type: "provisional", text: result.provisional }, exchangeId, at), thinking: false });
+  }
+  if (result?.emergencyLineShown === true && !shown.includes("emergency_line")) entries.push(runnerEventEntry({ type: "emergency_line" }, exchangeId, at));
+  return entries;
+}
+
+// A finished turn the page gets back when it loads (the server's reconcile): the person's message, what showed before the reply,
+// then the reply, or the closing notice with its reason outside it.
+function runnerReplayEntries(turn, at = new Date().toISOString()) {
+  if (!turn || typeof turn.exchangeId !== "string") return [];
+  const entries = [];
+  if (typeof turn.userMessage === "string") entries.push({ id: `${turn.exchangeId}-user`, exchangeId: turn.exchangeId, role: "user", content: turn.userMessage, at });
+  entries.push(...runnerStoredEntries(turn, turn.exchangeId, [], at));
+  if (typeof turn.answer === "string") {
+    entries.push({
+      id: `${turn.exchangeId}-assistant`,
+      exchangeId: turn.exchangeId,
+      role: "assistant",
+      content: turn.answer,
+      at,
+      ...(turn.closing ? { kind: "closing", closingReason: runnerClosingReason(turn.closing) } : {})
+    });
+  }
+  return entries;
+}
+
+// The parts of a trial turn on the page, in the order it shows them: the person's message, the provisional reply, the emergency
+// line and the reply (a closing notice is the reply of a turn closed without one).
+const RUNNER_TURN_PARTS = Object.freeze(["user", "provisional", "emergency_line", "reply"]);
+
+// Which part of its turn a conversation item is, or null for an item that is none (the line a failed request left, a divider).
+function runnerTurnPart(entry) {
+  if (entry?.role === "user") return "user";
+  if (entry?.kind === "provisional" || entry?.kind === "emergency_line") return entry.kind;
+  return entry?.role === "assistant" && entry.error !== true ? "reply" : null;
+}
+
+// Whether the page (`therapy`) shows every part of a turn the server sent back.
+function runnerTurnShown(therapy, turn) {
+  const shown = new Set(therapy.filter((entry) => entry?.exchangeId === turn?.exchangeId).map((entry) => runnerTurnPart(entry)));
+  const parts = runnerReplayEntries(turn).map((entry) => runnerTurnPart(entry));
+  return parts.length > 0 && parts.every((part) => shown.has(part));
+}
+
+// Adds to the page (`therapy`, changed in place) the parts of a turn the server sent back that it doesn't show yet, and never one it
+// shows already. A turn the page doesn't hold goes at the end. The missing parts of a turn it holds go into that turn, each before
+// the turn's first later part, or else after the turn's last item: a page whose stream failed after the person's message gets the
+// provisional reply, the emergency line and the reply there, after the line the failure left. Returns whether the page now shows
+// every part of the turn.
+function mergeRunnerTurn(therapy, turn, at = new Date().toISOString()) {
+  for (const entry of runnerReplayEntries(turn, at)) {
+    const part = runnerTurnPart(entry);
+    const own = [];
+    therapy.forEach((item, index) => { if (item?.exchangeId === turn.exchangeId) own.push(index); });
+    if (own.some((index) => runnerTurnPart(therapy[index]) === part)) continue;
+    const later = own.find((index) => RUNNER_TURN_PARTS.indexOf(runnerTurnPart(therapy[index])) > RUNNER_TURN_PARTS.indexOf(part));
+    therapy.splice(later ?? (own.length ? own.at(-1) + 1 : therapy.length), 0, entry);
+  }
+  return runnerTurnShown(therapy, turn);
+}
+
+// What the page shows of the turns its reconcile got back (design, section 8), changing `therapy` in place, and the cursor that
+// follows. Each turn is merged into the page (mergeRunnerTurn), except one still coming in on this page (`inFlight`), which its own
+// stream shows. The cursor moves through the turns in order while the page shows each one whole, and stops before the first it
+// doesn't, so a later reconcile gets that one back.
+function showRunnerTurns(therapy, turns, shownThrough, inFlight = new Set(), at = new Date().toISOString()) {
+  let cursor = shownThrough;
+  let advancing = true;
+  for (const turn of turns) {
+    if (typeof turn?.exchangeId !== "string") continue;
+    const shown = !inFlight.has(turn.exchangeId) && mergeRunnerTurn(therapy, turn, at);
+    advancing = advancing && shown;
+    if (advancing) cursor = turn.exchangeId;
+  }
+  return cursor;
+}
+
+// Whether the page shows the reply of every turn it holds after the cursor `shownThrough` (of every turn it holds, when it doesn't
+// show the cursor's turn), so the cursor may move to a turn just shown without passing one whose stream failed: that turn stays
+// after the cursor, and a later reconcile brings back what it missed.
+function runnerRepliesShownAfter(therapy, shownThrough) {
+  const from = therapy.findLastIndex((entry) => typeof shownThrough === "string" && entry?.exchangeId === shownThrough) + 1;
+  const parts = new Map();
+  for (const entry of therapy.slice(from)) {
+    if (typeof entry?.exchangeId !== "string") continue;
+    if (!parts.has(entry.exchangeId)) parts.set(entry.exchangeId, new Set());
+    parts.get(entry.exchangeId).add(runnerTurnPart(entry));
+  }
+  return [...parts.values()].every((shown) => shown.has("reply"));
+}
+
+// Why a turn closed without a reply, in plain words, shown outside the reply.
+function runnerClosingReason(closing) {
+  return closing && typeof closing.reason_code === "string" && Object.hasOwn(CLOSING_REASONS, closing.reason_code) ? CLOSING_REASONS[closing.reason_code] : "";
+}
+
+function runnerProgressText(step, startedAt, now = Date.now()) {
+  const seconds = Math.max(0, Math.floor((now - startedAt) / 1000));
+  return `${RUNNER_PROGRESS_LABEL} ${typeof step === "string" && step ? `${step} · ` : ""}${seconds} s`;
+}
+
+// What the page asks the server for when it loads (design, section 8). The page keeps no transcript across a reload, only the
+// exchange of the last turn it showed: that cursor is used only while the page still shows that turn, and the server then sends
+// the turns after it. A page that doesn't show it (a reload) asks for the whole current conversation, with what each turn showed.
+function runnerReconcileRequest(caseId, therapy, shownThrough) {
+  const showsEarlierTurns = typeof shownThrough === "string" && Array.isArray(therapy) && therapy.some((entry) => entry?.exchangeId === shownThrough);
+  return showsEarlierTurns ? { caseId, afterExchangeId: shownThrough } : { caseId, conversation: "current" };
+}
+
+// What the page says outside the reply after a turn that kept a plan ("kept") or deleted the kept plan ("deleted"); nothing otherwise.
+function keptPlanStatusText(action) {
+  return action === "kept" ? KEPT_PLAN_KEPT_LINE : action === "deleted" ? KEPT_PLAN_GONE_LINE : "";
+}
+
+// Whether the page asks "Pick up where we left off?" when it loads: the case has a conversation and the next message opens a new
+// one. The server says nothing of a kept plan, so the question shows whether or not one is kept.
+function runnerAsksResumeOnLoad(resume) {
+  return resume?.hasConversation === true && resume?.nextStartsNewConversation === true;
+}
+
+// What the next message tells the server of the answer: Yes (true) or Start fresh (false), only while the question is shown and
+// only once it is answered. An unanswered question sends nothing, which the server reads as no Yes.
+function runnerResumeField(shown, answer) {
+  return shown === true && typeof answer === "boolean" ? { resumeConfirmed: answer } : {};
+}
+
+// The fields of the page's state that aren't the case's: what the person set, the case id (the next message starts an empty case
+// under it), how the server stores cases and whether this browser holds data of older versions. Every other field is the case's,
+// a field added later included.
+const PAGE_STATE_KEPT_AFTER_DELETION = Object.freeze(["settings", "caseId", "privateStorageMode", "legacyPrivateDataDetected"]);
+
+// After "Delete this case" succeeded: the state keeps only what isn't the case's, and every other field takes its empty value
+// (`empty` is the state of a page that never held a case), so the backup export and the recovery ZIP hold nothing of the case.
+function forgetDeletedCase(pageState, empty) {
+  const kept = Object.fromEntries(PAGE_STATE_KEPT_AFTER_DELETION.filter((key) => Object.hasOwn(pageState, key)).map((key) => [key, pageState[key]]));
+  for (const key of Object.keys(pageState)) delete pageState[key];
+  return Object.assign(pageState, empty, kept);
+}
+
+// The cases the page may use (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, point 3), from /v1/runner/clients:
+// the owner's own case, then each client's, with the client's number on the list (the start script's commands ask for it) and the
+// label the owner gave. The page doesn't take a case from /health: the owner picks one for each conversation. Only ids of the start
+// script's form, which is also the page's own (scripts/runner-trial-start.mjs).
+const RUNNER_CASE_ID = /^case-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+function runnerCaseChoices(view) {
+  if (!view || !Array.isArray(view.cases)) return [];
+  const choices = [];
+  for (const entry of view.cases) {
+    if (!entry || typeof entry.caseId !== "string" || !RUNNER_CASE_ID.test(entry.caseId) || choices.some((choice) => choice.caseId === entry.caseId)) continue;
+    if (entry.kind === "own") choices.push(Object.freeze({ caseId: entry.caseId, kind: "own", number: null, label: null }));
+    else if (entry.kind === "client" && Number.isSafeInteger(entry.number) && entry.number > 0 && typeof entry.label === "string" && entry.label.trim()) {
+      choices.push(Object.freeze({ caseId: entry.caseId, kind: "client", number: entry.number, label: entry.label.trim(), journalConsent: ["none", "confirmed", "withdrawn"].includes(entry.journal?.consent) ? entry.journal.consent : "none" }));
+    }
+  }
+  return choices;
+}
+
+// With no clients the owner's own case is the only one, and the page takes it; with clients, no case is chosen until the owner picks
+// one (no default), so a conversation can't land in the wrong case by itself.
+function runnerDefaultCaseId(choices) {
+  return choices.length === 1 && choices[0].kind === "own" ? choices[0].caseId : null;
+}
+
+// The words for a case: in the menu, at the top of the conversation, and in the question before its first message. A transcript
+// can't be edited, so a message sent in the wrong case stays there until that case is deleted.
+function runnerCaseWords(choice) {
+  return choice?.kind === "client" ? `${choice.number}. ${choice.label}` : "Your own case";
+}
+function runnerConversationWords(choice) {
+  return choice?.kind === "client" ? `Conversation with ${runnerCaseWords(choice)}` : "Conversation in your own case";
+}
+function runnerConfirmWords(choice) {
+  return choice?.kind === "client"
+    ? `This message goes into the case of ${runnerCaseWords(choice)}. Messages can't be moved to another case afterwards. Send it?`
+    : "This message goes into your own case. Messages can't be moved to a client's case afterwards. Send it?";
+}
+
+// What the page says under the case when the client's journal consent was withdrawn: a case that has used the journal gives no
+// replies until the consent is confirmed again or the case is deleted (the runtime closes its turns).
+function runnerJournalNote(choice) {
+  return choice?.kind === "client" && choice.journalConsent === "withdrawn"
+    ? "Journal consent withdrawn: if this case has used the journal, it gives no replies until the consent is confirmed again or the case is deleted."
+    : "";
+}
+
+// Whether to ask before the first message after a pick: whenever the page has more than one case to choose from.
+function runnerAsksBeforeFirstMessage(choices) {
+  return choices.length > 1;
+}
+
+// The fields a page that switches to another case keeps: what the person set, and whether this browser holds data of older versions
+// (the browser's, not a case's). Every other field takes a fresh page's value (`empty`), with the chosen case's id. The page keeps no
+// transcript of its own across a reload, so the reconcile that follows brings the case's conversation back.
+// How the server stores cases is the server's, not a case's, so it stays too.
+const PAGE_STATE_KEPT_ON_ADOPTION = Object.freeze(["settings", "legacyPrivateDataDetected", "privateStorageMode"]);
+function adoptRunnerCase(pageState, empty, caseId) {
+  const kept = Object.fromEntries(PAGE_STATE_KEPT_ON_ADOPTION.filter((key) => Object.hasOwn(pageState, key)).map((key) => [key, pageState[key]]));
+  for (const key of Object.keys(pageState)) delete pageState[key];
+  return Object.assign(pageState, empty, kept, { caseId });
+}
+
+// The badge's words for the trial's arrangement (/health's runnerArrangement): who reads, writes and checks. Fixed words only;
+// an arrangement it can't read gives "Runner trial" alone, never the usual app's models.
+const RUNNER_PROVIDER_NAMES = Object.freeze({ claude: "Claude", codex: "GPT" });
+const RUNNER_WRITER_WORDS = Object.freeze({ focused: "focused writer", whole: "whole writer" });
+const RUNNER_CHECKER_WORDS = Object.freeze({ whole: "one whole checker", split: "split checkers" });
+function runnerArrangementText(arrangement) {
+  const word = (words, key) => (typeof key === "string" && Object.hasOwn(words, key) ? words[key] : null);
+  const names = (list) => (Array.isArray(list) && list.length > 0 && list.every((provider) => word(RUNNER_PROVIDER_NAMES, provider)) ? list.map((provider) => RUNNER_PROVIDER_NAMES[provider]).join(" + ") : null);
+  const parts = [names(arrangement?.readers), word(RUNNER_WRITER_WORDS, arrangement?.writerMode), names(arrangement?.writer), word(RUNNER_CHECKER_WORDS, arrangement?.checkerMode), names(arrangement?.checkers)];
+  if (parts.some((part) => part === null)) return "Runner trial";
+  const [readers, writer, writes, checkers, checks] = parts;
+  return `Runner trial: readers on ${readers} · ${writer} on ${writes} · ${checkers} on ${checks}`;
+}
+function runnerVersionText(health) {
+  if (health.runnerTrial === "on") {
+    const rules = health.runnerRules;
+    return `InnerSignal runner trial · rules ${rules?.version ?? "unknown"} (${rules?.sha256?.slice(0, 8) ?? "unknown"}) · page v${health.version}${rules?.source === "checkout" ? " · rules from this checkout, not the release" : ""}`;
+  }
+  const repair = health.localRepair?.jobId ? ` · local repair ${String(health.localRepair.jobId).slice(0, 8)}` : "";
+  return `Inner Signal runtime v${health.version}${repair}`;
+}
+
+// Only operational metadata reaches this renderer; every text node is made through textContent.
+function renderRunnerLog(root, log, openDetails = () => {}) {
+  root.replaceChildren();
+  const add = (parent, tag, words) => { const node = root.ownerDocument.createElement(tag); node.textContent = words; parent.append(node); return node; };
+  const seconds = (ms) => typeof ms === "number" ? (ms / 1000).toFixed(2) : "—";
+  const tokens = (value) => `input ${value.input_tokens ?? "—"}, cache read ${value.cache_read_input_tokens ?? "—"}, cache write ${value.cache_creation_input_tokens ?? "—"}, output ${value.output_tokens ?? "—"}, reasoning ${value.reasoning_output_tokens ?? "—"}`;
+  const roleNames = { R1: "Read crisis level", R2: "Choose rule boxes", R3: "Read child-contact boundary", W: "Write reply", "W-repair": "Repair reply", C1: "Check crisis rules", C2: "Check skill and response", C3: "Check boxes and protection", C4: "Check role and belief", C5: "Compare repair", CW: "Check whole reply" };
+  const summary = log.summary;
+  add(root, "h3", "Run log");
+  add(root, "p", `${summary.turns} turns · total seconds: median ${seconds(summary.total_time_ms.median)}, p90 ${seconds(summary.total_time_ms.p90)} · first words seconds: median ${seconds(summary.first_words_ms.median)}, p90 ${seconds(summary.first_words_ms.p90)} · workers/turn ${summary.workers_per_turn.toFixed(1)} · repairs/turn ${summary.repairs_per_turn.toFixed(1)}`);
+  for (const group of summary.tokens_by_provider_model) add(root, "p", `${group.provider ?? "unknown provider"} / ${group.model ?? "unknown model"} · ${group.calls} calls · ${tokens(group.tokens)}`);
+  add(root, "p", `Finding codes: ${summary.finding_codes.map((item) => `${item.code} ${item.count}`).join(", ") || "none"} · Failures: ${summary.failures_by_code.map((item) => `${item.code} ${item.count}`).join(", ") || "none"}`);
+  for (const turn of log.turns) {
+    const row = add(root, "details", "");
+    const outcome = turn.outcome.status === "delivered" ? "delivered" : `closed: ${turn.outcome.kind} / ${turn.outcome.reason_code}`;
+    add(row, "summary", `${turn.turn}. ${turn.started_at ?? "unknown time"} · total ${seconds(turn.duration_ms)} s · first words ${seconds(turn.first_words_ms)} s · ${turn.workers.length} workers · ${turn.repair_rounds} repairs · tokens: ${tokens(turn.tokens)} · ${outcome}`);
+    const detailsButton = add(row, "button", "Details");
+    detailsButton.type = "button";
+    detailsButton.setAttribute("aria-label", `Details for turn ${turn.turn}`);
+    detailsButton.setAttribute("aria-controls", "runner-details-panel");
+    detailsButton.setAttribute("aria-expanded", "false");
+    detailsButton.addEventListener("click", () => openDetails(detailsButton, turn.turn));
+    add(row, "p", `Ended ${turn.ended_at ?? "unknown time"} · crisis reading ${turn.crisis_level ?? "unavailable"}`);
+    for (const call of turn.workers) add(row, "pre", `${roleNames[call.role] ?? "Worker"} (${call.role}) · attempt ${call.attempt ?? "—"} · ${call.provider ?? "unknown provider"} / ${call.model ?? "unknown model"} · effort ${call.effort ?? "unreported"} · ${seconds(call.duration_ms)} s
+Tokens: ${tokens(call)}
+Failure: ${call.failure_code ?? "none"}
+Rule parts: ${call.rule_parts.map((part) => `${part.name} (${part.bytes ?? "unknown"} bytes)`).join(", ") || "unreported"}`);
+    add(row, "p", `Findings: ${turn.findings.map((item) => `${item.code} (${item.severity})`).join(", ") || "none"}`);
+  }
+}
+
+// Details stay in a separate panel so the Run log itself remains word-free. No model text is interpreted as markup or links.
+function renderRunnerTurnDetails(root, details, close) {
+  root.replaceChildren();
+  const add = (parent, tag, words) => { const node = root.ownerDocument.createElement(tag); node.textContent = words; parent.append(node); return node; };
+  add(root, "h3", `Details for turn ${details.turn}`);
+  const button = add(root, "button", "Close Details");
+  button.type = "button";
+  button.addEventListener("click", close);
+  add(root, "p", details.chronology_note);
+  const showStored = (parent, value, label = "") => {
+    if (label) add(parent, "p", label);
+    if (value != null && typeof value === "object") {
+      if (Array.isArray(value) && value.length === 0) add(parent, "pre", "[]");
+      else if (Object.keys(value).length === 0) add(parent, "pre", "{}");
+      else for (const [key, item] of Object.entries(value)) showStored(parent, item, key);
+    } else add(parent, "pre", value == null ? "not stored" : String(value));
+  };
+  for (const step of details.steps) {
+    const section = add(root, "section", "");
+    section.dataset.kind = step.kind;
+    if (step.draft) section.dataset.draft = step.draft;
+    add(section, "h4", step.label);
+    if (step.at) add(section, "p", step.at);
+    if (step.timing) add(section, "p", step.timing);
+    if (!step.workers.length && ["reader", "draft", "checker", "failure"].includes(step.kind)) add(section, "p", `${step.role ?? "Worker"} receipt: not stored.`);
+    for (const call of step.workers) add(section, "pre", `${call.role ?? "not stored"} · ${call.provider ?? "not stored"} / ${call.model ?? "not stored"} · attempt ${call.attempt ?? "not stored"} · duration ${call.duration_ms ?? "not stored"} ms · effort ${call.effort ?? "not stored"}
+Failure: ${call.failure_code ?? "none"}
+Rule parts: ${call.rule_parts.map((part) => `${part.name ?? "not stored"} (${part.bytes ?? "not stored"} bytes)`).join(", ") || "not stored"}`);
+    showStored(section, step.content);
+    for (const missing of step.missing ?? []) add(section, "p", missing);
+  }
+  add(root, "h4", "Rules for this turn");
+  showStored(root, details.runner_config);
+}
+
+function hideRunnerDetails() {
+  const panel = $("#runner-details-panel");
+  panel.hidden = true;
+  panel.replaceChildren();
+  for (const button of panel.ownerDocument.querySelectorAll('[aria-controls="runner-details-panel"]')) button.setAttribute("aria-expanded", "false");
+}
+
+function createRunnerDetailsView({ panel, fetchDetails, isCurrent }) {
+  let request = 0;
+  let trigger = null;
+  const close = (restoreFocus = true) => {
+    request += 1;
+    hideRunnerDetails();
+    if (restoreFocus && trigger?.isConnected) trigger.focus();
+    trigger = null;
+  };
+  panel.addEventListener("keydown", (event) => { if (event.key === "Escape") { event.preventDefault(); close(); } });
+  return {
+    close,
+    async open(button, turn) {
+      close(false);
+      const ownRequest = request;
+      trigger = button;
+      button.setAttribute("aria-expanded", "true");
+      panel.hidden = false;
+      // Close stays available while loading and on failure, including to keyboard users.
+      const closeButton = panel.ownerDocument.createElement("button");
+      closeButton.type = "button";
+      closeButton.textContent = "Close Details";
+      closeButton.addEventListener("click", () => close());
+      const status = panel.ownerDocument.createElement("p");
+      status.textContent = "Loading Details…";
+      panel.append(closeButton, status);
+      panel.focus();
+      try {
+        const details = await fetchDetails(turn);
+        if (ownRequest !== request || panel.hidden || !isCurrent()) return;
+        renderRunnerTurnDetails(panel, details, () => close());
+      } catch {
+        if (ownRequest === request && !panel.hidden && isCurrent()) status.textContent = "Details are unavailable right now.";
+      }
+    }
+  };
+}
+
+// runner-trial-page:end
+
+// `inFlight`: the exchanges of the trial turns this page is still receiving, which a reconcile leaves to their own stream.
+// `keptPlanOn`: the plan kept for next time is on; `hasConversation`: the case has a conversation (from the server, or a turn sent);
+// `resumeShown` and `resumeAnswer`: "Pick up where we left off?" is shown, and its answer (true, false, or null before one).
+const runnerTrial = { on: false, newConversation: false, inFlight: new Set(), keptPlanOn: false, hasConversation: false, resumeShown: false, resumeAnswer: null };
+const RUNNER_RECONCILE_LABEL = "Looking for a reply that finished while this page was closed…";
+// The page's cases (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, point 3): the choices /v1/runner/clients gave,
+// the one picked, how many clients were added since the server started, and one bucket per case this page has shown: its transcript
+// as shown, its cursor and the trial's own page state (the new-conversation flag, the resume question, its turns in flight), so that
+// nothing that comes back for one case shows under another, also after switching away and back.
+const runnerCases = { choices: [], current: null, waiting: 0, buckets: new Map(), epochs: new Map() };
+// A case's deletion count: what was asked of a case before it was deleted never reaches the page afterwards (Codex's review 2).
+const runnerEpoch = (caseId) => runnerCases.epochs.get(caseId) ?? 0;
+function runnerBucket(caseId) {
+  if (!runnerCases.buckets.has(caseId)) {
+    runnerCases.buckets.set(caseId, { therapy: [], runnerShownThrough: null, newConversation: false, resumeShown: false, resumeAnswer: null, hasConversation: false, inFlight: new Set(), confirmed: false, draft: "" });
+  }
+  return runnerCases.buckets.get(caseId);
+}
+const runnerChoiceFor = (caseId) => runnerCases.choices.find((choice) => choice.caseId === caseId) ?? null;
+// The current case's page state goes back into its bucket (before a switch, and after the page cleared or replaced its transcript).
+function keepRunnerBucket() {
+  if (!runnerTrial.on || !runnerCases.current) return;
+  Object.assign(runnerBucket(runnerCases.current), {
+    therapy: state.therapy, runnerShownThrough: state.runnerShownThrough, newConversation: runnerTrial.newConversation,
+    resumeShown: runnerTrial.resumeShown, resumeAnswer: runnerTrial.resumeAnswer, hasConversation: runnerTrial.hasConversation, inFlight: runnerTrial.inFlight,
+    draft: globalThis.document?.querySelector("#therapy-message")?.value ?? ""
+  });
+}
+let healthChecked = Promise.resolve();
+
+function syncRunnerNewConversation() {
+  const button = $("#runner-new-conversation");
+  button.setAttribute("aria-pressed", runnerTrial.newConversation ? "true" : "false");
+  button.classList.toggle("selected", runnerTrial.newConversation);
+}
+
+function applyRunnerTrial(on) {
+  runnerTrial.on = on;
+  $("#runner-trial-banner").hidden = !on;
+  const line = $("#runner-emergency-line");
+  line.textContent = on ? EMERGENCY_LINE : "";
+  line.hidden = !on;
+  $("#runner-new-conversation").hidden = !on;
+  $("#runner-client-choice").hidden = !on;
+  $("#runner-delete-case").hidden = !on;
+  $("#runner-run-log").hidden = !on;
+  if (!on) {
+    hideRunnerDetails();
+    $("#runner-log-panel").hidden = true;
+    $("#runner-log-panel").replaceChildren();
+    $("#runner-run-log").setAttribute("aria-expanded", "false");
+  }
+  // State & tracker uses the encrypted case's state, tracker, journal and handoff routes without a model. The other views
+  // use the app's model pipeline, manage its separate Guide Packet, or export/erase browser memory rather than the trial vault.
+  for (const id of ["hypnosis", "guides", "supervisor", "data"]) {
+    const tab = $(`[data-tab="${id}"]`);
+    tab.hidden = on;
+    if (on) {
+      $(`#${id}`).hidden = true;
+      if (tab.classList.contains("active")) {
+        tab.classList.remove("active");
+        $("#therapy").hidden = false;
+        $("#therapy").classList.add("active");
+        $('[data-tab="therapy"]').classList.add("active");
+      }
+    }
+  }
+  $("#runner-tabs-note").hidden = !on;
+  // The usual app's pipeline sentences and its reasoning-depth menu don't apply to the trial; "not emergency care" stays.
+  $("#therapy-pipeline-description").hidden = on;
+  $("#therapy-processing-mode-label").hidden = on;
+  // Nor does the usual app's development panel, whose "Approve candidate" and "Keep current" buttons belong to its own worker
+  // (the 22 Nov page check: it showed in the trial).
+  $("#dev-automation").hidden = on;
+  if (!on) runnerTrial.newConversation = false;
+  syncRunnerNewConversation();
+}
+
+// The trial page's link to InnerSignal's feedback page (feedback place design, section 14): shown only while /health says
+// runnerFeedbackLink is on and the runner trial is on, with the one address the server gives, and only an https address whose path
+// is /feedback. It opens in a new tab and sends no referrer.
+function applyRunnerFeedbackLink(address) {
+  const valid = runnerTrial.on && typeof address === "string" && /^https:\/\/[A-Za-z0-9.-]+(?::\d{1,5})?\/feedback$/u.test(address);
+  const link = $("#runner-feedback-link");
+  if (valid) link.setAttribute("href", address);
+  else link.removeAttribute("href");
+  $("#runner-feedback").hidden = !valid;
+}
+
+// The plan kept for next time (design, section 9): the question a new conversation opens with, its two answers, the line that says
+// what happened to the kept plan, and the button that deletes it. Every word is fixed and set with textContent.
+function applyRunnerKeptPlan(on) {
+  runnerTrial.keptPlanOn = on && runnerTrial.on;
+  $("#runner-delete-kept-plan").hidden = !runnerTrial.keptPlanOn;
+  $("#runner-resume-question").textContent = runnerTrial.keptPlanOn ? RESUME_QUESTION : "";
+  $("#runner-resume-yes").textContent = runnerTrial.keptPlanOn ? RESUME_YES : "";
+  $("#runner-resume-fresh").textContent = runnerTrial.keptPlanOn ? RESUME_FRESH : "";
+  if (!runnerTrial.keptPlanOn) {
+    showRunnerResume(false);
+    setRunnerKeptPlanStatus("");
+  }
+}
+
+function syncRunnerResume() {
+  for (const [selector, value] of [["#runner-resume-yes", true], ["#runner-resume-fresh", false]]) {
+    const button = $(selector);
+    button.setAttribute("aria-pressed", runnerTrial.resumeAnswer === value ? "true" : "false");
+    button.classList.toggle("selected", runnerTrial.resumeAnswer === value);
+  }
+}
+
+// Shows "Pick up where we left off?" (before anything else of the new conversation, above the message box) or hides it. A question
+// shown anew starts unanswered; one already shown keeps the answer the person gave.
+function showRunnerResume(show) {
+  if (show === true && runnerTrial.resumeShown) return;
+  runnerTrial.resumeShown = show === true && runnerTrial.keptPlanOn;
+  runnerTrial.resumeAnswer = null;
+  $("#runner-resume").hidden = !runnerTrial.resumeShown;
+  syncRunnerResume();
+}
+
+function setRunnerKeptPlanStatus(words) {
+  const line = $("#runner-kept-plan-status");
+  line.textContent = words;
+  line.hidden = !words;
+}
+
+// When the page loads with the trial on (design, section 8): the server closes any turn of this case that a restart left
+// unfinished (and delivers one that was already approved), then sends back the turns that finished after the last one this page
+// showed, such as a reply that came while the page was closed. While a turn of the case is still running on the server, it waits.
+// A turn the page holds only in part (its stream failed) gets what it missed; the cursor passes only turns the page shows whole.
+// The answer belongs to the case it was asked for: when the owner switched to another case meanwhile, it goes into that case's
+// bucket, and nothing of it shows until the owner switches back.
+async function reconcileRunnerCase() {
+  const caseId = state.caseId;
+  const transcript = state.therapy;
+  const bucket = runnerBucket(caseId);
+  const epoch = runnerEpoch(caseId);
+  const current = () => caseId === state.caseId && transcript === state.therapy && runnerEpoch(caseId) === epoch;
+  const progress = $("#runner-progress");
+  progress.hidden = false;
+  progress.textContent = RUNNER_RECONCILE_LABEL;
+  try {
+    const response = await fetch("/v1/runner/reconcile", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(runnerReconcileRequest(caseId, transcript, state.runnerShownThrough))
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok || !Array.isArray(payload?.turns) || payload.caseId !== caseId || runnerEpoch(caseId) !== epoch) return;
+    if (!current()) {
+      bucket.runnerShownThrough = showRunnerTurns(transcript, payload.turns, bucket.runnerShownThrough, bucket.inFlight);
+      return;
+    }
+    // With the kept plan on: a new conversation opens with "Pick up where we left off?" whenever an earlier one exists.
+    if (runnerTrial.keptPlanOn && payload.resume) {
+      runnerTrial.hasConversation = payload.resume.hasConversation === true;
+      if (runnerAsksResumeOnLoad(payload.resume)) showRunnerResume(true);
+    }
+    state.runnerShownThrough = showRunnerTurns(state.therapy, payload.turns, state.runnerShownThrough, runnerTrial.inFlight);
+    if (payload.turns.length) {
+      saveState();
+      renderTherapy();
+    }
+  } catch {
+    // The page works without it: the next message closes what a restart left unfinished.
+  } finally {
+    if (current()) {
+      progress.hidden = true;
+      progress.textContent = "";
+    }
+  }
+}
+
+// One trial turn on the page: the indicator with the step and the seconds so far, and the items its events add.
+function beginRunnerTurn(exchangeId) {
+  const newConversation = runnerTrial.newConversation;
+  runnerTrial.newConversation = false;
+  syncRunnerNewConversation();
+  // The answer to "Pick up where we left off?" goes with this message, and the question and the kept-plan line go.
+  const resume = runnerResumeField(runnerTrial.resumeShown, runnerTrial.resumeAnswer);
+  if (runnerTrial.resumeShown) showRunnerResume(false);
+  if (runnerTrial.keptPlanOn) setRunnerKeptPlanStatus("");
+  runnerTrial.hasConversation = true;
+  // Everything of this turn goes into the transcript of the case it was sent in, and shows only while that case is on the page.
+  const transcript = state.therapy;
+  const inFlight = runnerTrial.inFlight;
+  const current = () => transcript === state.therapy;
+  const progress = $("#runner-progress");
+  const startedAt = Date.now();
+  let step = "";
+  const showProgress = () => {
+    if (!current()) return;
+    progress.hidden = false;
+    progress.textContent = runnerProgressText(step, startedAt);
+  };
+  showProgress();
+  const timer = setInterval(showProgress, 1000);
+  const added = [];
+  let finished = false;
+  inFlight.add(exchangeId);
+  return {
+    newConversation,
+    resume,
+    onEvent(event) {
+      if (finished) return;
+      if (event?.type === "status") {
+        if (typeof event.step === "string") step = event.step;
+        showProgress();
+        return;
+      }
+      const entry = runnerEventEntry(event, exchangeId);
+      if (!entry) return;
+      added.push(entry);
+      transcript.push(entry);
+      if (current()) renderTherapy();
+    },
+    // `result` is the answer, when there is one: what its stored turn showed and no live event brought (a JSON answer, a replay)
+    // is added here, as the stream would have added it. The page writes the reply or the failure's line right after this, with
+    // no wait in between, so a reconcile never sees the turn between the two.
+    finish(result = null) {
+      if (finished) return;
+      finished = true;
+      inFlight.delete(exchangeId);
+      clearInterval(timer);
+      if (current()) {
+        progress.hidden = true;
+        progress.textContent = "";
+      }
+      for (const entry of added) entry.thinking = false;
+      if (result) transcript.push(...runnerStoredEntries(result, exchangeId, added.map((entry) => entry.kind)));
+      if (current()) renderTherapy();
+    }
+  };
+}
+
+async function postRunnerTurn(body, turn) {
+  const response = await fetch("/v1/therapy/respond", {
+    method: "POST",
+    headers: { "content-type": "application/json", "accept": "application/x-ndjson" },
+    body: JSON.stringify(body)
+  });
+  if (response.ok && response.body && (response.headers.get("content-type") || "").includes("application/x-ndjson")) {
+    return readRunnerStream(response, (event) => turn.onEvent(event));
+  }
+  const payload = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+  if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
+  return payload;
+}
+
+function runnerLine(className, words) {
+  const line = document.createElement("p");
+  line.className = className;
+  line.textContent = words;
+  return line;
+}
+
+// The state of a page that holds no case: what a first visit starts from, and every field's value once "Delete this case" ran.
+function emptyPageState() {
+  return {
+    therapy: [],
+    hypnosisHistory: [],
+    settings: {},
+    caseId: `case-${crypto.randomUUID()}`,
+    // The runner trial: the exchange of the last turn this page showed, so a page that still shows it gets back only what
+    // finished after it.
+    runnerShownThrough: null,
+    caseSnapshot: null,
+    interventionContract: null,
+    priorProcessingTier: "",
+    durableCaseState: null,
+    caseStateView: null,
+    lastStateDiff: null,
+    trackerEntries: [],
+    journalEntries: [],
+    lastHandoffId: null,
+    handoffStatus: null,
+    privateStorageMode: "unknown",
+    legacyPrivateDataDetected: false
+  };
+}
+
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    const empty = emptyPageState();
     return {
-      therapy: [],
-      hypnosisHistory: [],
+      ...empty,
       settings: parsed.settings && typeof parsed.settings === "object" ? parsed.settings : {},
-      caseId: typeof parsed.caseId === "string" ? parsed.caseId : `case-${crypto.randomUUID()}`,
-      caseSnapshot: null,
-      interventionContract: null,
-      priorProcessingTier: "",
-      durableCaseState: null,
-      caseStateView: null,
-      lastStateDiff: null,
-      trackerEntries: [],
-      journalEntries: [],
-      lastHandoffId: null,
-      handoffStatus: null,
-      privateStorageMode: "unknown",
+      caseId: typeof parsed.caseId === "string" ? parsed.caseId : empty.caseId,
+      runnerShownThrough: typeof parsed.runnerShownThrough === "string" ? parsed.runnerShownThrough : null,
       legacyPrivateDataDetected: LEGACY_STORAGE_KEYS.some((key) => localStorage.getItem(key))
     };
   } catch {
-    return { therapy: [], hypnosisHistory: [], settings: {}, caseId: `case-${crypto.randomUUID()}`, caseSnapshot: null, interventionContract: null, priorProcessingTier: "", durableCaseState: null, caseStateView: null, lastStateDiff: null, trackerEntries: [], journalEntries: [], lastHandoffId: null, handoffStatus: null, privateStorageMode: "unknown", legacyPrivateDataDetected: false };
+    return emptyPageState();
   }
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings: state.settings, caseId: state.caseId }));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings: state.settings, caseId: state.caseId, ...(state.runnerShownThrough ? { runnerShownThrough: state.runnerShownThrough } : {}) }));
   renderDataSummary();
 }
 
@@ -164,6 +848,17 @@ function renderTherapy() {
     return;
   }
   for (const entry of state.therapy) {
+    // Runner trial items: the emergency line put into the conversation, and where a new conversation began.
+    if (entry.kind === "emergency_line") {
+      const item = runnerLine("runner-emergency", entry.content);
+      item.setAttribute("role", "note");
+      root.append(item);
+      continue;
+    }
+    if (entry.kind === "divider") {
+      root.append(runnerLine("runner-divider", entry.content));
+      continue;
+    }
     const block = document.createElement("div");
     block.className = `message ${entry.role === "user" ? "user" : "assistant"}`;
     const role = document.createElement("span");
@@ -172,9 +867,9 @@ function renderTherapy() {
     const body = document.createElement("div");
     body.textContent = entry.content;
     block.append(role, body);
-    if (entry.role === "assistant") {
+    if (entry.role === "assistant" && entry.kind !== "provisional") {
       appendPlanTrace(block, entry.plan);
-      if (entry.processingTier) {
+      if (entry.processingTier && entry.kind !== "closing") {
         const tier = document.createElement("span");
         tier.className = "processing-tier";
         const timing = Number.isFinite(entry.processingMs) ? ` · ${(entry.processingMs / 1000).toFixed(1)}s` : "";
@@ -184,12 +879,15 @@ function renderTherapy() {
       appendFeedbackControls(block, entry);
     }
     root.append(block);
+    // Outside the reply: the thinking line under a provisional reply until the full one comes, and a closed turn's reason.
+    if (entry.kind === "provisional" && entry.thinking) root.append(runnerLine("runner-thinking", THINKING_LINE));
+    if (entry.kind === "closing" && entry.closingReason) root.append(runnerLine("runner-closing-reason", entry.closingReason));
   }
   root.scrollTop = root.scrollHeight;
 }
 
 function recentTranscript() {
-  return state.therapy.slice(-10).map((item) => `${item.role.toUpperCase()}: ${item.content}`).join("\n\n");
+  return state.therapy.filter((item) => !RUNNER_ONLY_KINDS.includes(item.kind)).slice(-10).map((item) => `${item.role.toUpperCase()}: ${item.content}`).join("\n\n");
 }
 
 function structuredTranscript() {
@@ -642,6 +1340,7 @@ async function exportDiagnosticZip(button) {
 }
 
 function activateTab(id) {
+  if (runnerTrial.on && ["hypnosis", "guides", "supervisor", "data"].includes(id)) return;
   if (id !== "hypnosis") speechPlayback.stop();
   for (const button of $$(".tab")) button.classList.toggle("active", button.dataset.tab === id);
   for (const panel of $$(".panel")) {
@@ -649,6 +1348,106 @@ function activateTab(id) {
     panel.hidden = !active;
     panel.classList.toggle("active", active);
   }
+}
+
+// The menu of cases (design, point 3), the line at the top of the conversation saying whose case it is, and whether Send works:
+// with the trial on, only once a case is chosen.
+function showRunnerCaseChoice() {
+  const select = $("#runner-client");
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Choose who this conversation is with";
+  placeholder.disabled = Boolean(runnerCases.current);
+  const options = runnerCases.choices.map((choice) => {
+    const option = document.createElement("option");
+    option.value = choice.caseId;
+    option.textContent = runnerCaseWords(choice);
+    return option;
+  });
+  select.replaceChildren(placeholder, ...options);
+  select.value = runnerCases.current ?? "";
+  const choice = runnerChoiceFor(runnerCases.current);
+  const line = $("#runner-client-current");
+  line.textContent = !runnerTrial.on ? "" : choice ? runnerConversationWords(choice)
+    : runnerCases.choices.length ? "Choose who this conversation is with before writing." : "The trial's cases are unavailable right now.";
+  const waiting = $("#runner-client-waiting");
+  waiting.textContent = [runnerTrial.on && runnerCases.waiting > 0 ? `${runnerCases.waiting} client(s) added since the trial started: start it again to see them here.` : "", runnerTrial.on ? runnerJournalNote(choice) : ""].filter(Boolean).join(" ");
+  waiting.hidden = !waiting.textContent;
+  $("#therapy-send").disabled = runnerTrial.on && !choice;
+}
+
+async function loadRunnerCaseState(caseId) {
+  const epoch = runnerEpoch(caseId);
+  if (state.privateStorageMode === "encrypted") {
+    try {
+      const saved = await getJson(`/v1/case/state?caseId=${encodeURIComponent(caseId)}`);
+      if (caseId !== state.caseId || runnerEpoch(caseId) !== epoch) return;
+      state.durableCaseState = saved.durableCaseState || null;
+      state.caseStateView = saved.caseState || null;
+      state.lastStateDiff = saved.caseStateDiff || null;
+    } catch {}
+  }
+  if (caseId !== state.caseId) return;
+  renderCaseState();
+  renderHandoffStatus();
+}
+
+// Switching to another case (design, point 3): the page's case state goes (as when it took a case before), the trial's own page
+// state of the case left is kept in its bucket, and the chosen case's comes back with its conversation through its reconcile. The
+// question before the first message is asked again after every pick.
+async function chooseRunnerCase(caseId) {
+  if (!runnerTrial.on || caseId === runnerCases.current || !runnerChoiceFor(caseId)) return;
+  // Text typed before the first pick goes with the case picked (the question before the first message still asks).
+  const typedBeforePick = runnerCases.current === null ? $("#therapy-message").value : null;
+  keepRunnerBucket();
+  const bucket = runnerBucket(caseId);
+  adoptRunnerCase(state, emptyPageState(), caseId);
+  state.therapy = bucket.therapy;
+  state.runnerShownThrough = bucket.runnerShownThrough;
+  Object.assign(runnerTrial, { newConversation: bucket.newConversation, hasConversation: bucket.hasConversation, inFlight: bucket.inFlight });
+  runnerTrial.resumeShown = bucket.resumeShown && runnerTrial.keptPlanOn;
+  runnerTrial.resumeAnswer = runnerTrial.resumeShown ? bucket.resumeAnswer : null;
+  $("#runner-resume").hidden = !runnerTrial.resumeShown;
+  syncRunnerResume();
+  syncRunnerNewConversation();
+  bucket.confirmed = false;
+  runnerCases.current = caseId;
+  // What was typed for the case left stays with it, and the chosen case's comes back; the State & tracker forms are emptied, so
+  // nothing typed for one case can be saved under another (Codex's review 1, finding 6).
+  $("#therapy-message").value = typedBeforePick ?? bucket.draft;
+  for (const id of ["#tracker-form", "#journal-form"]) $(id)?.reset();
+  setRunnerKeptPlanStatus("");
+  supervisorPanel?.clear();
+  hideRunnerDetails();
+  $("#runner-log-panel").replaceChildren();
+  $("#runner-log-panel").hidden = true;
+  $("#runner-run-log").setAttribute("aria-expanded", "false");
+  $("#runner-progress").hidden = true;
+  $("#runner-progress").textContent = "";
+  showRunnerCaseChoice();
+  saveState();
+  renderTherapy();
+  renderCaseState();
+  renderHandoffStatus();
+  await reconcileRunnerCase();
+  await loadRunnerCaseState(caseId);
+}
+
+// The cases the trial's page may use, asked of the server when the page loads; with only the owner's own case, the page takes it.
+async function loadRunnerCases() {
+  try {
+    const response = await fetch("/v1/runner/clients", { headers: { accept: "application/json" }, referrerPolicy: "same-origin", cache: "no-store" });
+    const view = response.ok ? await response.json() : null;
+    runnerCases.choices = runnerCaseChoices(view);
+    runnerCases.waiting = Number.isSafeInteger(view?.clientsAwaitingRestart) && view.clientsAwaitingRestart > 0 ? view.clientsAwaitingRestart : 0;
+  } catch {
+    runnerCases.choices = [];
+    runnerCases.waiting = 0;
+  }
+  if (runnerCases.current && !runnerChoiceFor(runnerCases.current)) runnerCases.current = null;
+  showRunnerCaseChoice();
+  const only = runnerCases.current ? null : runnerDefaultCaseId(runnerCases.choices);
+  if (only) await chooseRunnerCase(only);
 }
 
 async function checkHealth() {
@@ -659,12 +1458,22 @@ async function checkHealth() {
     if (!response.ok || !health.ok) throw new Error("Runtime health check failed.");
     const versionLabel = $("#runtime-version");
     if (versionLabel && health.version) {
-      const repair = health.localRepair?.jobId ? ` · local repair ${String(health.localRepair.jobId).slice(0, 8)}` : "";
-      versionLabel.textContent = `Inner Signal runtime v${health.version}${repair}`;
+      versionLabel.textContent = runnerVersionText(health);
     }
     badge.className = "status ok";
-    badge.textContent = `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
+    // With the trial on, the badge shows who reads, writes and checks, not the usual app's models (the trial doesn't use them).
+    badge.textContent = health.runnerTrial === "on" ? runnerArrangementText(health.runnerArrangement) : `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
+    applyRunnerTrial(health.runnerTrial === "on");
+    applyRunnerKeptPlan(health.runnerKeptPlan === "on");
+    applyRunnerFeedbackLink(health.runnerFeedbackLink === "on" ? health.feedbackPageUrl : null);
     state.privateStorageMode = health.privateCaseStorage?.available ? "encrypted" : "session_only";
+    // With the trial on, the page doesn't take a case from /health (the design for clients, point 3): it asks which cases it may
+    // use, takes the owner's own when that is the only one, and otherwise waits for the owner to pick; the pick brings back that
+    // case's conversation (its reconcile) and its saved state.
+    if (runnerTrial.on) {
+      await loadRunnerCases();
+      return;
+    }
     if (health.privateCaseStorage?.available) {
       try {
         const saved = await getJson(`/v1/case/state?caseId=${encodeURIComponent(state.caseId)}`);
@@ -682,12 +1491,35 @@ async function checkHealth() {
 }
 
 for (const button of $$(".tab")) button.addEventListener("click", () => activateTab(button.dataset.tab));
-initSupervisorPanel({ getCaseId: () => state.caseId });
+const supervisorPanel = initSupervisorPanel({ getCaseId: () => state.caseId });
 
 $("#therapy-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const message = $("#therapy-message").value.trim();
   if (!message) return;
+  // The page knows whether the runner trial is on before it sends anything, so its line and stream are there from the first message.
+  await healthChecked;
+  // With the trial on, a message goes only into a case the owner picked, and after a pick the page asks once more before the first
+  // message, since a transcript can't be edited (the design for clients, point 3).
+  if (runnerTrial.on) {
+    const choice = runnerChoiceFor(runnerCases.current);
+    if (!choice || choice.caseId !== state.caseId) {
+      showRunnerCaseChoice();
+      alert("Choose who this conversation is with first.");
+      return;
+    }
+    const picked = runnerBucket(choice.caseId);
+    if (runnerAsksBeforeFirstMessage(runnerCases.choices) && !picked.confirmed) {
+      if (!confirm(runnerConfirmWords(choice))) return;
+      picked.confirmed = true;
+    }
+  }
+  // What this turn's answer belongs to: the case, transcript and bucket it was sent with, whatever the page shows when it comes.
+  const turnCase = state.caseId;
+  if (runnerTrial.on) runnerBucket(turnCase).draft = "";
+  const transcript = state.therapy;
+  const turnBucket = runnerTrial.on ? runnerBucket(turnCase) : null;
+  const shownNow = () => transcript === state.therapy && turnCase === state.caseId;
   const button = $("#therapy-send");
   const priorTranscript = recentTranscript();
   const priorTranscriptEntries = structuredTranscript();
@@ -699,8 +1531,9 @@ $("#therapy-form").addEventListener("submit", async (event) => {
   renderTherapy();
   $("#therapy-message").value = "";
   setBusy(button, true, "Reasoning…");
+  const runnerTurn = runnerTrial.on ? beginRunnerTurn(exchangeId) : null;
   try {
-    const result = await postJson("/v1/therapy/respond", {
+    const request = {
       userMessage: message,
       caseId: state.caseId,
       exchangeId,
@@ -714,17 +1547,25 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       processingMode: $("#therapy-processing-mode")?.value || "auto",
       priorCaseSnapshot: state.caseSnapshot,
       priorInterventionContract: state.interventionContract,
-      priorProcessingTier: state.priorProcessingTier
-    });
+      priorProcessingTier: state.priorProcessingTier,
+      ...(runnerTurn?.newConversation ? { newConversation: true } : {}),
+      ...(runnerTurn?.resume ?? {})
+    };
+    const result = runnerTurn ? await postRunnerTurn(request, runnerTurn) : await postJson("/v1/therapy/respond", request);
+    runnerTurn?.finish(result);
+    // What happened to the kept plan in this turn, said outside the reply in fixed words (the writer can't know what was kept).
+    if (runnerTurn && runnerTrial.keptPlanOn && shownNow()) setRunnerKeptPlanStatus(keptPlanStatusText(result.keptPlan));
     const answer = text(result.answer) || text(result.decision_summary) || "The runtime returned no answer text.";
-    state.caseSnapshot = result.caseFormulation && typeof result.caseFormulation === "object" ? result.caseFormulation : state.caseSnapshot;
-    state.interventionContract = result.interventionContract && typeof result.interventionContract === "object" ? result.interventionContract : state.interventionContract;
-    state.priorProcessingTier = result.processingTier || result.mode || state.priorProcessingTier || "";
-    state.durableCaseState = result.durableCaseState || state.durableCaseState;
-    state.caseStateView = result.caseState || state.caseStateView;
-    state.lastStateDiff = result.caseStateDiff || null;
-    state.privateStorageMode = result.privateCaseStorage || state.privateStorageMode;
-    state.therapy.push({
+    if (shownNow()) {
+      state.caseSnapshot = result.caseFormulation && typeof result.caseFormulation === "object" ? result.caseFormulation : state.caseSnapshot;
+      state.interventionContract = result.interventionContract && typeof result.interventionContract === "object" ? result.interventionContract : state.interventionContract;
+      state.priorProcessingTier = result.processingTier || result.mode || state.priorProcessingTier || "";
+      state.durableCaseState = result.durableCaseState || state.durableCaseState;
+      state.caseStateView = result.caseState || state.caseStateView;
+      state.lastStateDiff = result.caseStateDiff || null;
+      state.privateStorageMode = result.privateCaseStorage || state.privateStorageMode;
+    }
+    transcript.push({
       id: assistantTurnId,
       exchangeId,
       role: "assistant",
@@ -736,22 +1577,184 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       processingTier: result.processingTier || result.mode || "unknown",
       routingReason: result.routingReason || "",
       processingMs: Number(result.processingMs) || null,
-      responseContract: result.responseContract || null
+      responseContract: result.responseContract || null,
+      // A runner-trial turn closed without a reply: its notice is the reply, and the reason shows outside it.
+      ...(result.closing ? { kind: "closing", closingReason: runnerClosingReason(result.closing) } : {})
     });
-    saveState();
-    renderTherapy();
-    renderCaseState("diff");
+    // The cursor moves to this turn only if no earlier turn after it still misses its reply (a failed stream), so a reconcile
+    // can bring that reply back. A turn that finished while another case was on the page moves that case's own cursor.
+    if (runnerTurn && shownNow() && runnerRepliesShownAfter(state.therapy, state.runnerShownThrough)) state.runnerShownThrough = exchangeId;
+    else if (runnerTurn && !shownNow() && runnerRepliesShownAfter(transcript, turnBucket.runnerShownThrough)) turnBucket.runnerShownThrough = exchangeId;
+    if (shownNow()) {
+      saveState();
+      renderTherapy();
+      renderCaseState("diff");
+    }
   } catch (error) {
-    state.therapy.push({ role: "assistant", content: `Runtime error: ${error.message}`, at: new Date().toISOString(), error: true });
-    saveState();
-    renderTherapy();
+    runnerTurn?.finish();
+    // The line belongs to its exchange, so a reply a reconcile brings back later goes after it, in the same turn.
+    transcript.push({ role: "assistant", exchangeId, content: `Runtime error: ${error.message}`, at: new Date().toISOString(), error: true });
+    if (shownNow()) {
+      saveState();
+      renderTherapy();
+    }
+  } finally {
+    setBusy(button, false);
+  }
+});
+
+let runnerLogRequest = 0;
+const runnerDetailsView = createRunnerDetailsView({
+  panel: $("#runner-details-panel"),
+  isCurrent: () => runnerTrial.on && !$("#runner-log-panel").hidden,
+  fetchDetails: async (turn) => {
+    const caseId = state.caseId;
+    const response = await fetch(`/v1/runner/turn-details?caseId=${encodeURIComponent(caseId)}&turn=${turn}`, { headers: { accept: "application/json" }, referrerPolicy: "same-origin", cache: "no-store" });
+    if (!response.ok) throw new Error("unavailable");
+    const details = await response.json();
+    if (caseId !== state.caseId) throw new Error("unavailable");
+    return details;
+  }
+});
+$("#runner-run-log").addEventListener("click", async () => {
+  if (!runnerTrial.on) return;
+  const panel = $("#runner-log-panel");
+  const button = $("#runner-run-log");
+  const request = ++runnerLogRequest;
+  runnerDetailsView.close(false);
+  if (!panel.hidden) { panel.hidden = true; button.setAttribute("aria-expanded", "false"); return; }
+  panel.hidden = false;
+  button.setAttribute("aria-expanded", "true");
+  panel.textContent = "Loading run log…";
+  const caseId = state.caseId;
+  try {
+    const response = await fetch(`/v1/runner/log?caseId=${encodeURIComponent(caseId)}`, { headers: { accept: "application/json" }, referrerPolicy: "same-origin" });
+    if (!response.ok) throw new Error("unavailable");
+    const log = await response.json();
+    if (request === runnerLogRequest && caseId === state.caseId && !panel.hidden) renderRunnerLog(panel, log, (button, turn) => runnerDetailsView.open(button, turn));
+  } catch {
+    if (request === runnerLogRequest && caseId === state.caseId && !panel.hidden) panel.textContent = "The run log is unavailable right now.";
+  }
+});
+
+$("#runner-client").addEventListener("change", (event) => { void chooseRunnerCase(event.target.value); });
+
+// The runner trial's "New conversation": the next message starts a new conversation on the server, which lifts the crisis
+// rules' "in this conversation" limits; the risk record and the protection gate carry over.
+$("#runner-new-conversation").addEventListener("click", () => {
+  if (!runnerTrial.on || runnerTrial.newConversation) return;
+  runnerTrial.newConversation = true;
+  state.therapy.push({ role: "notice", kind: "divider", content: "New conversation", at: new Date().toISOString() });
+  renderTherapy();
+  syncRunnerNewConversation();
+  // With the kept plan on, the new conversation opens with "Pick up where we left off?" whenever an earlier one exists.
+  if (runnerTrial.keptPlanOn && (runnerTrial.hasConversation || state.therapy.some((entry) => typeof entry?.exchangeId === "string"))) showRunnerResume(true);
+});
+
+// "Pick up where we left off?": the answer goes to the server with the next message.
+for (const [selector, answer] of [["#runner-resume-yes", true], ["#runner-resume-fresh", false]]) {
+  $(selector).addEventListener("click", () => {
+    if (!runnerTrial.resumeShown) return;
+    runnerTrial.resumeAnswer = answer;
+    syncRunnerResume();
+  });
+}
+
+// "Delete the kept plan" (design, section 9): after the plain confirmation, the server deletes the case's kept plan (its lines leave
+// the record; the conversation that holds them stays, since only deleting the case removes it). The answer is the same whether or
+// not a plan was kept.
+$("#runner-delete-kept-plan").addEventListener("click", async () => {
+  if (!runnerTrial.keptPlanOn || !confirm(KEPT_PLAN_DELETE_NOTE)) return;
+  const button = $("#runner-delete-kept-plan");
+  setBusy(button, true, "Deleting…");
+  try {
+    const deleting = state.caseId;
+    const response = await fetch("/v1/runner/kept-plan/delete", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ caseId: deleting, confirmed: true })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
+    if (deleting === state.caseId) setRunnerKeptPlanStatus(KEPT_PLAN_GONE_LINE);
+  } catch (error) {
+    alert(`The kept plan was not deleted: ${error.message}`);
+  } finally {
+    setBusy(button, false);
+  }
+});
+
+// After "Delete this case" succeeded (design, section 6), nothing of the case stays in the page: its state forgets every field
+// that is the case's (the transcript, the tracker and journal entries, the hypnosis sessions, the case views, the handoff and any
+// field added later), so the backup export and the recovery ZIP hold none of it; what the page shows of it is emptied (the
+// hypnosis session on screen, the supervisor panel's text), and so are the forms with text typed for it. The settings and the case
+// id stay, so the next message starts an empty case.
+function clearDeletedCase() {
+  forgetDeletedCase(state, emptyPageState());
+  state.therapy.push({ role: "notice", kind: "divider", content: "This case was deleted", at: new Date().toISOString() });
+  speechPlayback.stop();
+  currentPlan = null;
+  selectedRouteText = "";
+  for (const id of ["#hypnosis-pre-gate", "#gate-title", "#gate-intro", "#gate-note", "#hypnosis-route"]) $(id).textContent = "";
+  $("#gate-actions").replaceChildren();
+  for (const id of ["#hypnosis-result", "#hypnosis-gate", "#hypnosis-route"]) $(id).hidden = true;
+  $("#therapy-message").value = "";
+  for (const id of ["#hypnosis-form", "#tracker-form", "#journal-form"]) $(id)?.reset();
+  supervisorPanel?.clear();
+  runnerTrial.newConversation = false;
+  syncRunnerNewConversation();
+  // The deleted case's kept plan went with it: no question about an earlier conversation, and no line about a plan.
+  $("#runner-log-panel").replaceChildren();
+  hideRunnerDetails();
+  $("#runner-log-panel").hidden = true;
+  $("#runner-run-log").setAttribute("aria-expanded", "false");
+  runnerTrial.hasConversation = false;
+  showRunnerResume(false);
+  setRunnerKeptPlanStatus("");
+  syncSpeechPlaybackControls();
+  keepRunnerBucket();
+  saveState();
+  renderTherapy();
+  renderCaseState();
+  renderHandoffStatus();
+}
+
+// The runner trial's "Delete this case" (design, section 6): once the person types DELETE, the server removes this case from this
+// computer (its conversations, risk record and handoffs, and the files that name it), and then the page forgets it too. The page
+// keeps its case id, so the next message starts an empty case.
+$("#runner-delete-case").addEventListener("click", async () => {
+  if (!runnerTrial.on) return;
+  const choice = runnerChoiceFor(state.caseId);
+  if (!choice) return;
+  const typed = prompt(`${runnerConversationWords(choice)}. This deletes this case from this computer: every conversation, its risk record, its handoffs and any copy of a journal. It can't be undone. Type DELETE to delete it.`);
+  if (typeof typed !== "string" || typed.trim() !== "DELETE") return;
+  const button = $("#runner-delete-case");
+  setBusy(button, true, "Deleting…");
+  try {
+    // The answer belongs to the case it was asked for: when the owner switched meanwhile, that case's bucket goes, and the case on
+    // the page stays as it is (Codex's review 1, finding 5).
+    const deleting = state.caseId;
+    const response = await fetch("/v1/case/delete", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ caseId: deleting, confirmation: "DELETE" })
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
+    runnerCases.epochs.set(deleting, runnerEpoch(deleting) + 1);
+    if (deleting === state.caseId) clearDeletedCase();
+    else runnerCases.buckets.delete(deleting);
+    if (payload.handoffsKept) alert(`${payload.handoffsKept} handoff file(s) couldn't be confirmed as this case's and were kept.`);
+  } catch (error) {
+    alert(`The case was not deleted: ${error.message}`);
   } finally {
     setBusy(button, false);
   }
 });
 
 $("#clear-therapy").addEventListener("click", () => {
-  state.therapy = [];
+  // Emptied in place, so a runner trial turn still being received keeps showing in this case's view.
+  state.therapy.splice(0, state.therapy.length);
   state.caseSnapshot = null;
   state.interventionContract = null;
   state.priorProcessingTier = "";
@@ -859,6 +1862,7 @@ $("#erase-data").addEventListener("click", () => {
   state.journalEntries = [];
   state.lastHandoffId = null;
   state.handoffStatus = null;
+  state.runnerShownThrough = null;
   state.legacyPrivateDataDetected = false;
   renderTherapy();
   renderCaseState();
@@ -878,12 +1882,17 @@ for (const id of ["#open-state-diff", "#show-state-diff"]) $(id)?.addEventListen
 $("#create-handoff")?.addEventListener("click", async (event) => {
   const button = event.currentTarget;
   setBusy(button, true, "Creating…");
+  // A handoff belongs to the case it was made for: shown only while that case is on the page.
+  const handoffCase = state.caseId;
+  const handoffEpoch = runnerEpoch(handoffCase);
   try {
-    const result = await postJson("/v1/case/handoff", { caseId: state.caseId });
+    const result = await postJson("/v1/case/handoff", { caseId: handoffCase });
+    if (handoffCase !== state.caseId || runnerEpoch(handoffCase) !== handoffEpoch) return;
     state.lastHandoffId = result.handoff_id;
     state.handoffStatus = result;
     renderHandoffStatus();
   } catch (error) {
+    if (handoffCase !== state.caseId || runnerEpoch(handoffCase) !== handoffEpoch) return;
     state.lastHandoffId = null;
     state.handoffStatus = null;
     renderHandoffStatus();
@@ -920,17 +1929,20 @@ $("#tracker-form")?.addEventListener("submit", async (event) => {
     thc_used: thc === "" ? null : thc === "yes",
     stressors_events: note ? [note] : []
   };
-  state.trackerEntries.push(entry);
+  // Saved into the case it was written for, whatever the page shows when the answer comes.
+  const entryCase = state.caseId;
+  const entries = state.trackerEntries;
+  entries.push(entry);
   setBusy(button, true, "Saving…");
   try {
-    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/tracker", { caseId: state.caseId, entry });
+    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/tracker", { caseId: entryCase, entry });
     event.currentTarget.reset();
     renderDataSummary();
     $("#case-storage-status").textContent = state.privateStorageMode === "encrypted"
       ? "Trajectory entry saved in encrypted private storage. Tracking remains descriptive, not causal."
       : "Trajectory entry saved for this session only. Tracking remains descriptive, not causal.";
   } catch (error) {
-    state.trackerEntries = state.trackerEntries.filter((item) => item.id !== entry.id);
+    entries.splice(0, entries.length, ...entries.filter((item) => item.id !== entry.id));
     alert(`Could not save trajectory entry: ${error.message}`);
   } finally {
     setBusy(button, false);
@@ -941,16 +1953,18 @@ $("#journal-form")?.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = $("#journal-save");
   const entry = { id: `journal-${crypto.randomUUID()}`, observed_at: new Date().toISOString(), kind: $("#journal-kind").value, text: $("#journal-text").value.trim() };
-  state.journalEntries.push(entry);
+  const entryCase = state.caseId;
+  const entries = state.journalEntries;
+  entries.push(entry);
   setBusy(button, true, "Saving…");
   try {
-    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/journal", { caseId: state.caseId, entry });
+    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/journal", { caseId: entryCase, entry });
     event.currentTarget.reset();
     $("#case-storage-status").textContent = state.privateStorageMode === "encrypted"
       ? "Private note saved in encrypted storage. Its contents are not displayed in the case-state view."
       : "Private note remains session-only and will be lost when this page closes.";
   } catch (error) {
-    state.journalEntries = state.journalEntries.filter((item) => item.id !== entry.id);
+    entries.splice(0, entries.length, ...entries.filter((item) => item.id !== entry.id));
     alert(`Could not save private note: ${error.message}`);
   } finally {
     setBusy(button, false);
@@ -996,7 +2010,11 @@ renderDataSummary();
 renderCaseState();
 saveState();
 syncSpeechPlaybackControls();
-checkHealth();
-refreshDevelopmentStatus();
-refreshGuidePacketStatus().catch(() => {});
-setInterval(refreshDevelopmentStatus, 5000);
+healthChecked = checkHealth();
+healthChecked.then(() => {
+  if (!runnerTrial.on) {
+    refreshDevelopmentStatus();
+    refreshGuidePacketStatus().catch(() => {});
+  }
+});
+setInterval(() => { if (!runnerTrial.on) refreshDevelopmentStatus(); }, 5000);

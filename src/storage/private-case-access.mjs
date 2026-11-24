@@ -9,7 +9,7 @@ import { createEncryptedPrivateCaseStore } from "./private-case-store.mjs";
 import { createPrivateJournalCorpusStore } from "./private-journal-corpus.mjs";
 import { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 import { resolvePrivateArtifactCaseId } from "./private-artifact-locator.mjs";
-import { resolvePrivateCaseAliasCaseId, writePrivateCaseAliasLocator } from "./private-case-alias-locator.mjs";
+import { resolvePrivateCaseAliasCaseId } from "./private-case-alias-locator.mjs";
 
 export { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 
@@ -358,6 +358,33 @@ export function createPrivateCaseAccessService({
     async deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input, authContext) {
       return write(caseId, authContext, (store) => store.deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));
     },
+    // The runner trial's records (docs/superpowers/specs/2026-11-21-runner-trial-design.md, section 1).
+    async recordRunnerReading(caseId, runtimeTurnId, reading, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerReading(caseId, runtimeTurnId, reading));
+    },
+    async recordRunnerCheckerLevel(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerCheckerLevel(caseId, runtimeTurnId, input));
+    },
+    async recordRunnerProvisional(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerProvisional(caseId, runtimeTurnId, input));
+    },
+    async recordRunnerEmergencyLine(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerEmergencyLine(caseId, runtimeTurnId, input));
+    },
+    async closeRuntimeTurnUnanswered(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.closeRuntimeTurnUnanswered(caseId, runtimeTurnId, input));
+    },
+    // The runner trial's plan kept for next time (section 9 of the design): keeping one, and deleting it.
+    async recordRunnerKeptPlan(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.recordRunnerKeptPlan(caseId, runtimeTurnId, input));
+    },
+    async deleteRunnerKeptPlans(caseId, input, authContext) {
+      return write(caseId, authContext, (store) => store.deleteRunnerKeptPlans(caseId, input));
+    },
+    // The runner trial page's "Delete this case" (section 6 of the design): the case file, its handoffs and the files naming it.
+    async deletePrivateCase(caseId, authContext) {
+      return write(caseId, authContext, (store) => store.deletePrivateCase(caseId));
+    },
     async saveCaseState(caseId, state, authContext) { return write(caseId, authContext, (store) => store.saveCaseState(caseId, state)); },
     async getCaseState(caseId, authContext) { return read(caseId, authContext, (store) => store.getCaseState(caseId)); },
     async saveCaseDiff(caseId, diff, options, authContext) { return write(caseId, authContext, (store) => store.saveCaseDiff(caseId, diff, options)); },
@@ -529,13 +556,9 @@ export function createPrivateCaseAccessService({
     async appendTracker(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendTracker(caseId, entry)); },
     async appendJournal(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendJournal(caseId, entry)); },
     async getCurrentEpisode(caseId, authContext) { return read(caseId, authContext, (store) => store.getCurrentEpisode(caseId)); },
+    // The alias file names the case, so the store writes it in the case's queue, where a deletion of the case finds it.
     async bindCaseAlias(caseId, caseAlias, authContext) {
-      return write(caseId, authContext, async (store) => {
-        const record = await store.load(caseId);
-        if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
-        await writePrivateCaseAliasLocator({ rootDir, alias: caseAlias, caseId });
-        return Object.freeze({ case_id: caseId, alias_bound: true });
-      });
+      return write(caseId, authContext, (store) => store.bindCaseAlias(caseId, caseAlias));
     },
     async createHandoff(caseId, options, authContext) { return write(caseId, authContext, (store) => store.createHandoff(caseId, options)); },
     async loadHandoff(handoffId, authContext, { requireContinuationSafe = true, journalContinuitySupported = false } = {}) {

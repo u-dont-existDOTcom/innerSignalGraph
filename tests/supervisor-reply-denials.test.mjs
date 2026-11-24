@@ -122,6 +122,18 @@ test("every method of the access service refuses a holder of only the reply-draf
     savePrivateRuntimeDiscriminator: () => access.savePrivateRuntimeDiscriminator(CASE_ID, "runtime:x", {}, replyOnly),
     deliverPrivateRuntimeCandidate: () => access.deliverPrivateRuntimeCandidate(CASE_ID, "runtime:x", {}, replyOnly),
     deliverPrivateRuntimeDiscriminator: () => access.deliverPrivateRuntimeDiscriminator(CASE_ID, "runtime:x", {}, replyOnly),
+    // The runner trial's records (docs/superpowers/specs/2026-11-21-runner-trial-design.md, section 1).
+    recordRunnerReading: () => access.recordRunnerReading(CASE_ID, "runtime:x", {}, replyOnly),
+    recordRunnerCheckerLevel: () => access.recordRunnerCheckerLevel(CASE_ID, "runtime:x", {}, replyOnly),
+    recordRunnerProvisional: () => access.recordRunnerProvisional(CASE_ID, "runtime:x", {}, replyOnly),
+    recordRunnerEmergencyLine: () => access.recordRunnerEmergencyLine(CASE_ID, "runtime:x", {}, replyOnly),
+    closeRuntimeTurnUnanswered: () => access.closeRuntimeTurnUnanswered(CASE_ID, "runtime:x", {}, replyOnly),
+    // The runner trial's plan kept for next time (section 9 of the design): a holder of only the reply-draft scope keeps and deletes
+    // nothing.
+    recordRunnerKeptPlan: () => access.recordRunnerKeptPlan(CASE_ID, "runtime:x", { lines: ["synthetic line"] }, replyOnly),
+    deleteRunnerKeptPlans: () => access.deleteRunnerKeptPlans(CASE_ID, { reason: "deleted_on_page" }, replyOnly),
+    // The runner trial page's "Delete this case": a holder of only the reply-draft scope deletes nothing.
+    deletePrivateCase: () => access.deletePrivateCase(CASE_ID, replyOnly),
     saveCaseState: () => access.saveCaseState(CASE_ID, {}, replyOnly),
     getCaseState: () => access.getCaseState(CASE_ID, replyOnly),
     saveCaseDiff: () => access.saveCaseDiff(CASE_ID, {}, {}, replyOnly),

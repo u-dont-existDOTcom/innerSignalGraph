@@ -2,16 +2,20 @@ import { loadConfig } from "../core/config.mjs";
 import { createProviders } from "../providers/factory.mjs";
 import { listenInnerSignalLoopback } from "../server/listen-loopback.mjs";
 import { recoverGuidePacketCandidateOnStartup } from "../guide-packet/autopilot.mjs";
-import { loadPrivateRuntimeAccessFromEnvironment } from "../storage/private-runtime-environment.mjs";
+import { loadPrivateRuntimeAccessFromEnvironment, scrubPrivateCaseTokens } from "../storage/private-runtime-environment.mjs";
 
 const config = loadConfig();
 const providers = createProviders(config);
 const privateRuntime = await loadPrivateRuntimeAccessFromEnvironment(process.env, { responseEvidenceEnforced: config.responseEvidenceEnforced });
+// The case tokens are read once, above; no subprocess this server starts (a model CLI's capability check included) inherits them
+// (Codex's review 1, finding 9).
+scrubPrivateCaseTokens(process.env);
 const listener = await listenInnerSignalLoopback({
   config,
   providers,
   privateCaseAccessService: privateRuntime?.privateCaseAccessService ?? null,
-  privateAuthContext: privateRuntime?.privateAuthContext ?? null
+  privateAuthContext: privateRuntime?.privateAuthContext ?? null,
+  privateCaseAuthContexts: privateRuntime?.privateCaseAuthContexts ?? new Map()
 });
 
 console.log(`Inner Signal runtime listening on ${listener.url}`);

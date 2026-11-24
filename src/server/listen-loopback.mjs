@@ -2,6 +2,7 @@ import { createInnerSignalServer } from "./create-server.mjs";
 import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-model-runtime.mjs";
 import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 import { createPrivateSupervisorDraftService } from "../supervisor/private-supervisor-draft.mjs";
+import { createRunnerTrialController } from "../runner-trial/trial-controller.mjs";
 
 function listen(server, port, host) {
   return new Promise((resolve, reject) => {
@@ -36,12 +37,21 @@ export async function listenInnerSignalLoopback({
   privateCaseStore = null,
   privateCaseAccessService = null,
   privateAuthContext = null,
+  // The runner trial's clients: each client case's own token, for that case alone (src/storage/private-runtime-environment.mjs).
+  privateCaseAuthContexts = new Map(),
   privateTherapyController = null,
   privateSupervisorService = null,
+  runnerTrialEvents = null,
   port = config.port
 }) {
   const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
-  const sharedPrivateTherapyController = privateTherapyController ?? (privateCaseSource
+  // With INNER_SIGNAL_RUNNER_TRIAL on, both listeners share the trial's controller and its event hub, so one case's turns are
+  // still taken one at a time and each page's stream hears its own turn whichever address it used. It stops startup when the
+  // trial can't be built (no vault, or settings that don't pass their checks), before anything listens.
+  const runnerTrial = config.runnerTrialEnabled === true && !privateTherapyController
+    ? createRunnerTrialController({ privateCaseSource, config, clientCaseIds: [...privateCaseAuthContexts.keys()] })
+    : null;
+  const sharedPrivateTherapyController = privateTherapyController ?? runnerTrial?.controller ?? (privateCaseSource
     ? createPrivateTherapyTurnController({
         privateCaseSource,
         modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
@@ -49,6 +59,7 @@ export async function listenInnerSignalLoopback({
         maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
       })
     : null);
+  const sharedRunnerTrialEvents = runnerTrial?.events ?? runnerTrialEvents;
   // One supervisor draft service for both listeners, so one case's reviews are taken one at a time across them.
   const sharedPrivateSupervisorService = privateSupervisorService ?? (privateCaseSource
     ? createPrivateSupervisorDraftService({
@@ -63,8 +74,12 @@ export async function listenInnerSignalLoopback({
     privateCaseStore,
     privateCaseAccessService,
     privateAuthContext,
+    privateCaseAuthContexts,
     privateTherapyController: sharedPrivateTherapyController,
-    privateSupervisorService: sharedPrivateSupervisorService
+    privateSupervisorService: sharedPrivateSupervisorService,
+    runnerTrialEvents: sharedRunnerTrialEvents,
+    // The trial's settings, so /health can show the page its arrangement.
+    runnerTrialSettings: runnerTrial?.settings ?? null
   };
   const ipv4 = createInnerSignalServer(serverOptions);
   await listen(ipv4, port, "127.0.0.1");

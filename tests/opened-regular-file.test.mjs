@@ -9,6 +9,7 @@ import {
   withOpenedRegularFile,
   withOpenedRegularFileSync
 } from "../src/core/opened-regular-file.mjs";
+import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
 async function fixture(context) {
   const root = await fsp.mkdtemp(path.join(os.tmpdir(), "inner-signal-opened-file-"));
@@ -67,6 +68,18 @@ test("sync regular-file reads stay bound to the opened inode after pathname repl
   });
 
   assert.equal(content, "trusted\n");
+});
+
+test("a named pipe is refused without waiting for a writer, before invoking the reader", async (context) => {
+  const { root } = await fixture(context);
+  const pipe = path.join(root, "pipe");
+  makeNamedPipe(pipe);
+  const printed = printedApart(`
+    import { withOpenedRegularFile, withOpenedRegularFileSync } from ${JSON.stringify(new URL("../src/core/opened-regular-file.mjs", import.meta.url).href)};
+    for (const open of [withOpenedRegularFile, withOpenedRegularFileSync]) {
+      try { await open(process.argv[1], () => console.log("reader invoked")); console.log("opened"); } catch (error) { console.log(error.code); }
+    }`, [pipe]);
+  assert.equal(printed, "ERR_NOT_REGULAR_FILE\nERR_NOT_REGULAR_FILE\n");
 });
 
 test("sync regular-file opens reject directories before invoking the reader", async (context) => {

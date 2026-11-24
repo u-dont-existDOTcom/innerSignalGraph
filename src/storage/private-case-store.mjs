@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { ValidationError } from "../core/errors.mjs";
+import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import {
   RESPONSE_EVIDENCE_POLICY_VERSION, RESPONSE_EVIDENCE_BUDGETS, assessResponseEvidenceAdmission,
   buildEvidenceModelView, buildResponseEvidenceSnapshot, responseEvidenceSnapshotCurrent, responseEvidenceDependenciesCurrent, normalizeResponseEvidenceJournal,
@@ -35,6 +35,8 @@ import {
   appendPrivateRuntimeTransition,
   createPrivateRuntimeDiscriminator,
   createPrivateRuntimeTurn,
+  createRunnerClosure,
+  isFinishedRuntimeTurn,
   sha256ExactText,
   validatePrivateRuntimeDiscriminatorReview,
   validatePrivateRuntimeTurn
@@ -81,7 +83,9 @@ import {
   validateSupervisorArtifacts
 } from "./private-case-supervisor.mjs";
 import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
-import { writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
+import { listPrivateArtifactLocatorsForCase, writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
+import { listPrivateCaseAliasLocatorsForCase, writePrivateCaseAliasLocator } from "./private-case-alias-locator.mjs";
+import { privateJournalCorpusDirectory } from "./private-journal-corpus.mjs";
 import { compatibilityStateBinding } from "../case-formulation/protective-compatibility.mjs";
 import {
   TRANSCRIPT_AMENDMENT_LIMITS,
@@ -90,6 +94,19 @@ import {
   validateTranscriptAmendments
 } from "./transcript-amendments.mjs";
 import { getSharedCaseMutationCoordinator } from "./shared-case-coordinator.mjs";
+import {
+  KEPT_PLAN_DELETION_REASONS,
+  assertKeptPlansAppendOnly,
+  crisisReadingOf,
+  earlierRepliesInConversation,
+  keepPlanBasis,
+  keepPlanYesConfirmed,
+  keptPlanExpired,
+  keptPlanLinesFound,
+  keptPlanRefusal,
+  markKeptPlanDeleted,
+  validateKeptPlans
+} from "../runner-trial/kept-plan.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const JOURNAL_ID = /^[A-Za-z0-9:_-]{1,160}$/;
@@ -415,6 +432,13 @@ export function validatePrivateCaseRecord(value) {
     if (runtimeTurn.current_candidate_id != null && !value.candidate_responses.some((entry) => entry.id === runtimeTurn.current_candidate_id)) {
       throw new ValidationError(`Private runtime turn ${runtimeTurn.id} has a missing current candidate.`);
     }
+    if (runtimeTurn.closure) {
+      // A turn the runner trial closed without a reply: its fixed text is the exchange's assistant turn, byte for byte.
+      const closingTurn = value.raw_transcript.find((entry) => entry.id === runtimeTurn.closure.assistant_turn_id);
+      if (!closingTurn || closingTurn.role !== "assistant" || closingTurn.exchange_id !== runtimeTurn.exchange_id || closingTurn.text !== runtimeTurn.closure.exact_text) {
+        throw new ValidationError(`Private runtime turn ${runtimeTurn.id} has an invalid exact closing transcript binding.`);
+      }
+    }
     if (runtimeTurn.delivery) {
       const assistantTurn = value.raw_transcript.find((entry) => entry.id === runtimeTurn.assistant_turn_id);
       if (!assistantTurn || assistantTurn.role !== "assistant" || assistantTurn.exchange_id !== runtimeTurn.exchange_id || assistantTurn.text !== runtimeTurn.delivery.exact_text) {
@@ -494,6 +518,8 @@ export function validatePrivateCaseRecord(value) {
     keyCorpusIds.add(entry.corpus_id);
   }
   if (keyCorpusIds.size !== corpusIds.size) throw new ValidationError("Every journal corpus requires exactly one key entry.");
+  // The runner trial's plans kept for next time (src/runner-trial/kept-plan.mjs). A case that never kept one has no such field.
+  if (Object.hasOwn(value, "runner_kept_plans")) validateKeptPlans(value.runner_kept_plans, value);
   return value;
 }
 
@@ -554,7 +580,7 @@ function assertAppendOnly(previous, next) {
   for (let index = 0; index < previous.runtime_turns.length; index += 1) {
     const before = previous.runtime_turns[index];
     const after = next.runtime_turns[index];
-    for (const field of ["id", "exchange_id", "user_turn_id", "inbound", "created_at"]) {
+    for (const field of ["id", "exchange_id", "user_turn_id", "inbound", "created_at", "runner_config"]) {
       if (!after || JSON.stringify(before[field]) !== JSON.stringify(after[field])) throw new ValidationError("Private runtime turn identities are immutable.");
     }
     if (after.events.length < before.events.length || before.events.some((event, eventIndex) => JSON.stringify(event) !== JSON.stringify(after.events[eventIndex]))) {
@@ -563,6 +589,16 @@ function assertAppendOnly(previous, next) {
     if (before.discriminator != null && JSON.stringify(before.discriminator) !== JSON.stringify(after.discriminator)) throw new ValidationError("Private runtime discriminator is immutable.");
     if (before.discriminator_review != null && JSON.stringify(before.discriminator_review) !== JSON.stringify(after.discriminator_review)) throw new ValidationError("Private runtime discriminator review is immutable.");
     if (before.delivery != null && JSON.stringify(before.delivery) !== JSON.stringify(after.delivery)) throw new ValidationError("Private runtime delivery is immutable.");
+    // The runner trial's checker levels: every audit attempt's reading is kept, so a later one never erases an earlier one.
+    const levelsBefore = before.runner_reading?.checker_levels ?? [];
+    const levelsAfter = after.runner_reading?.checker_levels ?? [];
+    if (levelsAfter.length < levelsBefore.length || levelsBefore.some((entry, levelIndex) => JSON.stringify(entry) !== JSON.stringify(levelsAfter[levelIndex]))) {
+      throw new ValidationError("Runner checker levels are append-only and immutable.");
+    }
+    // When a turn kept a plan or deleted the kept plan, once stored, never changes.
+    for (const field of ["kept_plan_kept_at", "kept_plan_deleted_at"]) {
+      if (before[field] != null && before[field] !== after[field]) throw new ValidationError("A turn's kept-plan record is immutable.");
+    }
   }
   if (next.source_artifacts.length < previous.source_artifacts.length) throw new ValidationError("Exact source artifacts are append-only.");
   for (let index = 0; index < previous.source_artifacts.length; index += 1) {
@@ -599,6 +635,7 @@ function assertAppendOnly(previous, next) {
   for (const [corpusId] of previousCorpora) {
     if (!next.journal_corpora.some((reference) => reference.corpus_id === corpusId)) throw new ValidationError("Journal corpus references cannot be removed by ordinary mutation.");
   }
+  assertKeptPlansAppendOnly(previous.runner_kept_plans ?? [], next.runner_kept_plans ?? []);
 }
 
 async function durableEncryptedWrite(file, envelope) {
@@ -618,6 +655,29 @@ async function durableEncryptedWrite(file, envelope) {
     body.fill(0);
     if (handle) await handle.close().catch(() => {});
     await fs.unlink(temporary).catch(() => {});
+  }
+}
+
+// Removes one file; false when it was already gone.
+async function removeFile(file) {
+  try {
+    await fs.unlink(file);
+    return true;
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+async function syncDirectory(directory) {
+  let handle = null;
+  try {
+    handle = await fs.open(directory, "r");
+    await handle.sync();
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  } finally {
+    await handle?.close();
   }
 }
 
@@ -730,9 +790,13 @@ export function createEncryptedPrivateCaseStore({
     return structuredClone(candidate);
   };
   const loadOrCreate = async (caseId) => mutate(safeCaseId(caseId), () => null);
-  const mutate = async (caseId, operation) => coordinator.run(safeCaseId(caseId), async () => {
+  // `afterWrite` writes a file that names the case (a locator) in the same turn of the case's queue as the record, after it: a
+  // deletion queued behind finds the file and removes it, so none can appear after a deletion returned. `requireExisting` leaves a
+  // case that has no file as it is (the operation isn't run and the result is null), where every other write would create it.
+  const mutate = async (caseId, operation, { afterWrite = null, requireExisting = false } = {}) => coordinator.run(safeCaseId(caseId), async () => {
     const id = safeCaseId(caseId);
     const existing = await readExistingWithEnvelope(id);
+    if (!existing && requireExisting) return null;
     let previous;
     let currentEnvelope = null;
     if (existing) {
@@ -745,15 +809,34 @@ export function createEncryptedPrivateCaseStore({
       currentEnvelope = created.envelope;
     }
     const next = await operation(structuredClone(previous));
-    if (next === null) return structuredClone(previous);
-    next.updated_at = now();
-    next.revision = previous.revision + 1;
-    return write(id, next, previous, currentEnvelope);
+    let result;
+    if (next === null) result = structuredClone(previous);
+    else {
+      next.updated_at = now();
+      next.revision = previous.revision + 1;
+      result = await write(id, next, previous, currentEnvelope);
+    }
+    if (afterWrite) await afterWrite(result);
+    return result;
   });
+  const candidateLocator = (caseId, candidateId) => () => writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
   const readRequired = async (caseId) => {
     const record = await readExisting(safeCaseId(caseId));
     if (!record) throw new ValidationError(`Private case ${caseId} was not found.`, { code: "PRIVATE_CASE_NOT_FOUND" });
     return record;
+  };
+  // An approved runner trial turn is closed without a reply only as a failed check, and only when its reply may no longer be sent
+  // (the design for clients, point 6): response evidence no longer admits it at delivery, checked here again; or the trial holds it
+  // back because the case's journal gate is closed (`journalHold`), allowed only in a case that has read its client's journal (one of
+  // its evidence snapshots holds journal quotations). The gate itself (the owner's confirmation of consent, the cold-test receipt,
+  // the grant) is the trial's own record outside the case, so the store can't evaluate it: the hold is the trial runtime's word,
+  // given only right after its own check of the gate, and its effect is the safe one (a reply not sent, never one sent). Journal
+  // quotations alone, without the hold, never close an approved reply. Otherwise the reply stays to be delivered.
+  const approvedReplyMayNotBeSent = (record, runtimeTurn, reasonCode, journalHold) => {
+    const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
+    if (!candidate || reasonCode !== "checks_failed") return false;
+    if (journalHold === true) return (record.response_evidence_snapshots ?? []).some((entry) => entry.source_items.some((item) => item.kind === "journal_quotation"));
+    return !assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point: "deliverPrivateRuntimeCandidate" }).admissible;
   };
   const requireResponseEvidence = (record, candidate, point) => {
     const assessment = assessResponseEvidenceAdmission(record, candidate, { policy: responseEvidencePolicy, point });
@@ -1138,7 +1221,7 @@ export function createEncryptedPrivateCaseStore({
       });
       return structuredClone(completed);
     },
-    async beginPrivateRuntimeTurn(caseId, { runtimeTurnId, exchangeId, userTurnId, exactText }) {
+    async beginPrivateRuntimeTurn(caseId, { runtimeTurnId, exchangeId, userTurnId, exactText, runnerConfig }) {
       return mutate(caseId, (record) => {
         const existing = record.runtime_turns.find((entry) => entry.id === runtimeTurnId);
         if (existing) {
@@ -1147,7 +1230,7 @@ export function createEncryptedPrivateCaseStore({
           }
           return null;
         }
-        const unfinished = record.runtime_turns.find((entry) => entry.state !== "DELIVERED");
+        const unfinished = record.runtime_turns.find((entry) => !isFinishedRuntimeTurn(entry));
         if (unfinished) throw new ValidationError(`Private case already has unfinished runtime turn ${unfinished.id}.`, { code: "PRIVATE_RUNTIME_CASE_BUSY" });
         if (record.runtime_turns.some((entry) => entry.exchange_id === exchangeId || entry.user_turn_id === userTurnId)
             || record.raw_transcript.some((entry) => entry.id === userTurnId)) {
@@ -1158,6 +1241,7 @@ export function createEncryptedPrivateCaseStore({
           exchangeId,
           userTurnId,
           exactText,
+          runnerConfig,
           createdAt: now()
         }));
         return record;
@@ -1219,7 +1303,7 @@ export function createEncryptedPrivateCaseStore({
       responseEvidence = null,
       eventId
     }) {
-      const record = await mutate(caseId, (record) => {
+      return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         const existing = record.candidate_responses.find((entry) => entry.id === candidateId);
         if (existing) {
@@ -1353,9 +1437,7 @@ export function createEncryptedPrivateCaseStore({
         });
         Object.assign(runtimeTurn, updatedRuntime);
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
-      return record;
+      }, { afterWrite: candidateLocator(caseId, candidateId) });
     },
     async commitPrivateRuntimeAudit(caseId, runtimeTurnId, evidence, { eventId }) {
       return mutate(caseId, (record) => {
@@ -1552,6 +1634,208 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
     },
+    // The runner trial's readers' results for one turn, each reader's stored once, before anything that rests on it is shown.
+    // A later call adds readers not yet stored and never changes one already there (a rerun reuses the first reading). The
+    // conversation the turn belongs to is fixed by the first call.
+    async recordRunnerReading(caseId, runtimeTurnId, { conversationId, readers = {} }) {
+      let stored = null;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        const existing = runtimeTurn.runner_reading ?? null;
+        if (existing && existing.conversation_id !== conversationId) throw new ValidationError("A turn's conversation is fixed by its first reading.");
+        const added = Object.entries(readers).filter(([name]) => !existing?.readers?.[name]);
+        if (existing && added.length === 0) { stored = structuredClone(existing); return null; }
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no new reading.");
+        runtimeTurn.runner_reading = {
+          ...(existing ?? {}),
+          schema_version: 1,
+          conversation_id: conversationId,
+          recorded_at: existing?.recorded_at ?? now(),
+          readers: { ...(existing?.readers ?? {}), ...structuredClone(Object.fromEntries(added)) }
+        };
+        validatePrivateRuntimeTurn(runtimeTurn);
+        stored = structuredClone(runtimeTurn.runner_reading);
+        return record;
+      });
+      return stored;
+    },
+    // One audit attempt's crisis level, as the level reader (the crisis checker, or the whole checker) read it, appended as soon
+    // as it answers, even when another checker gave no reading: the closing and later turns read every one of them.
+    // With the kept plan on (src/runner-trial/kept-plan.mjs), the same entry also holds that checker's two kept-plan readings: whether
+    // the conversation reached the plan for the next hours, and whether the person's yes is about keeping the plan.
+    async recordRunnerCheckerLevel(caseId, runtimeTurnId, { candidateId, candidateVersion = null, checker, level, planReached = undefined, confirmsKeepPlanYes = undefined }) {
+      let stored = null;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (!runtimeTurn.runner_reading) throw new ValidationError("A checker level belongs to a turn the runner trial read.");
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no new reading.");
+        const levels = runtimeTurn.runner_reading.checker_levels ?? [];
+        const keptPlanReadings = {
+          ...(planReached === undefined ? {} : { plan_reached: planReached === true }),
+          ...(confirmsKeepPlanYes === undefined ? {} : { confirms_keep_plan_yes: confirmsKeepPlanYes === true })
+        };
+        runtimeTurn.runner_reading = {
+          ...runtimeTurn.runner_reading,
+          checker_levels: [...levels, { attempt: levels.length + 1, candidate_id: candidateId, candidate_version: candidateVersion, checker, level, recorded_at: now(), ...keptPlanReadings }]
+        };
+        validatePrivateRuntimeTurn(runtimeTurn);
+        stored = structuredClone(runtimeTurn.runner_reading.checker_levels);
+        return record;
+      });
+      return stored;
+    },
+    // A provisional reply (the owner's 3, question i62), stored when it is shown; immutable once stored.
+    async recordRunnerProvisional(caseId, runtimeTurnId, { exactText, checks = [] }) {
+      let stored = null;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.provisional) {
+          if (runtimeTurn.provisional.exact_text !== exactText) throw new ValidationError("A turn's provisional reply is immutable.");
+          stored = structuredClone(runtimeTurn.provisional);
+          return null;
+        }
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no provisional reply.");
+        runtimeTurn.provisional = { exact_text: exactText, sha256: sha256ExactText(exactText), checks: structuredClone(checks), shown_at: now() };
+        validatePrivateRuntimeTurn(runtimeTurn);
+        stored = structuredClone(runtimeTurn.provisional);
+        return record;
+      });
+      return stored;
+    },
+    // When the page put the always-visible emergency line into the conversation for this turn (section 4 of the design). Once per
+    // turn, and only while the turn is unfinished: the runner trial's timed line (no reply 30 s after the message) may come just
+    // after the turn's reply or closing, which then wins. A case that has no file is left as it is (never created here).
+    // Once per turn. It answers whether this call stored it, so a caller sends the page the line only once (Codex's review of
+    // e17c949a2: a timer and a closing had each sent it).
+    async recordRunnerEmergencyLine(caseId, runtimeTurnId, { reason }) {
+      let inserted = false;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.emergency_line_shown_at) return null;
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw new ValidationError("A finished runtime turn takes no emergency line.");
+        runtimeTurn.emergency_line_shown_at = now();
+        runtimeTurn.emergency_line_reason = String(reason ?? "crisis").slice(0, 80);
+        validatePrivateRuntimeTurn(runtimeTurn);
+        inserted = true;
+        return record;
+      }, { requireExisting: true });
+      return { inserted };
+    },
+    // The plan kept for next time (the runner trial's kept plan, design section 9; rules in src/runner-trial/kept-plan.mjs). Kept for
+    // one turn, once: only when the case's stored readings and this turn's allow it (the crisis reader read that the person asks;
+    // the crisis checker confirmed a yes to an offer made in the reply before; no reading anywhere in the case says they may be
+    // under 18 or that home isn't safe), and only the lines found word for word in a reply InnerSignal delivered earlier in this
+    // conversation, with the date. A plan kept before is deleted in its place. Never in the transcript; the record is append-only.
+    async recordRunnerKeptPlan(caseId, runtimeTurnId, { lines = [] } = {}) {
+      let stored = null;
+      await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        const plans = record.runner_kept_plans ?? [];
+        const existing = plans.find((plan) => plan.runtime_turn_id === runtimeTurnId);
+        if (existing) { stored = structuredClone(existing); return null; }
+        if (isFinishedRuntimeTurn(runtimeTurn)) throw keptPlanRefusal("finished_turn");
+        const basis = keepPlanBasis(record, runtimeTurn);
+        if (!basis.allowed) throw keptPlanRefusal(basis.reason);
+        if (basis.needsConfirmation && !keepPlanYesConfirmed(runtimeTurn)) throw keptPlanRefusal("not_confirmed");
+        const found = keptPlanLinesFound(lines, earlierRepliesInConversation(record, runtimeTurn));
+        if (found.length === 0) throw keptPlanRefusal("no_line_found");
+        const timestamp = now();
+        for (const plan of plans) if (plan.deleted_at == null) markKeptPlanDeleted(plan, "replaced", timestamp);
+        const plan = {
+          schema_version: 1,
+          id: `kept-plan:${sha256Hex(runtimeTurnId).slice(0, 24)}`,
+          conversation_id: runtimeTurn.runner_reading.conversation_id,
+          runtime_turn_id: runtimeTurnId,
+          kept_at: timestamp,
+          lines: found,
+          deleted_at: null,
+          deletion_reason: null
+        };
+        record.runner_kept_plans = [...plans, plan];
+        runtimeTurn.kept_plan_kept_at = timestamp;
+        validatePrivateRuntimeTurn(runtimeTurn);
+        stored = structuredClone(plan);
+        return record;
+      });
+      return stored;
+    },
+    // Deletes the case's kept plan (its lines removed, the date and the reason kept): `expired` deletes only plans 30 days old by
+    // this store's clock; `asked_in_conversation` needs the turn whose crisis reading says the person asked (and marks that turn);
+    // `deleted_on_page` is the page's button. A case without a file is left as it is.
+    async deleteRunnerKeptPlans(caseId, { reason, runtimeTurnId = null } = {}) {
+      if (!KEPT_PLAN_DELETION_REASONS.includes(reason) || reason === "replaced") throw new ValidationError("The kept plan's deletion reason is invalid.");
+      let deleted = 0;
+      await mutate(caseId, (record) => {
+        let runtimeTurn = null;
+        if (reason === "asked_in_conversation") {
+          runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+          if (crisisReadingOf(runtimeTurn)?.asks_to_delete_plan !== true) throw keptPlanRefusal("not_asked");
+          if (runtimeTurn.kept_plan_deleted_at) return null;
+          if (isFinishedRuntimeTurn(runtimeTurn)) throw keptPlanRefusal("finished_turn");
+        }
+        const timestamp = now();
+        const due = (record.runner_kept_plans ?? []).filter((plan) => plan.deleted_at == null && (reason !== "expired" || keptPlanExpired(plan, Date.parse(timestamp))));
+        if (due.length === 0 && !runtimeTurn) return null;
+        for (const plan of due) markKeptPlanDeleted(plan, reason, timestamp);
+        if (runtimeTurn) {
+          runtimeTurn.kept_plan_deleted_at = timestamp;
+          validatePrivateRuntimeTurn(runtimeTurn);
+        }
+        deleted = due.length;
+        return record;
+      }, { requireExisting: true });
+      return Object.freeze({ deleted });
+    },
+    // Close a turn the runner trial can't answer, in one write: the person's turn if the transcript doesn't hold it yet, the case
+    // state computed from the stored readings, the active draft superseded, and the fixed text as the exchange's assistant turn.
+    async closeRuntimeTurnUnanswered(caseId, runtimeTurnId, { kind, reasonCode, assistantTurnId, caseState = null, stateDiff = null, diffId = null, eventId, journalHold = false }) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.state === "UNANSWERED") {
+          if (runtimeTurn.closure.kind === kind && runtimeTurn.closure.assistant_turn_id === assistantTurnId) return null;
+          throw new ValidationError("This turn is already closed differently.");
+        }
+        if (runtimeTurn.state === "DELIVERED" || (runtimeTurn.state === "APPROVED" && !approvedReplyMayNotBeSent(record, runtimeTurn, reasonCode, journalHold))) {
+          throw new ValidationError("A delivered or approved turn is not closed without a reply.");
+        }
+        if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
+        const timestamp = now();
+        if (caseState != null) {
+          const state = validateCaseState(keepStoredRoadmap(caseState, record.case_state));
+          if (state.case_id !== caseId) throw new ValidationError("Case state identity mismatch.");
+          record.case_state = state;
+        }
+        let userTurn = record.raw_transcript.find((entry) => entry.id === runtimeTurn.user_turn_id);
+        if (!userTurn) {
+          userTurn = {
+            id: runtimeTurn.user_turn_id,
+            exchange_id: runtimeTurn.exchange_id,
+            role: "user",
+            text: runtimeTurn.inbound.exact_text,
+            at: runtimeTurn.inbound.received_at,
+            episode_id: record.case_state.current_episode?.id ?? null
+          };
+          record.raw_transcript.push(userTurn);
+          if (stateDiff != null) appendDiff(record, stateDiff, { turnId: runtimeTurn.user_turn_id, diffId });
+        }
+        for (const candidate of record.candidate_responses.filter(isActivePrivateCandidate)) {
+          candidate.metadata = { ...candidate.metadata, superseded_from_status: candidate.status, superseded_by_runner_closing_runtime_turn_id: runtimeTurn.id };
+          candidate.status = "superseded";
+          candidate.updated_at = timestamp;
+        }
+        const closure = createRunnerClosure({ kind, reasonCode, assistantTurnId, closedAt: timestamp });
+        record.raw_transcript.push({ id: assistantTurnId, exchange_id: runtimeTurn.exchange_id, role: "assistant", text: closure.exact_text, at: timestamp, episode_id: userTurn.episode_id ?? record.case_state.current_episode?.id ?? null });
+        const updatedRuntime = appendPrivateRuntimeTransition(runtimeTurn, {
+          eventId,
+          toState: "UNANSWERED",
+          at: timestamp,
+          details: { kind, reason_code: reasonCode },
+          projectionPatch: { assistant_turn_id: assistantTurnId, closure }
+        });
+        Object.assign(runtimeTurn, updatedRuntime);
+        return record;
+      });
+    },
     async commitTurn(caseId, { transcript_entries, case_state, state_diff, diff_id = null, diff_turn_id = null }) {
       return mutate(caseId, (record) => {
         const additions = validateTranscriptEntries(transcript_entries);
@@ -1700,13 +1984,11 @@ export function createEncryptedPrivateCaseStore({
       });
     },
     async saveCandidateResponse(caseId, candidateId, exactText, metadata = {}) {
-      const record = await mutate(caseId, (record) => {
+      return mutate(caseId, (record) => {
         rejectReservedCandidateMetadata(metadata);
         appendOriginalCandidate(record, candidateId, exactText, metadata);
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
-      return record;
+      }, { afterWrite: candidateLocator(caseId, candidateId) });
     },
     async updateCandidateStatus(caseId, candidateId, status, metadataPatch = {}) {
       return mutate(caseId, (record) => {
@@ -1737,13 +2019,11 @@ export function createEncryptedPrivateCaseStore({
       });
     },
     async reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata = {}) {
-      const record = await mutate(caseId, (record) => {
+      return mutate(caseId, (record) => {
         rejectReservedCandidateMetadata(metadata);
         appendReconstruction(record, parentCandidateId, candidateId, exactText, metadata);
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
-      return record;
+      }, { afterWrite: candidateLocator(caseId, candidateId) });
     },
     async approveCandidateForDelivery(caseId, candidateId, auditId) {
       return mutate(caseId, (record) => {
@@ -2055,8 +2335,7 @@ export function createEncryptedPrivateCaseStore({
           }));
         }
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
+      }, { afterWrite: candidateLocator(caseId, candidateId) });
       const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
       return Object.freeze({ case_id: caseId, revision: record.revision, replayed, artifact: supervisorArtifactView(record, candidate, { responseEvidencePolicy }) });
     },
@@ -2162,8 +2441,7 @@ export function createEncryptedPrivateCaseStore({
           }
         }, evidenceBinding);
         return record;
-      });
-      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: childId, caseId });
+      }, { afterWrite: () => candidateLocator(caseId, childId)() });
       return Object.freeze({ case_id: caseId, revision: record.revision, artifact: supervisorArtifactView(record, record.candidate_responses.find((entry) => entry.id === childId), { responseEvidencePolicy }) });
     },
     // The only function that returns the exact approved client text. It re-checks, inside the same write that records the export,
@@ -2554,83 +2832,11 @@ export function createEncryptedPrivateCaseStore({
         hidden_reasoning_included: false
       });
     },
-    async createHandoff(caseId, {
-      handoffId = createHandoffId(),
-      runtimeVersion = RUNTIME_VERSION,
-      auditVersion = PRIVATE_CANDIDATE_AUDIT_VERSION
-    } = {}) {
-      const record = await readRequired(caseId);
-      const transcript = effectiveTranscript(record);
-      const durableContext = buildDurableCaseContext({
-        caseId,
-        caseState: record.case_state,
-        transcriptEntries: transcript,
-        trackerEntries: record.tracker_entries
-      });
-      const recentVerbatim = selectRecentVerbatimWindow(transcript, {
-        currentEpisodeId: record.case_state.current_episode?.id ?? null,
-        currentEpisodeStartTurnId: record.case_state.current_episode?.started_turn_id ?? null,
-        maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
-        requireCompleteEpisode: true
-      });
-      const candidate = selectContinuationCandidate(record, "current_pending");
-      const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
-      const historicalDelivery = candidate == null ? resolveHistoricalDeliveryCheckpoint(record) : null;
-      const context = {
-        case_state: record.case_state,
-        last_state_diff: lastTurnDiff(record),
-        current_episode: record.case_state.current_episode,
-        constitution_ref: durableContext.constitution_ref,
-        candidate_response: candidate,
-        delivery_completion: deliveryCompletion,
-        historical_delivery_completion: historicalDelivery,
-        recent_verbatim: recentVerbatim,
-        source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
-        targeted_older_evidence: durableContext.targeted_older_evidence,
-        journal_continuity: createJournalContinuityProjection(record.journal_corpora, {
-          consumerCapabilitySupported: true
-        })
-      };
-      const continuationSafety = assessContinuationSafety(context);
-      const createdAt = now();
-      const { artifact, packet } = compilePrivateHandoffArtifact({
-        handoffId,
-        record,
-        recentVerbatim,
-        continuationSafety,
-        historicalDelivery,
-        runtimeVersion,
-        auditVersion,
-        createdAt
-      });
-      const file = handoffFileFor(handoffId);
-      if (await fs.access(file).then(() => true).catch((error) => error?.code === "ENOENT" ? false : Promise.reject(error))) {
-        throw new ValidationError(`Private handoff ${handoffId} already exists and is immutable.`);
-      }
-      if (!recoverySecret) throw new ValidationError("Recovery secret is required when creating a private handoff envelope.");
-      const plaintext = Buffer.from(JSON.stringify(artifact), "utf8");
-      try {
-        const envelope = await createVaultEnvelope({ plaintextBytes: plaintext, routineKek: routineKey, recoverySecretBytes: recoverySecret });
-        await fs.mkdir(handoffDirectory, { recursive: true, mode: 0o700 });
-        await fs.chmod(handoffDirectory, 0o700);
-        await durableEncryptedWrite(file, envelope);
-      } finally { plaintext.fill(0); }
-      await writePrivateArtifactLocator({ rootDir, kind: "handoff", artifactId: handoffId, caseId });
-      for (const pending of packet.pending_artifacts) {
-        await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: pending.id, caseId });
-      }
-      const reopened = await readHandoffArtifactWithEnvelope(handoffId, caseId);
-      if (!reopened || reopened.artifact.exact_text !== artifact.exact_text) throw new ValidationError("Private handoff encrypted round-trip verification failed.");
-      return Object.freeze({
-        handoff_id: handoffId,
-        case_id: caseId,
-        candidate_ids: packet.pending_artifacts.map((entry) => entry.id),
-        handoff_status: packet.handoff_status,
-        local_round_trip_verified: true,
-        fresh_session_status: "PENDING_FRESH_SESSION",
-        encrypted_export_available: true,
-        continuation_safety: cloneValue(packet.continuation_safety)
-      });
+    // A handoff of the case, from one reading of its record to the last file written (the envelope, its locator and the
+    // locators of the drafts it carries), in one turn of the case's queue: a deletion either finds all of it and removes it,
+    // or comes first, and then the case is gone and no handoff is made. None can be written after a deletion returned.
+    async createHandoff(caseId, options = {}) {
+      return coordinator.run(safeCaseId(caseId), () => createHandoffInQueue(caseId, options));
     },
     async loadHandoff(caseId, handoffId) {
       const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));
@@ -2654,6 +2860,27 @@ export function createEncryptedPrivateCaseStore({
         throw new ValidationError("Encrypted private handoff export exceeds the portable-export limit.");
       }
       return body;
+    },
+    // Bind an alias to the case. The alias file names the case, so it is written in the case's queue, like every file that does:
+    // a deletion finds it, and none is written for a case after its deletion returned.
+    async bindCaseAlias(caseId, caseAlias) {
+      const id = safeCaseId(caseId);
+      return coordinator.run(id, async () => {
+        ensureOpen();
+        if (!(await readExisting(id))) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        await writePrivateCaseAliasLocator({ rootDir, alias: caseAlias, caseId: id });
+        return Object.freeze({ case_id: id, alias_bound: true });
+      });
+    },
+    // Delete one case from this vault (the runner trial page's "Delete this case"; docs/superpowers/specs/2026-11-21-runner-trial-
+    // design.md, section 6): its encrypted case file, the handoff envelopes its locators name (each first opened with this case's
+    // key and confirmed to be this case's), the folders of the journal corpora its record names, and the locator and alias files
+    // that name it. Only paths proven to be this case's are touched: a handoff that can't be opened and confirmed is kept, with
+    // its locator, and reported. Inside the case's mutation queue, which every write of the case and of a file naming it takes, so
+    // nothing writes the case or such a file meanwhile; the caller also holds the turn controller's queue, so no turn of the case
+    // is running. Run again after an interruption, it finishes the job.
+    async deletePrivateCase(caseId) {
+      return deleteCaseInQueue(caseId);
     },
     async getHandoffTrackerWindow(caseId, handoffId, options = {}) {
       const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));
@@ -2687,4 +2914,133 @@ export function createEncryptedPrivateCaseStore({
       }
     }
   });
+
+  async function createHandoffInQueue(caseId, {
+    handoffId = createHandoffId(),
+    runtimeVersion = RUNTIME_VERSION,
+    auditVersion = PRIVATE_CANDIDATE_AUDIT_VERSION
+  } = {}) {
+    const record = await readRequired(caseId);
+    const transcript = effectiveTranscript(record);
+    const durableContext = buildDurableCaseContext({
+      caseId,
+      caseState: record.case_state,
+      transcriptEntries: transcript,
+      trackerEntries: record.tracker_entries
+    });
+    const recentVerbatim = selectRecentVerbatimWindow(transcript, {
+      currentEpisodeId: record.case_state.current_episode?.id ?? null,
+      currentEpisodeStartTurnId: record.case_state.current_episode?.started_turn_id ?? null,
+      maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
+      requireCompleteEpisode: true
+    });
+    const candidate = selectContinuationCandidate(record, "current_pending");
+    const deliveryCompletion = candidateDeliveryCompletion(record, candidate);
+    const historicalDelivery = candidate == null ? resolveHistoricalDeliveryCheckpoint(record) : null;
+    const context = {
+      case_state: record.case_state,
+      last_state_diff: lastTurnDiff(record),
+      current_episode: record.case_state.current_episode,
+      constitution_ref: durableContext.constitution_ref,
+      candidate_response: candidate,
+      delivery_completion: deliveryCompletion,
+      historical_delivery_completion: historicalDelivery,
+      recent_verbatim: recentVerbatim,
+      source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
+      targeted_older_evidence: durableContext.targeted_older_evidence,
+      journal_continuity: createJournalContinuityProjection(record.journal_corpora, {
+        consumerCapabilitySupported: true
+      })
+    };
+    const continuationSafety = assessContinuationSafety(context);
+    const createdAt = now();
+    const { artifact, packet } = compilePrivateHandoffArtifact({
+      handoffId,
+      record,
+      recentVerbatim,
+      continuationSafety,
+      historicalDelivery,
+      runtimeVersion,
+      auditVersion,
+      createdAt
+    });
+    const file = handoffFileFor(handoffId);
+    if (await fs.access(file).then(() => true).catch((error) => error?.code === "ENOENT" ? false : Promise.reject(error))) {
+      throw new ValidationError(`Private handoff ${handoffId} already exists and is immutable.`);
+    }
+    if (!recoverySecret) throw new ValidationError("Recovery secret is required when creating a private handoff envelope.");
+    const plaintext = Buffer.from(JSON.stringify(artifact), "utf8");
+    try {
+      const envelope = await createVaultEnvelope({ plaintextBytes: plaintext, routineKek: routineKey, recoverySecretBytes: recoverySecret });
+      await fs.mkdir(handoffDirectory, { recursive: true, mode: 0o700 });
+      await fs.chmod(handoffDirectory, 0o700);
+      await durableEncryptedWrite(file, envelope);
+    } finally { plaintext.fill(0); }
+    await writePrivateArtifactLocator({ rootDir, kind: "handoff", artifactId: handoffId, caseId });
+    for (const pending of packet.pending_artifacts) {
+      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: pending.id, caseId });
+    }
+    const reopened = await readHandoffArtifactWithEnvelope(handoffId, caseId);
+    if (!reopened || reopened.artifact.exact_text !== artifact.exact_text) throw new ValidationError("Private handoff encrypted round-trip verification failed.");
+    return Object.freeze({
+      handoff_id: handoffId,
+      case_id: caseId,
+      candidate_ids: packet.pending_artifacts.map((entry) => entry.id),
+      handoff_status: packet.handoff_status,
+      local_round_trip_verified: true,
+      fresh_session_status: "PENDING_FRESH_SESSION",
+      encrypted_export_available: true,
+      continuation_safety: cloneValue(packet.continuation_safety)
+    });
+  }
+
+  // The deletion's steps, in the case's queue (deletePrivateCase above).
+  async function deleteCaseInQueue(caseId) {
+    const id = safeCaseId(caseId);
+    return coordinator.run(id, async () => {
+      ensureOpen();
+      // A case file that is there but can't be opened with this case's key stops the deletion before anything is removed.
+      const existing = await readExistingWithEnvelope(id);
+      const locators = await listPrivateArtifactLocatorsForCase({ rootDir, caseId: id });
+      const keptHandoffs = [];
+      let handoffsRemoved = 0;
+      for (const locator of locators.filter((entry) => entry.kind === "handoff")) {
+        let opened;
+        try { opened = await readHandoffArtifactWithEnvelope(locator.artifactId, id); }
+        catch { keptHandoffs.push(locator.artifactId); continue; }
+        if (opened && await removeFile(handoffFileFor(locator.artifactId))) handoffsRemoved += 1;
+      }
+      let journalCorporaRemoved = 0;
+      for (const reference of existing?.record.journal_corpora ?? []) {
+        const directory = privateJournalCorpusDirectory({ rootDir, caseId: id, corpusId: reference.corpus_id });
+        const info = await fs.lstat(directory).catch((error) => (error?.code === "ENOENT" ? null : Promise.reject(error)));
+        if (!info?.isDirectory()) continue;
+        await fs.rm(directory, { recursive: true });
+        journalCorporaRemoved += 1;
+      }
+      const caseFileRemoved = await removeFile(fileFor(id));
+      await removeFile(`${fileFor(id)}.tmp`);
+      let locatorFilesRemoved = 0;
+      for (const locator of locators) {
+        if (locator.kind === "handoff" && keptHandoffs.includes(locator.artifactId)) continue;
+        if (await removeFile(locator.file)) locatorFilesRemoved += 1;
+      }
+      let aliasFilesRemoved = 0;
+      for (const alias of await listPrivateCaseAliasLocatorsForCase({ rootDir, caseId: id })) {
+        if (await removeFile(alias.file)) aliasFilesRemoved += 1;
+      }
+      for (const directory of [rootDir, handoffDirectory, path.join(rootDir, ".artifact-locators"), path.join(rootDir, ".case-alias-locators"), path.join(rootDir, ".journal-corpora")]) {
+        await syncDirectory(directory);
+      }
+      return Object.freeze({
+        case_id: id,
+        case_file_removed: caseFileRemoved,
+        handoffs_removed: handoffsRemoved,
+        journal_corpora_removed: journalCorporaRemoved,
+        locator_files_removed: locatorFilesRemoved,
+        alias_locator_files_removed: aliasFilesRemoved,
+        handoffs_kept: Object.freeze([...keptHandoffs])
+      });
+    });
+  }
 }
