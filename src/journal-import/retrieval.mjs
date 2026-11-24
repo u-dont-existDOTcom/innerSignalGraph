@@ -4,7 +4,7 @@ import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } fr
 import { compareSourceOrder, knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
 import { QUOTE_MONTHS_KEY, QUOTE_STOPWORDS, QUOTE_TERMS_STATS_KEY, QUOTE_UNDATED_KEY, QUOTE_WIDE_KEY, quoteCues } from "./quote-index.mjs";
 import { POINTER_TAG_KINDS } from "./pointer-tags.mjs";
-import { formsQueryTerms, formsReadingTerm } from "./word-forms.mjs";
+import { FRENCH_STOPWORDS, formsQueryTerms, formsReadingTerm, formsReadingTokens } from "./word-forms.mjs";
 
 export const QUOTE_SEARCH_LIMITS = Object.freeze({
   limitDefault: 24,
@@ -23,6 +23,30 @@ export const QUOTE_SEARCH_LIMITS = Object.freeze({
 export const QUOTE_BM25 = Object.freeze({ k1: 1.2, b: 0.75 });
 // The name of the order version 3 of the quote index ranks in, which a cursor carries so one version's cursor can't page the other's.
 const QUOTE_RANKING_V3 = "quotes-v3";
+
+/**
+ * The numbers of the search a reply's evidence makes (`findEvidenceQuotes`), in one place. A person's message is whole sentences, not
+ * chosen search words, so most of its words say nothing about which quote matters, and how many quotes hold a word is what tells:
+ * - `common`: a word over 5% of the quotes hold (and over 20 of them, so that a small journal has words left to go by) isn't ranked by.
+ * - `termsMax`: of the rest, the rarest 24, as many as the quote search ranks by; the rarest, so that a long message's point counts
+ *   wherever it stands.
+ * - `rare`: a word at most 1% of the quotes hold (or at most 10, in a small journal) is enough by itself to keep a quote that holds it.
+ * - `matched`: without such a word, a quote is kept for at least two of the chosen words that are at least half of them.
+ * - `candidatesMax`: how many of the kept quotes' records one search looks at, at most, however many of them may not be used.
+ * They are reasoned, not measured: the 3,207 test questions about one real journal are on the server, so these numbers can't be tuned
+ * on them from here. `version` names the method with its numbers (QUOTE_BM25 and the stop words included): change it with any of them,
+ * since a cached search and a retrieval's receipt go by it.
+ */
+export const EVIDENCE_QUOTE_SEARCH = Object.freeze({
+  version: "evidence-quotes-v1",
+  common: Object.freeze({ share: 0.05, quotes: 20 }),
+  termsMax: 24,
+  rare: Object.freeze({ share: 0.01, quotes: 10 }),
+  matched: Object.freeze({ terms: 2, share: 0.5 }),
+  candidatesMax: 40
+});
+// The lifecycles a quotation may be used in as evidence.
+const EVIDENCE_LIFECYCLES = Object.freeze(["active", "candidate", "superseded"]);
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const active = (record) => !["deleted", "revoked"].includes(record.lifecycle);
@@ -64,6 +88,33 @@ function inTimeWindow(intervals, { from, to, include_unknown: includeUnknown }) 
     && (to === null || start === null || timeBoundStartsByEndOf(start, to)));
 }
 
+// The words of a message an evidence search may rank by, each once in the order they first appear: read as the generation's word list
+// reads words (`forms`) or exactly, without the English and French stop words, which are read the same way.
+const evidenceStopwords = new Map();
+function evidenceTerms(query, forms) {
+  const read = forms ? formsReadingTerm : (word) => word;
+  if (!evidenceStopwords.has(forms)) evidenceStopwords.set(forms, new Set([...QUOTE_STOPWORDS, ...FRENCH_STOPWORDS].map(read)));
+  const stopwords = evidenceStopwords.get(forms);
+  return [...new Set(lexicalTerms(query).map(read))].filter((term) => !stopwords.has(term));
+}
+
+// Which of those words are chosen, from how many quotes hold each (`counts`, in the words' order) and how many quotes there are: the
+// places of the chosen ones, rarest first (equally rare ones as they stand in the message), and why each of the others is left out.
+function chooseEvidenceTerms(counts, population) {
+  const { common, termsMax } = EVIDENCE_QUOTE_SEARCH;
+  const commonOver = Math.max(common.quotes, common.share * population);
+  const dropped = new Map();
+  const ranked = [];
+  counts.forEach((count, place) => {
+    if (count === 0) dropped.set(place, "in_no_quote");
+    else if (count > commonOver) dropped.set(place, "common");
+    else ranked.push(place);
+  });
+  ranked.sort((left, right) => counts[left] - counts[right] || left - right);
+  for (const place of ranked.slice(termsMax)) dropped.set(place, "over_the_term_limit");
+  return { chosen: ranked.slice(0, termsMax), dropped };
+}
+
 function intersection(lists) {
   if (!lists.length) return [];
   const [first, ...rest] = [...lists].sort((left, right) => left.length - right.length);
@@ -74,9 +125,9 @@ function intersection(lists) {
 /**
  * The ordered results of a search or timeline query, kept so the pages after the first slice them
  * instead of rebuilding the whole result on every cursor request. Keys name the exact snapshot,
- * purpose, query and filters, and entries hold record identifiers only, never content. A miss
- * (expired, evicted, another process) rebuilds the same order, so the cache changes cost, not
- * results.
+ * purpose, query and filters, and entries hold record identifiers only, never content (an evidence
+ * search's also how many quotes hold each of its words, never the words). A miss (expired, evicted,
+ * another process) rebuilds the same order, so the cache changes cost, not results.
  */
 export function createJournalResultCache({ maximumEntries = 32, ttlMs = 15 * 60 * 1000, now = () => Date.now() } = {}) {
   invariant(Number.isSafeInteger(maximumEntries) && maximumEntries > 0 && Number.isSafeInteger(ttlMs) && ttlMs > 0, "RESULT_CACHE_INVALID");
@@ -844,10 +895,145 @@ export async function openPrivateJournalGraph({
     return result;
   };
 
+  // How many quotes there are, the mean of their lengths, and for each of the words the quotes that hold it as [id, uses, length]. A
+  // word list (version 3 of the quote index) says how often a quote uses the word and how long the quote is. Elsewhere the word index
+  // says only which records hold the word: each passage among them counts as one use in a quote of mean length, so BM25 goes by how rare
+  // the word is. Those passages are the ones the generation lists as such; its word list names passages alone.
+  const evidencePostings = async (terms, wordList) => {
+    if (wordList) {
+      const [totals = null] = await readIndex("quote_terms", QUOTE_TERMS_STATS_KEY);
+      invariant(totals !== null && Number.isSafeInteger(totals.quotes) && totals.quotes >= 0 && Number.isFinite(totals.mean_length) && totals.mean_length > 0,
+        "QUOTE_TERMS_INVALID");
+      return { population: totals.quotes, meanLength: totals.mean_length, holders: await Promise.all(terms.map((term) => readIndex("quote_terms", term))) };
+    }
+    const passages = new Set(await readIndex("kinds", "passage"));
+    const lists = await Promise.all(terms.map((term) => readIndex("lexical", term)));
+    return { population: passages.size, meanLength: 1, holders: lists.map((ids) => [...new Set(ids)].filter((id) => passages.has(id)).map((id) => [id, 1, 1])) };
+  };
+
+  // A candidate of an evidence search, checked on its own record: a passage, in a lifecycle that may be used, not restricted, whose exact
+  // words are the bytes stored for it, as resolveEvidence checks them. What can't be used comes back with the reason instead. A record
+  // of another case or corpus still refuses the whole search, and a failure that isn't this record's own still fails it.
+  const evidenceCandidate = async (id) => {
+    let record;
+    try { record = await loadRecord(id); }
+    catch (error) {
+      if (!(error instanceof ValidationError) || error.code === "GRAPH_RECORD_SCOPE_MISMATCH") throw error;
+      return { unusable: "record_unavailable" };
+    }
+    if (record.kind !== "passage") return { unusable: "not_a_quotation" };
+    if (!EVIDENCE_LIFECYCLES.includes(record.lifecycle)) return { unusable: "deleted_or_revoked_quotation" };
+    if (record.data.disclosure === "restricted") return { unusable: "restricted_quotation" };
+    if (typeof record.data.quote !== "string" || !record.data.quote.length) return { unusable: "quotation_unavailable" };
+    try {
+      const text = await exactText({ representationId: record.data.representation_id, startByte: record.data.start_byte, endByte: record.data.end_byte,
+        expectedSha256: record.data.quote_sha256 });
+      invariant(text === record.data.quote, "SOURCE_SPAN_QUOTE_MISMATCH");
+    } catch (error) {
+      if (!(error instanceof ValidationError)) throw error;
+      return { unusable: "words_not_verified" };
+    }
+    return { record };
+  };
+
+  /**
+   * The quotes a whole message may be about, ranked, for a reply's evidence (EVIDENCE_QUOTE_SEARCH says how the numbers were chosen).
+   * The message's words are read as the generation's word list reads them, or exactly where it has none, without the English and
+   * French stop words. Of the words some quotes hold, the common ones are left out and the rarest chosen; with none left there is no
+   * result, never a search by stop words. The order is Okapi BM25 over the chosen words, then the id: unlike `findQuotes`, no quote
+   * goes first for holding more of them, since in a long message many weak words would beat the one that matters. A quote is kept for
+   * a rare word, or for enough of the chosen ones. Of the kept quotes, in order, the first `limit` that may be used come back: each is
+   * checked on its record (`evidenceCandidate`), and one that may not be used is counted in `omitted` with its reason and never fails
+   * the search. Sharing words with the message doesn't make a quote relevant to it: that is for its reader to judge.
+   *
+   * Each quote has its record id, exact words and span, its lifecycle, when it was written as the quote index dates it (null without a
+   * date or a quote index; an interval has `between`, open at an end where a bound is null), its wording cues (`quoteCues`) and the
+   * chosen words it holds. `terms` says which words were chosen and which left out and why, with how many quotes hold each; `kept`,
+   * `examined` and `returned` count the kept quotes, those looked at and those returned.
+   *
+   * The result cache holds, for these words in this snapshot, how many quotes there are, how many hold each word (by its place, never
+   * the word) and the kept quotes' ids in order; each record is read and checked again on every call.
+   */
+  const findEvidenceQuotes = async ({ query, limit } = {}) => {
+    await assertCurrent();
+    invariant(typeof query === "string" && query.length <= 4_000, "QUOTE_QUERY_INVALID");
+    invariant(Number.isSafeInteger(limit) && limit >= 1 && limit <= EVIDENCE_QUOTE_SEARCH.candidatesMax, "QUOTE_LIMIT_INVALID");
+    const wordList = Array.isArray(manifest.indexes.quote_terms);
+    const terms = evidenceTerms(query, wordList);
+    const key = cacheKey("evidence-quotes", EVIDENCE_QUOTE_SEARCH.version, sha256(Buffer.from(terms.join("\0"), "utf8")));
+    let entry = terms.length ? resultCache?.get(key) ?? null : [0];
+    if (!entry) {
+      const { population, meanLength, holders } = await evidencePostings(terms, wordList);
+      const { rare, matched } = EVIDENCE_QUOTE_SEARCH;
+      const rareUpTo = Math.max(rare.quotes, rare.share * population);
+      const { chosen } = chooseEvidenceTerms(holders.map((list) => list.length), population);
+      const scores = new Map(), held = new Map(), holdsRare = new Set();
+      for (const place of chosen) {
+        const list = holders[place];
+        const weight = Math.log(1 + (population - list.length + 0.5) / (list.length + 0.5));
+        for (const [id, uses, length] of list) {
+          const factor = 1 - QUOTE_BM25.b + QUOTE_BM25.b * length / meanLength;
+          scores.set(id, (scores.get(id) ?? 0) + weight * uses * (QUOTE_BM25.k1 + 1) / (uses + QUOTE_BM25.k1 * factor));
+          held.set(id, (held.get(id) ?? 0) + 1);
+          if (list.length <= rareUpTo) holdsRare.add(id);
+        }
+      }
+      const enough = Math.max(matched.terms, matched.share * chosen.length);
+      const kept = [...scores.keys()].filter((id) => holdsRare.has(id) || held.get(id) >= enough)
+        .sort((left, right) => scores.get(right) - scores.get(left) || left.localeCompare(right));
+      entry = [String(population), ...holders.map((list) => String(list.length)), ...kept];
+      resultCache?.set(key, entry);
+    }
+    const population = Number(entry[0]);
+    const counts = entry.slice(1, 1 + terms.length).map(Number);
+    const kept = entry.slice(1 + terms.length);
+    const { chosen, dropped } = chooseEvidenceTerms(counts, population);
+    const chosenTerms = chosen.map((place) => terms[place]);
+    const quoteIndex = Array.isArray(manifest.indexes.quote_meta);
+    const quotes = [], omitted = new Map();
+    let examined = 0;
+    for (const id of kept) {
+      if (quotes.length >= limit || examined >= EVIDENCE_QUOTE_SEARCH.candidatesMax) break;
+      examined += 1;
+      const { record, unusable } = await evidenceCandidate(id);
+      if (unusable) { omitted.set(unusable, (omitted.get(unusable) ?? 0) + 1); continue; }
+      const text = record.data.quote;
+      const date = (quoteIndex ? (await readIndex("quote_meta", id))[0] : null)?.written ?? null;
+      const words = new Set(wordList ? formsReadingTokens(text) : lexicalTerms(text));
+      quotes.push(Object.freeze({
+        record_id: id,
+        text,
+        start_byte: record.data.start_byte,
+        end_byte: record.data.end_byte,
+        lifecycle: record.lifecycle,
+        written: date ? Object.freeze({ from: date.from, to: date.to, precision: date.precision, between: date.between === true,
+          ambiguous: date.ambiguous === true, year_inferred: date.year_inferred === true }) : null,
+        cues: quoteCues(text),
+        matched_terms: Object.freeze(chosenTerms.filter((term) => words.has(term)))
+      }));
+    }
+    const result = Object.freeze({
+      quotes: Object.freeze(quotes),
+      kept: kept.length,
+      examined,
+      returned: quotes.length,
+      omitted: Object.freeze([...omitted].map(([reason, count]) => Object.freeze({ reason, count }))),
+      terms: Object.freeze({
+        quotes: terms.length ? population : null,
+        chosen: Object.freeze(chosen.map((place) => Object.freeze({ term: terms[place], quotes: counts[place] }))),
+        dropped: Object.freeze([...dropped].sort(([left], [right]) => left - right)
+          .map(([place, reason]) => Object.freeze({ term: terms[place], quotes: counts[place], reason })))
+      })
+    });
+    await assertCurrent();
+    return result;
+  };
+
   return Object.freeze({
     manifest: structuredClone(manifest),
     search,
     findQuotes,
+    findEvidenceQuotes,
     findEntities,
     timeline,
     evidenceGroup,
