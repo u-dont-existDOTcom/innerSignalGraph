@@ -50,11 +50,11 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      fails: the copy is tested again before any reply uses it.
   --cold-test FILE   the copy's cold test, with the questions and their key from FILE (mode 0600, outside the checkout). For each
                      question, what a reply to it as the message would get from the copy goes to a fresh call of the trial's
-                     writer's worker, which answers from that alone, and the answer, with the same passages and the key quotes, to a
+                     writer's worker, which answers from that alone; and the answer, with the same passages and the key quotes, to a
                      fresh call of the checker's worker, which judges it (and is asked again when it finds something wrong): two
-                     calls a question, three at most, one at a time. The copy passes when the file has at least ${COLD_TEST_RULE.answerable} questions the
-                     journal answers and ${COLD_TEST_RULE.unanswerable} it doesn't, no answer is wrong, at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} questions that share a search word
-                     with their key quotes are right, and the copy's publication didn't change meanwhile.
+                     calls a question, three at most, one at a time. The copy passes when the file has at least ${COLD_TEST_RULE.answerable} questions
+                     the journal answers and ${COLD_TEST_RULE.unanswerable} it doesn't, no answer is wrong, at least ${COLD_TEST_RULE.right.at_least} of every ${COLD_TEST_RULE.right.of} questions that share a
+                     search word with their key quotes are right, and the copy's publication didn't change meanwhile.
                      A test that starts removes the copy's receipt; only a pass gives a new one, which the journal gate asks for.
                      Of two tests that overlap, the one started last decides, also when it never ends.
                      It sends excerpts of the client's journal to the companies running those workers (with --provider mixed,

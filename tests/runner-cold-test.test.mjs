@@ -10,7 +10,7 @@ import { SESSION_USE_READER_VERSION, createSessionUseJournalEvidenceProvider } f
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, coldTestReceiptMatches, readColdTestReceipt, validateColdTestReceipt } from "../src/runner-trial/clients.mjs";
 import { createRunnerJournalGate, openSessionUseReader } from "../src/runner-trial/journal-gate.mjs";
 import { COLD_CONSUMER_INSTRUCTION, COLD_CONSUMER_SCHEMA, COLD_JUDGE_INSTRUCTION, COLD_JUDGE_SCHEMA, COLD_TEST_RULE, MAX_COLD_QUESTIONS, createSealedColdTestPort, resolveColdKey, runJournalColdTest, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
-import { ANSWER, JUDGE_REASON, RECEIPTS, coldWorkers, questionsFile } from "./helpers/cold-test.mjs";
+import { ANSWER, JUDGE_REASON, RECEIPTS, coldWorkers, questionsFile } from "./helpers/cold-workers.mjs";
 import { inventedPages, inventedParagraphs, persistInventedJournal } from "./helpers/invented-journal.mjs";
 
 // The journal's cold test (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, "As built, part 2"): what its consumer is
@@ -133,8 +133,10 @@ test("the fault the first design let pass: a reader that finds nothing for whole
     const provider = createSessionUseJournalEvidenceProvider({ caseAccessService, corpusId, journalNotes: true, async openReader(input) {
       const reader = await openPrivateJournalGraph(input);
       return { ...reader, async findEvidenceQuotes({ query, limit }) {
+        const ranked = await reader.findEvidenceQuotes({ query, limit });
         const { records, total_matches: kept } = await reader.search({ query, graphEnabled: false, pageSize: limit });
-        return { quotes: records.map((record) => ({ record_id: record.id, text: record.data.quote, start_byte: record.data.start_byte, end_byte: record.data.end_byte, lifecycle: record.lifecycle, written: null, cues: [] })), kept, returned: records.length, omitted: [] };
+        const quotes = records.map((record) => ({ record_id: record.id, text: record.data.quote, start_byte: record.data.start_byte, end_byte: record.data.end_byte, lifecycle: record.lifecycle, written: null, cues: [] }));
+        return { ...ranked, quotes, kept, examined: quotes.length, returned: quotes.length, omitted: [] };
       } };
     } });
     return { version: "every-word", read: (request) => provider.freezeResponseEvidenceJournal(request) };
@@ -230,7 +232,7 @@ test("a part that isn't available stops the test with no verdict; a search that 
   // A question of words the journal doesn't have is one by itself.
   const none = await run(workers, { questions: [{ ...FEW[0], question: "zxqnonexistent" }, FEW[2]] });
   assert.equal(entryOf(none, 1).found, false);
-  assert.match(workers.packets("W").at(-2).coverage, /; 0 matching passages; 0 exact quotations returned\./u);
+  assert.match(workers.packets("W").at(-2).coverage, /; 0 matching passages\b.*; 0 exact quotations returned\./u);
 });
 
 test("what the consumer and the judge are told: what a passage is and isn't, and what each verdict means", () => {
@@ -373,12 +375,24 @@ test("an answerable question is right only when its passages were found, it is d
   };
   const lost = entryOf(await run(answering((value) => value, () => "right"), { questions, readerFor: losing }), 1);
   assert.deepEqual([lost.found, lost.cited, lost.verdict, lost.result], [false, false, "right", "neither"]);
-  // By the record, not by the words or the place: two passages that say the same are one group, and either of them will do.
+  // By the record, not by the words or the place: two passages that say the same are one group, and either of them will do, found or cited.
   const twice = await copyOf(t, { paragraphs: [...PARAGRAPHS, told(4)] });
+  const either = async (workers, options = {}) => {
+    const scores = entryOf(await twice.run(workers, { questions: [{ ...both, question: `And the ${THINGS[4]}?`, evidence_quotes: [keyQuote(4)] }, FEW[2]], ...options }), 1);
+    return [scores.found, scores.cited, scores.result];
+  };
   const workers = standIns();
-  const { report } = await twice.run(workers, { questions: [{ ...both, question: `And the ${THINGS[4]}?`, evidence_quotes: [keyQuote(4)] }, FEW[2]] });
-  assert.equal(workers.packets("W")[0].passages.filter(({ words }) => words === told(4)).length, 2);
-  assert.deepEqual([report.by_question[0].found, report.by_question[0].cited], [true, true]);
+  assert.deepEqual(await either(workers), [true, true, "right"]);
+  const given = workers.packets("W")[0].passages.filter(({ words }) => words === told(4));
+  assert.equal(given.length, 2);
+  for (const { id } of given) {
+    assert.deepEqual(await either(answering((value) => ({ ...value, evidence_ids: [id] }))), [true, true, "right"], "one of them cited");
+    const returning = async (options) => {
+      const reader = await openSessionUseReader(options);
+      return { ...reader, async read(request) { const part = await reader.read(request); return { ...part, source_items: part.source_items.filter((item) => item.exact_excerpt !== told(4) || item.id === id) }; } };
+    };
+    assert.deepEqual(await either(standIns(), { readerFor: returning }), [true, true, "right"], "one of them found");
+  }
 });
 
 test("an unanswerable question is right only when it is declared one of the three others and the judge says right", async (t) => {
@@ -502,6 +516,15 @@ test("a publication that changes during the test: not a pass after the last read
   const last = await changing(120);
   const { passed, receipt, report } = await last.run();
   assert.deepEqual([passed, receipt, report.same_snapshot, report.wrong, report.not_met], [false, null, false, 0, ["snapshot_changed"]]);
+  // Each of the three names alone, changed once the last call is made.
+  const still = await copyOf(t);
+  for (const change of [{ active_generation: "another-generation" }, { manifest_object_id: "manifest:another" }, { visibility_epoch: 9 }]) {
+    let done = false;
+    const service = { ...still.service, async inspectJournalCorpus(...args) { const inspected = await still.service.inspectJournalCorpus(...args); return done ? { ...inspected, reference: { ...inspected.reference, ...change } } : inspected; } };
+    const workers = standIns({ reply: async (count, request, usual) => { const value = await usual(); done = count === 2 * QUESTIONS.length; return value; } });
+    const changed = await runJournalColdTest({ service, auth: AUTH, caseId: CASE, corpusId: CORPUS, questions: questionsFile(QUESTIONS), port: still.portOf(workers) });
+    assert.deepEqual([changed.passed, changed.receipt, changed.report.same_snapshot, changed.report.not_met], [false, null, false, ["snapshot_changed"]], JSON.stringify(change));
+  }
   const earlier = await changing(2);
   await assert.rejects(earlier.run(), (error) => ["COLD_TEST_SNAPSHOT_CHANGED", "COLD_TEST_READER_UNAVAILABLE"].includes(error.code));
   assert.equal(earlier.workers.sent.length, 2, "the next question is asked of no one");

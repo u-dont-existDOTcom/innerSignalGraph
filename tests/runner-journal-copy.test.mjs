@@ -28,7 +28,7 @@ import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordin
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { StartError, acquireTrialFolderLock, addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
 import { CLIENT_COPY_KEY_FILE, IMPORT_PURPOSES, USAGE, ensureJournalCopyKey, importClientJournal, oneTimeGrant, parseJournalArguments, runClientColdTest, runMain } from "../scripts/runner-trial-journal.mjs";
-import { ANSWER, JUDGE_REASON, RECEIPTS, coldWorkers, questionsFile } from "./helpers/cold-test.mjs";
+import { ANSWER, JUDGE_REASON, RECEIPTS, coldWorkers, questionsFile } from "./helpers/cold-workers.mjs";
 import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
 // The copy step for a client's journal (design for clients, point 4) and the command of its cold test (point 5c): exported where the journal
@@ -1501,7 +1501,7 @@ test("a cold test that starts removes the copy's receipt and only a pass gives a
   assert.match(USAGE, /A test that starts removes the copy's receipt; only a pass gives a new one/u);
   assert.match(USAGE, /--cold-test FILE --provider mixed\|claude\|codex/u);
   assert.match(USAGE, /excerpts of the client's journal to the companies running those workers \(with --provider mixed,\s+Anthropic and OpenAI; claude, Anthropic; codex, OpenAI\)/u);
-  assert.match(USAGE, /at least 40 questions the\s+journal answers and 20 it doesn't, no answer is wrong, at least 2 of every 3 questions that share a search word/u);
+  assert.match(USAGE, /at least 40 questions\s+the journal answers and 20 it doesn't, no answer is wrong, at least 2 of every 3 questions that share a\s+search word with their key quotes are right/u);
 });
 
 test("the cold test's workers are the trial's writer's for the consumer and its checker's for the judge, with each provider choice: GPT's answers judged by Claude with mixed, both one company's otherwise", async (t) => {

@@ -137,24 +137,6 @@ function evidenceTerms(query, forms) {
   return [...terms.values()];
 }
 
-// Whether a quote holds a word of an evidence search (one of `evidenceTerms`): read as the generation's word list reads words, or exactly as
-// written where it has none and for a word looked up as written.
-function quoteHoldsTerm(text, forms) {
-  const read = forms ? new Set(formsReadingTokens(text)) : null;
-  const written = new Set(lexicalTerms(text));
-  return ({ term, exact }) => (exact ? exact.some((word) => written.has(word)) : read.has(term));
-}
-
-/**
- * The words of a message that an evidence search goes by and that `quote` holds, read as `findEvidenceQuotes` reads both on a generation
- * with a word list (`wordList`) or without one. With none, no search by words can find the quote for that message. How many quotes hold a
- * word isn't asked here: one the search leaves out as common counts too.
- */
-export function evidenceWordsShared(message, quote, { wordList }) {
-  invariant(typeof message === "string" && typeof quote === "string" && typeof wordList === "boolean", "QUOTE_QUERY_INVALID");
-  return Object.freeze(evidenceTerms(message, wordList).filter(quoteHoldsTerm(quote, wordList)).map(({ term }) => term));
-}
-
 // Which of those words are chosen, from how many quotes hold each (`counts`, in the words' order) and how many quotes there are: the
 // places of the chosen ones, rarest first (equally rare ones as they stand in the message), and why each of the others is left out.
 function chooseEvidenceTerms(counts, population) {
@@ -177,6 +159,24 @@ function intersection(lists) {
   const [first, ...rest] = [...lists].sort((left, right) => left.length - right.length);
   const sets = rest.map(list => new Set(list));
   return [...new Set(first)].filter((id) => sets.every((set) => set.has(id)));
+}
+
+// Whether a quote holds a word of an evidence search (one of `evidenceTerms`): read as the generation's word list reads words, or exactly as
+// written where it has none and for a word looked up as written.
+function quoteHoldsTerm(text, forms) {
+  const read = forms ? new Set(formsReadingTokens(text)) : null;
+  const written = new Set(lexicalTerms(text));
+  return ({ term, exact }) => (exact ? exact.some((word) => written.has(word)) : read.has(term));
+}
+
+/**
+ * The words of a message that an evidence search goes by and that `quote` holds, read as `findEvidenceQuotes` reads both on a generation
+ * with a word list (`wordList`) or without one. With none, no search by words can find the quote for that message. How many quotes hold a
+ * word isn't asked here: one the search leaves out as common counts too.
+ */
+export function evidenceWordsShared(message, quote, { wordList }) {
+  invariant(typeof message === "string" && typeof quote === "string" && typeof wordList === "boolean", "QUOTE_QUERY_INVALID");
+  return Object.freeze(evidenceTerms(message, wordList).filter(quoteHoldsTerm(quote, wordList)).map(({ term }) => term));
 }
 
 /**
