@@ -21,6 +21,7 @@ import { childContactViolations } from "../src/case-formulation/protective-compa
 import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
+import { loadWholeProtocolOverMcp, servedFile, servedRules } from "./helpers/whole-protocol.mjs";
 
 // The owner's correction of 16 Oct 2026 (issue #168): reparenting is not an exercise.
 // These tests establish that the corrected rules reach every consumer, including the served
@@ -184,21 +185,15 @@ test("the therapy pipeline sends the reparenting rules to every model stage it r
 test("the served MCP route delivers the correction and keeps the safeguards", async (t) => {
   const listener = await listenPrivateCaseMcp({ caseAccessService: deniedService });
   t.after(() => listener.close());
-  const response = await fetch(listener.url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "load_therapy_protocol", arguments: {} } })
-  });
-  const body = await response.json();
-  assert.equal(response.status, 200);
-  assert.equal(body.result.structuredContent.protocol_sha256, loadTherapyProtocol().protocolSha256);
-  const text = body.result.content[0].text;
+  const text = await loadWholeProtocolOverMcp(listener.url);
+  const protocol = loadTherapyProtocol();
+  assert.ok(text.startsWith(`InnerSignal therapy protocol ${protocol.version} (sha256 ${protocol.protocolSha256})`));
   const block = (label) => {
-    const begin = text.indexOf(`<<<BEGIN ${label} `);
-    assert.notEqual(begin, -1, `${label} is served`);
-    return text.slice(begin, text.indexOf(`<<<END ${label}>>>`, begin));
+    const served = servedFile(text, label);
+    assert.notEqual(served, null, `${label} is served`);
+    return served;
   };
-  const instructions = block("instructions");
+  const instructions = servedRules(text);
   assert.match(instructions, /Reparenting is not an exercise\. It is the ongoing relationship in which the present-day adult cares for, validates, protects and guides the vulnerable younger self/);
   assert.match(instructions, /not a goal that reparenting optionally supports, including when you advise a supervisor/);
   assert.match(instructions, /Everyday protection and practical safety the person takes for that younger self belong to the same work when the person welcomes that frame, asking someone to come along included; what stays separately available is the outside service or the other person's help itself \(medical, crisis, safety and practical services\), never the person's own step\./);
