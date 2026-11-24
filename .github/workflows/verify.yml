@@ -43,9 +43,9 @@ jobs:
             local expected="$1" path="$2"
             test "$(git hash-object "$path")" = "$expected"
           }
-          check_blob f23f93f9048f82c40b78f0cd6a2207f80f30f09d plugins/inner-signal-therapy/.codex-plugin/plugin.json
+          check_blob 5c6e7b1b59e5b9245f939b4ccb1a9684eb20df08 plugins/inner-signal-therapy/.codex-plugin/plugin.json
           check_blob e0cb90e69a157d2a6cd10484ff103abbae4381ad plugins/inner-signal-therapy/skills/inner-signal-private-continuity/SKILL.md
-          check_blob b36d367581b620fc0514eb3d5832656deda9189e plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md
+          check_blob 89e52f59452dacf743570bbd34b5253643128615 plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md
           check_blob f0b0ebe379f4f9aa2358ec1733011c40b744b121 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/FOCUS-DISCIPLINE.md
           check_blob bac0b5bd57f49376ebe8f994e89240d60e5fda2e plugins/inner-signal-therapy/skills/inner-signal-therapy/references/GUIDE-REFERRALS.md
           check_blob 63362f82112c2a6db9993330af46aefb61bc8531 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/INNER-CHILD-BOX-GUIDANCE.md
@@ -59,6 +59,6 @@ jobs:
           node --input-type=module <<'NODE'
           import fs from 'node:fs';
           const m = JSON.parse(fs.readFileSync('plugins/inner-signal-therapy/.codex-plugin/plugin.json', 'utf8'));
-          if (m.version !== '0.2.6' || m.interface?.displayName !== 'InnerSignal') throw new Error('Wrong InnerSignal release manifest.');
+          if (m.version !== '0.2.7' || m.interface?.displayName !== 'InnerSignal') throw new Error('Wrong InnerSignal release manifest.');
           if (!m.interface?.capabilities?.includes('Advisory') || !m.interface?.capabilities?.includes('Read')) throw new Error('Unified capabilities missing.');
           NODE
