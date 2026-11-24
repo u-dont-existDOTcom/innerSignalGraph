@@ -663,7 +663,8 @@ function randomTurn(next, damaged) {
     if (chance(0.2)) findings.push({ id: "X:1", severity: "low", summary: word("unbound") });
     if (!checkLost) truth.checks.push([call("INVOCATION_COMPLETED", "audit", checkId, { ...(auditor ? { actual_context_id: auditor } : {}), output: { value: { findings, extra: word("checkExtra") }, providerReceipt: { receipts: (damaged && chance(0.1) ? [] : roles).map((role) => ({ role, provider: "anthropic" })) } } }), cycle + 1]);
     if (chance(0.04)) { if (checkLost) for (const finding of findings) forget(finding.summary); break; }
-    const audit = { id: damaged && chance(0.1) ? "audit-same" : `audit-${cycle + 1}`, verdict: "fail", findings: [...findings, ...(chance(0.3) ? [{ id: "evidence:1", severity: "substantive", summary: word("evidence") }] : [])], ...(auditor ? { auditor_context_id: auditor } : {}), recorded_at: now() };
+    const audit = { id: damaged && chance(0.1) ? "audit-same" : `audit-${cycle + 1}`, verdict: pick(["pass", "fail"]), sufficient_for_approval: chance(0.5), unresolved_substantive_finding_ids: findings.map((finding) => finding.id),
+      findings: [...findings, ...(chance(0.3) ? [{ id: "evidence:1", severity: "substantive", summary: word("evidence") }] : [])], ...(auditor ? { auditor_context_id: auditor } : {}), completed_at: now(), recorded_at: now() };
     candidate.audit_history.push(audit); truth.audits.push([audit, cycle + 1]);
     const to = last ? pick(["APPROVED", "UNANSWERED"]) : "REPAIR_REQUIRED";
     move(to, damaged && chance(0.1) ? {} : { audit_id: audit.id, candidate_id: candidate.id });
@@ -672,9 +673,12 @@ function randomTurn(next, damaged) {
     move("RECONSTRUCTING", { parent_candidate_id: candidate.id }); parent = candidate.id;
   }
   if (!["DELIVERED", "UNANSWERED"].includes(state)) move("UNANSWERED");
+  truth.plan = chance(0.2) ? { runtime_turn_id: "t1", kept_at: now(), lines: [word("plan")], deleted_at: null, deletion_reason: null } : null;
+  truth.deletedAt = chance(0.2) ? now() : null;
   const turn = { id: "t1", state, inbound: { exact_text: word("person") }, runner_reading: { readers, checker_levels: levels }, events,
+    ...(truth.plan ? { kept_plan_kept_at: truth.plan.kept_at } : {}), ...(truth.deletedAt ? { kept_plan_deleted_at: truth.deletedAt } : {}),
     ...(state === "DELIVERED" ? { delivery: { exact_text: reply, delivered_at: now() } } : { closure: { reason_code: word("closing"), exact_text: word("notice"), closed_at: now() } }) };
-  return { record: { candidate_responses: candidates, runtime_turns: [turn] }, words, truth };
+  return { record: { candidate_responses: candidates, runner_kept_plans: truth.plan ? [truth.plan] : [], runtime_turns: [turn] }, words, truth };
 }
 
 for (const [name, damaged] of [["the runtime's own order and identities", false], ["lost, missing or reused identities", true]]) {
@@ -688,12 +692,21 @@ for (const [name, damaged] of [["the runtime's own order and identities", false]
       assert.equal(JSON.stringify(record), before, "the record is only read");
       const text = JSON.stringify(details.steps);
       for (const value of words) assert.ok(text.includes(value), `turn ${index}: ${value} is shown\n${before}`);
-      const readings = details.steps.flatMap((entry) => (entry.content?.readings ?? []).map((item) => [item.note, entry.draft ?? null]));
-      assert.deepEqual(readings.sort(), truth.readings.map(([entry, draft]) => [entry.note, draft]).sort(), `turn ${index}: readings\n${before}`);
-      const drafts = details.steps.filter((entry) => ["draft", "stored_draft"].includes(entry.kind) && entry.draft != null).map((entry) => [entry.draft, entry.content.exact_text]);
-      assert.deepEqual(drafts.sort(), truth.drafts.map((candidate) => [candidate.repair_cycle + 1, candidate.exact_text]).sort(), `turn ${index}: drafts\n${before}`);
-      const audits = details.steps.filter((entry) => entry.kind === "committed_check").map((entry) => [entry.draft ?? null, entry.content.recorded_at]);
-      assert.deepEqual(audits.sort(), truth.audits.map(([audit, draft]) => [draft, audit.recorded_at]).sort(), `turn ${index}: committed audits\n${before}`);
+      // Each as stored, whole, and no more of them.
+      const ofKind = (...kinds) => details.steps.filter((entry) => kinds.includes(entry.kind));
+      const readings = details.steps.flatMap((entry) => (entry.content?.readings ?? []).map((item) => [item, entry.draft ?? null])).sort(([a], [b]) => a.attempt - b.attempt);
+      assert.deepEqual(readings, truth.readings, `turn ${index}: readings\n${before}`);
+      const drafts = ofKind("draft", "stored_draft").filter((entry) => entry.draft != null).map((entry) => [entry.draft, entry.content.exact_text]).sort(([a], [b]) => a - b);
+      assert.deepEqual(drafts, truth.drafts.map((candidate) => [candidate.repair_cycle + 1, candidate.exact_text]), `turn ${index}: drafts\n${before}`);
+      const audits = ofKind("committed_check").map((entry) => [entry.content, entry.draft ?? null]).sort(([a], [b]) => a.recorded_at.localeCompare(b.recorded_at));
+      const committed = ({ verdict, sufficient_for_approval, unresolved_substantive_finding_ids, findings, completed_at, recorded_at }) => ({ verdict, sufficient_for_approval, unresolved_substantive_finding_ids, findings, completed_at, recorded_at });
+      assert.deepEqual(audits, truth.audits.map(([audit, draft]) => [committed(audit), draft]), `turn ${index}: committed audits\n${before}`);
+      for (const [event] of truth.checks) {
+        const own = ofKind("checker", "findings", "program_checks").filter((entry) => entry.at === event.at).flatMap((entry) => entry.content.findings);
+        assert.deepEqual(own.sort((a, b) => a.id.localeCompare(b.id)), [...event.details.output.value.findings].sort((a, b) => a.id.localeCompare(b.id)), `turn ${index}: a check's findings\n${before}`);
+      }
+      const plans = ofKind("kept_plan").map((entry) => entry.content);
+      assert.deepEqual(plans, [...(truth.deletedAt ? [{ deleted_at: truth.deletedAt }] : []), ...(truth.plan ? [{ saved_at: truth.plan.kept_at, lines: truth.plan.lines, deleted_at: null, deletion_reason: null }] : [])], `turn ${index}: the kept plan\n${before}`);
       // A check with a stored identity of its own, or in the runtime's own order, is shown with its own draft. Any other can only be
       // placed by position.
       const contextOf = (event) => event.details.actual_context_id ?? null;

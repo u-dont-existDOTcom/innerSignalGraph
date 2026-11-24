@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -1207,7 +1208,7 @@ test("deleting a case removes its file, handoffs, journal folders and the files 
   assert.equal((await store.loadOrCreate(a)).runtime_turns.length, 0);
 });
 
-test("a link or a folder at a locator's own path is never listed as the case's, so a deletion leaves it alone", async (t) => {
+test("a link, a folder or a named pipe at a locator's own path is never listed as the case's or waited on, so a deletion leaves it alone", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "runner-locators-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const caseId = "synthetic-locators";
@@ -1224,6 +1225,15 @@ test("a link or a folder at a locator's own path is never listed as the case's, 
   assert.deepEqual(await listed(), [[handoff], []]);
   await fs.unlink(handoff); await fs.mkdir(handoff);
   assert.deepEqual(await listed(), [[], []]);
+  for (const file of [candidate, alias]) {
+    await fs.unlink(file);
+    execFileSync("mkfifo", [file]);
+    const writer = spawn("sh", ["-c", 'sleep 2; : > "$1"', "sh", file], { stdio: "ignore" });
+    t.after(() => writer.kill("SIGKILL"));
+  }
+  const started = performance.now();
+  assert.deepEqual(await listed(), [[], []]);
+  assert.ok(performance.now() - started < 1_500, "not waited on");
 });
 
 // The store's per-case queue, watched: each run says whether its operation has started and finished.

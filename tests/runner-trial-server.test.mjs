@@ -316,7 +316,11 @@ test("the settings file must be named by an absolute path outside the repository
   assert.throws(() => loadRunnerTrialSettings({ settingsPath: large }), /must name a readable JSON file/u);
   const pipe = path.join(dir, "pipe.json");
   execFileSync("mkfifo", [pipe]);
+  const writer = spawn("sh", ["-c", 'sleep 2; : > "$1"', "sh", pipe], { stdio: "ignore" });
+  t.after(() => writer.kill("SIGKILL"));
+  const started = performance.now();
   assert.throws(() => loadRunnerTrialSettings({ settingsPath: pipe }), /must name a readable JSON file/u);
+  assert.ok(performance.now() - started < 1_500, "not waited on");
   const kept = path.join(dir, "kept.json");
   await fs.writeFile(kept, JSON.stringify({ writerMode: "whole" }));
   const toKept = path.join(dir, "to-kept.json");
