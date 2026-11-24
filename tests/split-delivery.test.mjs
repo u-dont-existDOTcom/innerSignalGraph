@@ -151,7 +151,10 @@ test("before the first reply: the rules, every file the rules say to read before
     if (index > 0) assert.ok(groupOf(name) >= groupOf(urgentOrder[index - 1]), `${name} comes no earlier than ${urgentOrder[index - 1]}`);
   });
   for (const part of [...delivery.rules.slice(delivery.firstNames.length), ...delivery.boxList]) assert.ok(delivery.groups[0].includes(part.name), part.name);
-  assert.ok(delivery.groups[0].includes(`${BOX_PART_PREFIX}${SAFETY_BOX_IDS[0]}`), "the first group holds at least the first safety box");
+  // The crisis section names three boxes: the adult seat, the self/death inquiry and this precious human life. The first two
+  // stay in the first group with the orientation box (with 0.2.6's rules the third is in the second); if the rules grow so
+  // that one of them moves on, this fails and the order needs a decision again (Fable's recheck, 24 Nov 2026).
+  for (const id of ["IC.SAFETY_ORIENTATION", "IC.SUICIDAL_ADULT_SEAT", "IC.SUICIDAL_SELF_DEATH_INQUIRY"]) assert.ok(delivery.groups[0].includes(`${BOX_PART_PREFIX}${id}`), id);
   const early = delivery.groups.slice(0, 2).flat();
   for (const id of SAFETY_BOX_IDS) assert.ok(early.includes(`${BOX_PART_PREFIX}${id}`), id);
   assert.ok(early.includes("references/PROTECTIVE-COMPATIBILITY.md"));
