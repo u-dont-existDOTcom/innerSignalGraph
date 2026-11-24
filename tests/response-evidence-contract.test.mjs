@@ -1,13 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import Ajv2020 from "ajv/dist/2020.js";
 import { createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { createTranscriptCompletionAmendment } from "../src/storage/transcript-amendments.mjs";
 import { chunkExactSourceText, createExactSourceArtifact } from "../src/storage/exact-source-artifact.mjs";
 import {
-  RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildEvidenceModelView,
+  JOURNAL_NOTE_CUE_KINDS, RESPONSE_EVIDENCE_DIMENSIONS, buildResponseEvidenceSnapshot, buildEvidenceModelView,
   computeEvidenceDependencyBinding, normalizeEvidenceReview, deriveEvidenceFindings,
   responseEvidenceSnapshotSha256, responseEvidenceSnapshotCurrent, responseEvidenceRefreshJournal, inspectGovernedModelCall, prepareGovernedModelCall, sha256Json, sha256Text, validateResponseEvidenceSnapshot
 } from "../src/supervisor/response-evidence-contract.mjs";
+import { QUOTE_CUE_KINDS, quoteCues } from "../src/journal-import/quote-index.mjs";
 
 const NOW = "2026-11-23T12:00:00.000Z";
 const turn = (id, role = "user", text = "Synthetic exact words.") => ({ id, role, text, at: NOW, exchange_id: id, episode_id: null });
@@ -403,4 +406,73 @@ test("audit prompt uses the owner's exact amended advice paragraph", async () =>
   const { privateRuntimeAuditPrompt } = await import("../src/prompts/private-runtime-audit.mjs");
   const paragraph = "Personalized advice depends on history when whether the method was tried before, what happened, or a barrier to it would change the advice. When the sources settle that, check the advice against them: advice that repeats what the sources say failed, or ignores a barrier they state, is contradicted, even with no historical claim in its wording and even if it is called general information. When the sources do not settle it, a suggestion that says or implies nothing about the person's past with the method is current-message support: assess it uncertain_but_worded_accurately, not missing history. List missing_material_history only when the response itself asserts, presupposes or depends on an answer the sources do not give.";
   assert.ok(privateRuntimeAuditPrompt({ response_evidence: {} }).system.includes(paragraph));
+});
+
+// A journal quotation's note (24 Nov 2026): when the entry says it was written, its wording cues and its lifecycle.
+const JOURNAL_WORDS = "I dreamt I had missed the train. Maybe I will write it down.";
+const journalNote = () => ({ written: { from: "2019-03-03", to: "2019-04-10", precision: "interval", between: true, ambiguous: false, year_inferred: true },
+  cues: quoteCues(JOURNAL_WORDS).map((cue) => ({ ...cue })), lifecycle: "superseded" });
+function journalRecord(note) {
+  const r = record();
+  r.journal_corpora = [{ corpus_id: "corpus:one", active_generation: "generation:one", visibility_epoch: 0, manifest_object_id: "manifest:one" }];
+  const item = { id: "src:journal:1", kind: "journal_quotation", actor: "client", audience: "private_journal", time: { at: null, status: "unavailable" },
+    epistemic_status: "client_written_account", excerpt_sha256: sha256Text(JOURNAL_WORDS), excerpt_bytes: Buffer.byteLength(JOURNAL_WORDS), exact_excerpt: JOURNAL_WORDS,
+    locator: { kind: "journal", corpus_id: "corpus:one", generation: "generation:one", visibility_epoch: 0, record_id: "record:one", start_byte: 0, end_byte: Buffer.byteLength(JOURNAL_WORDS) },
+    ...(note === undefined ? {} : { journal_note: note }) };
+  const receipt = { operation_id: "retrieval:one", corpus_id: "corpus:one", generation: "generation:one", visibility_epoch: 0, manifest_object_id: "manifest:one", purpose: "session_use",
+    query_sha256: sha256Text("query"), filters_sha256: sha256Json({}), returned_source_ids: [item.id], packet_sha256: sha256Json([item]), more_available: false, omitted_count: 0,
+    budget_used_tokens: 0, budget_used_bytes: 0 };
+  return { r, journal: { availability: "available", retrieval_status: "returned", source_items: [item], receipts: [receipt] } };
+}
+const freezeJournal = (note) => {
+  const { r, journal } = journalRecord(note);
+  return { r, snapshot: buildResponseEvidenceSnapshot(r, { ...input(), journal }, { createdAt: NOW }) };
+};
+
+test("a journal quotation's note is stored with it and passed on in the models' view; a quotation without one stays valid", () => {
+  const { r, snapshot } = freezeJournal(journalNote());
+  assert.equal(validateResponseEvidenceSnapshot(snapshot), snapshot);
+  assert.deepEqual(snapshot.source_items.find((item) => item.kind === "journal_quotation").journal_note, journalNote());
+  const shown = buildEvidenceModelView(r, snapshot).view.source_items.find((item) => item.kind === "journal_quotation");
+  assert.deepEqual([shown.exact_excerpt, shown.journal_note], [JOURNAL_WORDS, journalNote()]);
+  assert.deepEqual(shown.time, { at: null, status: "unavailable" }, "a writing date is never the time of anything");
+  for (const note of [{ ...journalNote(), written: null }, { ...journalNote(), cues: [] }, ...["active", "candidate"].map((lifecycle) => ({ ...journalNote(), lifecycle })),
+    ...[["2019", "2019", "year"], ["2019-03", "2019-03", "month"], ["2019-03-03", "2019-03-03", "day"], [null, "2019-04", "interval"], ["2019-03-03", null, "interval"]]
+      .map(([from, to, precision]) => ({ ...journalNote(), written: { from, to, precision, between: precision === "interval", ambiguous: true, year_inferred: false } }))]) {
+    assert.doesNotThrow(() => freezeJournal(note), JSON.stringify(note));
+  }
+  const { r: plain, snapshot: without } = freezeJournal(undefined);
+  assert.equal(validateResponseEvidenceSnapshot(without), without);
+  assert.equal(Object.hasOwn(buildEvidenceModelView(plain, without).view.source_items.find((item) => item.kind === "journal_quotation"), "journal_note"), false);
+});
+
+test("a journal note is strict, and no other kind of source may hold one", () => {
+  const note = journalNote();
+  for (const bad of [
+    null, "note", {}, { ...note, extra: true }, { written: note.written, cues: note.cues }, { ...note, lifecycle: "revoked" }, { ...note, lifecycle: "deleted" }, { ...note, cues: null },
+    { ...note, cues: [{ kind: "feeling", words: "sad" }] }, { ...note, cues: [{ kind: "dream" }] }, { ...note, cues: [{ kind: "dream", words: "dream", at: 1 }] }, { ...note, cues: [{ kind: "dream", words: "x".repeat(81) }] },
+    { ...note, written: {} }, { ...note, written: { ...note.written, date_line: "March 3, 2019" } }, { ...note, written: { ...note.written, precision: "about" } },
+    { ...note, written: { ...note.written, from: "March 2019" } }, { ...note, written: { ...note.written, to: "2019-03-03T12:00:00.000Z" } }, { ...note, written: { ...note.written, between: null } }
+  ]) malformed(() => freezeJournal(bad));
+  const { snapshot } = freezeJournal(note);
+  for (const kind of ["exact_client_turn", "journal_retrieval_record"]) {
+    const changed = structuredClone(snapshot);
+    changed.source_items.find((item) => item.kind === kind).journal_note = structuredClone(note);
+    changed.snapshot_sha256 = responseEvidenceSnapshotSha256(changed);
+    malformed(() => validateResponseEvidenceSnapshot(changed));
+  }
+  // The contract names the cue kinds itself, since the encrypted store must start without an installed package: the same ones.
+  assert.deepEqual([...JOURNAL_NOTE_CUE_KINDS], [...QUOTE_CUE_KINDS]);
+});
+
+test("the public schema takes a snapshot with a journal note, and refuses one the contract refuses", async () => {
+  const validate = new Ajv2020({ strict: true, validateFormats: false }).compile(JSON.parse(await fs.readFile(new URL("../schemas/private-case/response-evidence-snapshot-v1.schema.json", import.meta.url), "utf8")));
+  const { snapshot } = freezeJournal(journalNote());
+  assert.equal(validate(snapshot), true, JSON.stringify(validate.errors));
+  assert.equal(validate(freezeJournal(undefined).snapshot), true);
+  for (const change of [(note) => { note.lifecycle = "revoked"; }, (note) => { note.extra = true; }, (note) => { note.written.from = "March 2019"; }, (note) => { delete note.cues; }]) {
+    const changed = structuredClone(snapshot);
+    change(changed.source_items.find((item) => item.kind === "journal_quotation").journal_note);
+    assert.equal(validate(changed), false);
+  }
 });
