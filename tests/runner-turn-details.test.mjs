@@ -335,7 +335,7 @@ test("a check that fails part-way still shows the readings its finished checkers
   assert.deepEqual(failure.workers.map((call) => [call.role, call.failure_code]), [["C1", null], ["C2", "REFUSED"]]);
 });
 
-test("a reader that didn't run in the turn's arrangement gets no section; a failed one stays shown", () => {
+test("the box reader's placeholder gets no section, known by its stored shape alone; a real or failed result stays shown whatever the stored arrangement", () => {
   const turnWith = (boxes, runnerConfig) => ({ runtime_turns: [{ id: "w", state: "DELIVERED", inbound: { exact_text: M.person },
     ...(runnerConfig ? { runner_config: runnerConfig } : {}),
     runner_reading: { readers: { crisis: { level: "none", receipts: [{ role: "R1" }] }, ...(boxes === undefined ? {} : { boxes }), protection: { compatible: true, receipts: [{ role: "R3" }] } } },
@@ -349,4 +349,74 @@ test("a reader that didn't run in the turn's arrangement gets no section; a fail
   // A focused writer's box reader that ran, or failed before any receipt, keeps its section.
   assert.deepEqual(readerLabels(turnWith({ boxes: ["box-1"], receipts: [{ role: "R2" }] })), ["Crisis reader", "Rule box reader", "Protection reader"]);
   assert.deepEqual(readerLabels(turnWith({ boxes: null, receipts: [] })), ["Crisis reader", "Rule box reader", "Protection reader"]);
+  // GPT's review 6: a turn made with the whole writer, stopped before its first call and retried after a restart with the focused
+  // one keeps `writerMode: "whole"` while its box reader ran and stored a result. That result is shown, also when it found no box.
+  assert.deepEqual(readerLabels(turnWith({ boxes: ["box-1"], receipts: [{ role: "R2" }] }, whole)), ["Crisis reader", "Rule box reader", "Protection reader"]);
+  assert.deepEqual(readerLabels(turnWith({ boxes: [], receipts: [{ role: "R2" }] }, whole)), ["Crisis reader", "Rule box reader", "Protection reader"]);
+  // Anything but the placeholder's exact shape stays shown.
+  assert.deepEqual(readerLabels(turnWith({ boxes: [], receipts: [], note: "stored" })), ["Crisis reader", "Rule box reader", "Protection reader"]);
+  assert.deepEqual(readerLabels(turnWith({ boxes: [] })), ["Crisis reader", "Rule box reader", "Protection reader"]);
+});
+
+// Synthetic turns for the readings' invariant: one turn ("t1") with two drafts' candidates, readings as the store keeps them.
+const at = (second) => `2026-11-23T12:00:${String(second).padStart(2, "0")}.000Z`;
+const reading = (attempt, checker, candidateId, second, extra = {}) => ({ attempt, candidate_id: candidateId, candidate_version: 1, checker, level: "none", ...(second == null ? {} : { recorded_at: at(second) }), ...extra });
+const writerDone = (stage, second) => ({ event_type: "INVOCATION_COMPLETED", stage, at: at(second), details: { output: { exactText: stage === "candidate" ? M.draft1 : M.draft2, result: { receipts: [{ role: "W", provider: "openai" }] } } } });
+const auditDone = (second, roles, findings = []) => ({ event_type: "INVOCATION_COMPLETED", stage: "audit", at: at(second), details: { output: { value: { findings, checker_level: "none" }, providerReceipt: { receipts: roles.map((role) => ({ role, provider: "anthropic" })) } } } });
+const auditFailed = (second, eventType = "INVOCATION_FAILED") => ({ event_type: eventType, stage: "audit", at: at(second), details: { error_code: "TIMEOUT", raw_private_evidence: { receipts: [] } } });
+const moved = (from, to, second, details = {}) => ({ event_type: "STATE_TRANSITION", from_state: from, to_state: to, at: at(second), details });
+const TWO_DRAFTS = [{ id: "cand-1", metadata: { runtime_turn_id: "t1" }, repair_cycle: 0, exact_text: M.draft1 }, { id: "cand-2", metadata: { runtime_turn_id: "t1" }, repair_cycle: 1, exact_text: M.draft2 }];
+const readingsTurn = (state, levels, events, end) => ({ candidate_responses: TWO_DRAFTS, runtime_turns: [{ id: "t1", state, inbound: { exact_text: M.person }, runner_reading: { checker_levels: levels }, events, ...end }] });
+const deliveredEnd = { delivery: { exact_text: M.draft1, delivered_at: at(59) } };
+const interruptedEnd = { closure: { kind: "runner_unavailable", reason_code: "interrupted", exact_text: "Fixed stored notice", closed_at: at(59) } };
+
+test("an audit the process stopped in still shows the reading its finished checker stored (GPT's review 6)", () => {
+  // C1 stored wants_to_die, the process stopped while C2 ran, and the reload closed the turn as interrupted: no failure event.
+  const record = readingsTurn("UNANSWERED", [reading(1, "C1", "cand-1", 2, { level: "wants_to_die" })],
+    [writerDone("candidate", 1), moved("CANDIDATE_PENDING_AUDIT", "AUDITING", 1), moved("AUDITING", "UNANSWERED", 59)], interruptedEnd);
+  const details = runnerTurnDetailsFromRecord(record, 1);
+  const withReadings = details.steps.filter((entry) => entry.content?.readings);
+  assert.equal(withReadings.length, 1);
+  assert.deepEqual(withReadings[0].content.readings, record.runtime_turns[0].runner_reading.checker_levels);
+  assert.equal(withReadings[0].draft, 1);
+  assert.equal(withReadings[0].content.result, "not stored");
+  const kinds = details.steps.map((entry) => entry.kind);
+  assert.ok(kinds.indexOf("draft") < kinds.indexOf("readings") && kinds.indexOf("readings") < kinds.indexOf("closure"));
+});
+
+test("every stored checker reading is shown exactly once, with its candidate's draft, in completed, failed, interrupted and repaired turns", () => {
+  const finding = { id: "C2:1", checker: "C2", code: "SYNTHETIC", severity: "high", summary: M.finding };
+  const scenarios = {
+    // C3's reading has no receipt of its own in the finished check, so it gets the step after the events.
+    completed: readingsTurn("DELIVERED", [reading(1, "C1", "cand-1", 2), reading(2, "C2", "cand-1", 3), reading(3, "C3", "cand-1", 3)],
+      [writerDone("candidate", 1), auditDone(4, ["C1", "C2"])], deliveredEnd),
+    // A failed attempt, then the same draft's check again: each reading with the attempt it was stored in, once.
+    failed: readingsTurn("DELIVERED", [reading(1, "C1", "cand-1", 2), reading(2, "C1", "cand-1", 5)],
+      [writerDone("candidate", 1), auditFailed(3), auditDone(6, ["C1"])], deliveredEnd),
+    abandoned: readingsTurn("UNANSWERED", [reading(1, "C1", "cand-1", 2), reading(2, "C2", "cand-1", null)],
+      [writerDone("candidate", 1), auditFailed(3, "INVOCATION_ABANDONED")], interruptedEnd),
+    interrupted: readingsTurn("UNANSWERED", [reading(1, "C1", "cand-1", 2, { level: "wants_to_die" }), reading(2, "C2", "cand-1", 3)],
+      [writerDone("candidate", 1), moved("CANDIDATE_PENDING_AUDIT", "AUDITING", 1), moved("AUDITING", "UNANSWERED", 59)], interruptedEnd),
+    // Draft 1 checked and repaired, draft 2 interrupted in its check, plus a legacy reading with no time and one for a candidate
+    // the record doesn't hold.
+    repaired: readingsTurn("UNANSWERED", [reading(1, "C1", "cand-1", 2), reading(2, "C2", "cand-1", 2), reading(3, "C1", "cand-2", 8), reading(4, "C2", "cand-2", null), reading(5, "C1", "cand-x", 9)],
+      [writerDone("candidate", 1), auditDone(3, ["C1", "C2"], [finding]), moved("AUDITING", "REPAIR_REQUIRED", 3), moved("REPAIR_REQUIRED", "RECONSTRUCTING", 4, { parent_candidate_id: "cand-1" }),
+        writerDone("repair", 6), moved("CANDIDATE_PENDING_AUDIT", "AUDITING", 7), moved("AUDITING", "UNANSWERED", 59)], interruptedEnd)
+  };
+  for (const [name, record] of Object.entries(scenarios)) {
+    const stored = record.runtime_turns[0].runner_reading.checker_levels;
+    const details = runnerTurnDetailsFromRecord(record, 1);
+    const shown = details.steps.flatMap((entry) => (entry.content?.readings ?? []).map((item) => ({ item, draft: entry.draft ?? null })));
+    assert.equal(shown.length, stored.length, `${name}: every reading, no more`);
+    for (const entry of stored) {
+      const matches = shown.filter(({ item }) => JSON.stringify(item) === JSON.stringify(entry));
+      assert.equal(matches.length, 1, `${name}: reading ${entry.attempt} once`);
+      const candidate = TWO_DRAFTS.find((item) => item.id === entry.candidate_id);
+      assert.equal(matches[0].draft, candidate ? candidate.repair_cycle + 1 : null, `${name}: reading ${entry.attempt} with its draft`);
+    }
+  }
+  // The finished checks keep their own readings: each checker's reading under its own check.
+  const completed = runnerTurnDetailsFromRecord(scenarios.completed, 1);
+  assert.deepEqual(completed.steps.filter((entry) => entry.kind === "checker").map((entry) => [entry.workers[0].role, entry.content.readings.map((item) => item.attempt)]), [["C1", [1]], ["C2", [2]]]);
+  assert.deepEqual(completed.steps.filter((entry) => entry.kind === "readings").map((entry) => [entry.draft, entry.content.readings.map((item) => item.attempt)]), [[1, [3]]]);
 });

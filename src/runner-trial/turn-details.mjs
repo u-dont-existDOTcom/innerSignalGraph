@@ -30,19 +30,33 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
   if (readers?.provisional_refused) add("provisional_refused", "Provisional reply refused", null, readers.provisional_refused);
   if (turn.provisional) add("provisional", "Provisional reply shown", turn.provisional.shown_at, turn.provisional, callsFrom(readers?.crisis?.receipts));
   // The remaining readers run concurrently. Their individual completion order is not recorded.
-  // A reader that didn't run in this turn's arrangement gets no section, rather than an empty one that reads like a failure.
-  // With the whole writer the runtime never calls the box reader and stores the placeholder `{ boxes: [], receipts: [] }`
-  // (runtime.mjs, the R2 step); a failed box reader stores `boxes: null` and stays shown.
-  const boxPlaceholder = (value) => value != null && list(value.receipts).length === 0
+  // The view shows what is stored. Whether something was stored is never inferred from the turn's state, how it closed or its
+  // stored configuration (the InnerSignal lane, after GPT's reviews 5 and 6). The one section left out is the box reader's
+  // placeholder, known by its stored shape alone: when the writer isn't focused the runtime stores `{ boxes: [], receipts: [] }`
+  // (runtime.mjs, runBoxPicker), so no receipts and every other field an empty array. A turn made with the whole writer and
+  // retried after a restart with the focused one keeps its first arrangement while its box reader ran, and a failed box reader
+  // stores `boxes: null`: both stay shown.
+  const boxPlaceholder = (value) => value != null && typeof value === "object" && !Array.isArray(value)
+    && Array.isArray(value.receipts) && value.receipts.length === 0 && Array.isArray(value.boxes)
     && Object.entries(without(value, ["receipts"])).every(([, item]) => Array.isArray(item) && item.length === 0);
-  const wholeWriter = turn.runner_config?.arrangement?.writerMode === "whole";
   for (const [key, role, label] of [["boxes", "R2", "Rule box reader"], ["protection", "R3", "Protection reader"]]) {
-    if (readers?.[key] == null || (key === "boxes" && (wholeWriter || boxPlaceholder(readers[key])))) continue;
+    if (readers?.[key] == null || (key === "boxes" && boxPlaceholder(readers[key]))) continue;
     add("reader", label, null, without(readers[key], ["receipts"]), callsFrom(readers[key].receipts), { role, timing: "Individual completion time and order not stored." });
   }
   const otherReadings = without(readers, ["crisis", "boxes", "protection", "provisional_refused"]);
   if (otherReadings && Object.keys(otherReadings).length) add("reading", "Other stored readings", null, otherReadings);
 
+  // Every stored checker reading appears exactly once: with the finished or failed check of its own draft that covers it, else
+  // in a step of its own after the events, bound to its candidate's draft (the InnerSignal lane, after GPT's reviews 5 and 6).
+  // A turn the reload closes as interrupted has no failure event, so its readings land there.
+  const storedReadings = list(turn.runner_reading?.checker_levels);
+  const shownReadings = new Set();
+  const takeReadings = (belongs) => {
+    const taken = storedReadings.filter((entry) => !shownReadings.has(entry) && belongs(entry));
+    for (const entry of taken) shownReadings.add(entry);
+    return taken;
+  };
+  const storedBy = (entry, at) => !at || !entry.recorded_at || entry.recorded_at <= at;
   let draft = 0;
   let previousAudit = null;
   let currentCandidate = null;
@@ -76,7 +90,7 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
         const findingsFor = (role) => list(value?.findings).filter((finding) => finding.checker === role || String(finding.id).startsWith(`${role}:`));
         for (const role of roles) {
           const ownCalls = workers.filter((call) => call.role === role);
-          const readings = list(turn.runner_reading?.checker_levels).filter((entry) => entry.checker === role && entry.candidate_id === currentCandidate?.id && entry.recorded_at <= event.at);
+          const readings = takeReadings((entry) => currentCandidate != null && entry.checker === role && entry.candidate_id === currentCandidate.id && storedBy(entry, event.at));
           add("checker", `${workerName(ownCalls, "Checker")}'s check of draft ${draft} (${role})`, event.at, {
             findings: findingsFor(role),
             ...(readings.length ? { readings } : {}),
@@ -96,13 +110,32 @@ export function runnerTurnDetailsFromRecord(record, turnNumber) {
       // A check that failed part-way still keeps the readings its finished checkers stored (a crisis level, say) before the
       // failure, bound to the draft being checked (Codex's review 5): show them instead of hiding them behind "not stored".
       const readings = event.stage === "audit"
-        ? list(turn.runner_reading?.checker_levels).filter((entry) => currentCandidate && entry.candidate_id === currentCandidate.id && (!event.at || !entry.recorded_at || entry.recorded_at <= event.at))
+        ? takeReadings((entry) => currentCandidate != null && entry.candidate_id === currentCandidate.id && storedBy(entry, event.at))
         : [];
       add("failure", `${event.stage} ${event.event_type === "INVOCATION_FAILED" ? "failed" : "interrupted"}`, event.at, {
         error_code: stored(event.details?.error_code), result: "not stored",
         ...(readings.length ? { readings } : {})
       }, callsFrom(event.details?.raw_private_evidence?.receipts), event.stage === "audit" && draft ? { draft } : {});
     }
+  }
+  // The readings no finished or failed check showed: an audit the process stopped in (GPT's review 6), a checker whose call left
+  // no receipt, a draft this turn's record doesn't hold. One step per candidate, in stored order.
+  const draftOf = (candidateId) => {
+    const candidate = list(record.candidate_responses).find((entry) => entry.id === candidateId && entry.metadata?.runtime_turn_id === turn.id);
+    return Number.isSafeInteger(candidate?.repair_cycle) ? candidate.repair_cycle + 1 : null;
+  };
+  const unshown = new Map();
+  for (const entry of storedReadings) {
+    if (shownReadings.has(entry)) continue;
+    const key = entry.candidate_id ?? null;
+    if (!unshown.has(key)) unshown.set(key, []);
+    unshown.get(key).push(entry);
+  }
+  for (const [candidateId, readings] of unshown) {
+    const readingDraft = draftOf(candidateId);
+    for (const entry of readings) shownReadings.add(entry);
+    add("readings", readingDraft ? `Stored readings for draft ${readingDraft}, with no stored result of its check` : "Stored readings for a draft not in this turn's record",
+      readings.map((entry) => entry.recorded_at).filter(Boolean).sort().at(-1) ?? null, { readings, result: "not stored" }, [], readingDraft ? { draft: readingDraft } : {});
   }
   if (turn.emergency_line_shown_at) {
     // Only the fact/reason are retained. Do not substitute today's constant for unrecorded historical words.
