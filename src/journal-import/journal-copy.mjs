@@ -1,7 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, createPrivateKey, createPublicKey, diffieHellman, generateKeyPairSync, hkdfSync, randomBytes } from "node:crypto";
+import fs from "node:fs/promises";
 import { ValidationError } from "../core/errors.mjs";
-import { persistGraphGeneration, readGenerationDirectory } from "../journal-import/graph.mjs";
-import { openPrivateJournalGraph } from "../journal-import/retrieval.mjs";
+import { persistGraphGeneration, readGenerationDirectory } from "./graph.mjs";
+import { openPrivateJournalGraph } from "./retrieval.mjs";
 
 // The copy step for a client's journal (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, point 4; the owner's answer
 // 1a to question i73): the client's published session-use generation is exported where it lives (the server's vault, a server step
@@ -11,7 +12,8 @@ import { openPrivateJournalGraph } from "../journal-import/retrieval.mjs";
 //
 // Sealing: the trial folder keeps an X25519 key pair (its private half mode 0600, beside the credentials). The export seals the
 // bundle to the public half with an ephemeral key (X25519, HKDF-SHA-256, AES-256-GCM), so only that trial folder can open it, and
-// the bundle on disk or in transit shows nothing of the journal.
+// the bundle on disk or in transit shows nothing of the journal. The export is the journal import's `export` command
+// (src/cli/journal-import.mjs); the import is the runner trial's `--import` (scripts/runner-trial-journal.mjs).
 
 export const JOURNAL_COPY_KIND = "runner_journal_copy";
 const SEAL_INFO = Buffer.from("inner-signal runner journal copy v1", "utf8");
@@ -30,8 +32,16 @@ export function createJournalCopyKeyPair() {
 const publicKeyOf = (base64) => createPublicKey({ key: Buffer.from(base64, "base64"), format: "der", type: "spki" });
 const privateKeyOf = (base64) => createPrivateKey({ key: Buffer.from(base64, "base64"), format: "der", type: "pkcs8" });
 
+// A trial folder's public key as `--copy-key` prints it: an X25519 key, SPKI DER in base64.
+export function validateJournalCopyRecipient(base64) {
+  let key = null;
+  try { key = typeof base64 === "string" && /^[A-Za-z0-9+/]+={0,2}$/u.test(base64) ? publicKeyOf(base64) : null; } catch { key = null; }
+  if (key?.asymmetricKeyType !== "x25519") invalid("JOURNAL_COPY_RECIPIENT_INVALID", "The trial folder's public key isn't valid.");
+  return base64;
+}
+
 export function sealJournalCopy(bundle, recipientPublicKey) {
-  const recipient = publicKeyOf(recipientPublicKey);
+  const recipient = publicKeyOf(validateJournalCopyRecipient(recipientPublicKey));
   const ephemeral = generateKeyPairSync("x25519");
   const shared = diffieHellman({ privateKey: ephemeral.privateKey, publicKey: recipient });
   const salt = randomBytes(32);
@@ -76,9 +86,36 @@ export function validateJournalCopyBundle(bundle) {
   return bundle;
 }
 
+// The sealed copy on disk: written whole to a new file only its owner can read (mode 0600), never over another file.
+export async function writeSealedJournalCopy(file, sealed) {
+  let handle;
+  try { handle = await fs.open(file, "wx", 0o600); } catch (error) {
+    if (error?.code === "EEXIST") invalid("JOURNAL_COPY_FILE_EXISTS", "A file is already there; nothing was written over it.");
+    throw error;
+  }
+  try {
+    await handle.writeFile(`${JSON.stringify(sealed)}\n`, "utf8");
+    await handle.sync();
+  } catch (error) {
+    await handle.close().catch(() => {});
+    await fs.rm(file, { force: true });
+    throw error;
+  }
+  await handle.close();
+}
+
+export async function readSealedJournalCopy(file) {
+  let value;
+  try { value = JSON.parse(await fs.readFile(file, "utf8")); } catch { return invalid("JOURNAL_COPY_UNREADABLE", "The sealed journal copy can't be read."); }
+  if (value?.schema_version !== 1 || value.kind !== "runner_journal_copy_sealed") invalid("JOURNAL_COPY_INVALID");
+  return value;
+}
+
 // The export half, where the client's journal lives: the active generation, published for session use, read whole and sealed.
-export async function exportJournalCopy({ caseAccessService, caseId, corpusId, authContext, recipientPublicKey, exportedAt = new Date().toISOString() }) {
-  const access = { requiredScope: "case:read", requiredPurpose: "session_use" };
+// `requiredScope`: the scope the reader's grant holds (the import's operator may hold write only).
+export async function exportJournalCopy({ caseAccessService, caseId, corpusId, authContext, recipientPublicKey, requiredScope = "case:read", exportedAt = new Date().toISOString() }) {
+  validateJournalCopyRecipient(recipientPublicKey);
+  const access = { requiredScope, requiredPurpose: "session_use" };
   const bundle = await caseAccessService.withJournalCorpus(caseId, corpusId, access, async ({ corpusStore, reference }) => {
     if (!reference?.active_generation) invalid("JOURNAL_COPY_NOT_PUBLISHED", "The journal has no published generation to copy.");
     const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });

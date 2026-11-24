@@ -126,7 +126,7 @@ test("unavailable commands are refused before any env file is read or token requ
   globalThis.fetch = server.fetchImpl;
   t.after(() => { globalThis.fetch = originalFetch; });
   let errors = "";
-  const code = await runJournalImportCli(["export", "--config", path.join(dir, "run.json"), "--env-file", file], {
+  const code = await runJournalImportCli(["cold-test", "--config", path.join(dir, "run.json"), "--env-file", file], {
     environment: {}, stdout: { write: () => {} }, stderr: { write: (chunk) => { errors += chunk; } }
   });
   assert.equal(code, 1);

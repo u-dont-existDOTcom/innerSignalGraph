@@ -204,7 +204,37 @@ of the journal. Recalling an output already recorded would need the page and the
 can weigh (lane question). The same review's minor finding is fixed: a lock file is removed by its identity, so a failed first
 write never leaves it behind.
 
-Not built, each needed before any client's journal reaches a reply: **point 4, the copy step** (the export on the server, only on
-the owner's go each time; the import into the client's runner case checked against the export; the adapter for the trial's
-development credentials), and **the journal's cold test**. Running the cold test on a client's journal comes back to the owner
-first.
+Not built on this branch, each needed before any client's journal reaches a reply: **point 4, the copy step**, and **the
+journal's cold test**. Both are on the next branch (below).
+
+## As built, part 2 (24 Nov 2026, branch `claude/runner-journal-copy-20261124`, stacked on the first)
+
+The lane's instruction after pull request 244: the copy step and the cold test, built and tested on made-up journals only, with no
+server contact; each real copy runs only on the owner's say.
+
+- **The export** is the journal import's `export` command (no longer only planned), run where the journal lives. Its settings come
+  from the import's private configuration (`runner_trial_export`: the corpus, the trial folder's public key, a new file outside the
+  checkout, the scope the operator's grant holds), checked before any env file is read or any sign-in is attempted. It reads the
+  corpus's active generation published for session use, seals it for that one key (X25519, HKDF-SHA-256, AES-256-GCM: only that
+  trial folder can open it; tampering fails the bundle's digests) and writes it whole, mode 0600, never over another file. The
+  code is `src/journal-import/journal-copy.mjs`.
+- **The import** is `scripts/runner-trial-journal.mjs --import`, the adapter for the trial's development credentials: under the
+  trial folder's lock and the vault's writer lock (so only while the trial is stopped), with a grant made in the process for that
+  command and that case alone, it rebuilds the graph under the client's runner case and a new corpus, publishes it for session
+  use, checks every quotation against the stored bytes and every passage against the export, then names the corpus on the client
+  list. The sealed file waits in the client's folder (removed by their Delete) and is removed once the copy is published. A new
+  copy drops the earlier receipt; the earlier copy stays in the case, unused, until the client's Delete (a limit).
+- **The cold test** is `--cold-test` (`src/runner-trial/journal-cold-test.mjs`), on the journal import's cold-consumer runner: a
+  fresh consumer gets the frozen questions and what the session-use reader retrieves, graph on and off, never the key; the
+  controller scores retrieval and answers apart and writes the receipt only on a pass. The key names evidence by exact words of
+  the journal, so whoever writes the questions needs no internal ids. The consumer is the trial's whole-reply checker worker,
+  signed in (`claude -p` or `codex exec`), no API. It needs the client's confirmed consent, read again before each packet leaves.
+  The journal import's own question freeze (`src/journal-import/cold-question-freeze.mjs`) needs the import's audit report,
+  which the copy doesn't carry, so the questions come from a file.
+- **Method choices left to the owner:** who writes each client's questions (the owner, or a separate question writer reading the
+  journal, never the consumer), how many and of which kinds, and the strict pass rule (every question right with the graph,
+  every key quote retrieved, the graph at least as good as without it).
+- **Tested** with the journal import's synthetic fixture only: the sealed export, a copy refused for another key or after
+  tampering, the import refused while the vault is held, the quote check, a cold test that passes, one that misses and one that
+  claims a false premise, the receipt opening the gate under the client's own grant, and a new copy closing it again. Nothing
+  here was run against a model or a real journal.

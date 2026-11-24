@@ -6,10 +6,14 @@ import path from "node:path";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders, PRIVATE_JOURNAL_PURPOSES } from "../src/storage/private-case-access.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
-import { createJournalCopyKeyPair, exportJournalCopy, importJournalCopy, openJournalCopy, sealJournalCopy } from "../src/runner-trial/journal-copy.mjs";
+import { createJournalCopyKeyPair, exportJournalCopy, importJournalCopy, openJournalCopy, sealJournalCopy, writeSealedJournalCopy } from "../src/journal-import/journal-copy.mjs";
 import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
 import { COLD_TEST_RECEIPT_FILE, clientJournalFolder, readRunnerClients } from "../src/runner-trial/clients.mjs";
+import { runJournalColdTest } from "../src/runner-trial/journal-cold-test.mjs";
+import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordinator.mjs";
+import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
+import { COPY_KEY_FILE, STAGED_COPY_FILE, ensureJournalCopyKey, importClientJournal, parseJournalArguments, runClientColdTest } from "../scripts/runner-trial-journal.mjs";
 
 // The copy step for a client's journal (design for clients, point 4): exported where the journal lives, sealed for the trial
 // alone, imported into the client's runner case and checked. The "server" here is a synthetic local vault with the journal
@@ -40,8 +44,10 @@ async function serverJournal(t) {
     persisted = await persistGraphGeneration({ corpusStore, graph, sourceRepresentations: sources, permittedUses: ["archive", "organize_search", "session_use"], shardTargetBytes: 4096 });
   }, auth);
   await service.publishJournalGeneration(SERVER_CASE, { corpusId: SERVER_CORPUS, generation: graph.generation, manifestObjectId: persisted.manifest_object_id }, auth);
-  return { service, auth, sources };
+  return { service, auth, sources, rootDir, keys };
 }
+
+const modeOf = async (file) => (await fs.stat(file)).mode & 0o777;
 
 test("a client's journal is exported sealed for the trial alone, imported into the client's runner case, checked quote by quote, and read there under the client's own grant", async (t) => {
   const server = await serverJournal(t);
@@ -105,18 +111,17 @@ const consumer = ({ miss = false, overclaim = false, script = { "q-premise": "fa
   }
 });
 
+// Questions on the synthetic fixture, with the key naming its evidence by exact words of the journal.
+const QUESTIONS = Object.freeze({ schema_version: 1, kind: "journal_cold_questions", questions: [
+  { id: "q-colleague", question: "colleague", answerable: true, evidence_quotes: ["ask a colleague for help", "asked a  colleague\nfor help"] },
+  { id: "q-premise", question: "When did the colleague refuse to help?", answerable: false },
+  { id: "q-absent", question: "zebra", answerable: false }
+] });
+const withQuestions = (questions) => ({ ...QUESTIONS, questions });
+
 test("the cold test: a fresh consumer answers frozen questions from the copy alone; a strict pass gives the receipt for exactly that snapshot, anything less gives none", async (t) => {
-  const { runJournalColdTest } = await import("../src/runner-trial/journal-cold-test.mjs");
   const server = await serverJournal(t);
-  const graph = JSON.parse(await fs.readFile(new URL("../schemas/journal-import/fixtures/synthetic-graph.json", import.meta.url), "utf8"));
-  const keyPassages = graph.nodes.filter((node) => node.kind === "passage" && /colleague/u.test(node.data?.quote ?? "")).map((node) => node.id);
-  assert.ok(keyPassages.length >= 1);
-  const frozen = [
-    { id: "q-colleague", question: "colleague", key: { answerable: true, evidence_ids: keyPassages } },
-    { id: "q-premise", question: "When did the colleague refuse to help?", key: { answerable: false, evidence_ids: [] } },
-    { id: "q-absent", question: "zebra", key: { answerable: false, evidence_ids: [] } }
-  ];
-  const run = (port) => runJournalColdTest({ service: server.service, auth: server.auth, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, frozen, port, now: () => new Date("2026-11-24T09:00:00.000Z") });
+  const run = (port, questions = QUESTIONS) => runJournalColdTest({ service: server.service, auth: server.auth, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, questions, port, now: () => new Date("2026-11-24T09:00:00.000Z") });
   const passed = await run(consumer());
   assert.equal(passed.passed, true, JSON.stringify(passed.report));
   const reference = (await server.service.inspectJournalCorpus(SERVER_CASE, SERVER_CORPUS, { requiredScope: "case:read", requiredPurpose: "session_use" }, server.auth)).reference;
@@ -130,5 +135,118 @@ test("the cold test: a fresh consumer answers frozen questions from the copy alo
     assert.equal(failed.receipt, null);
     assert.deepEqual(failed.report.by_question.filter((entry) => !entry.graph.right).map((entry) => entry.id), [wrong]);
   }
-  await assert.rejects(runJournalColdTest({ service: server.service, auth: server.auth, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, frozen: frozen.slice(0, 1), port: consumer() }), { code: "COLD_QUESTIONS_NEED_BOTH_KINDS" });
+  await assert.rejects(run(consumer(), withQuestions(QUESTIONS.questions.slice(0, 1))), { code: "COLD_QUESTIONS_NEED_BOTH_KINDS" });
+  // A key quote that no passage holds stops the test (the key is wrong), naming the question only.
+  await assert.rejects(run(consumer(), withQuestions([{ ...QUESTIONS.questions[0], evidence_quotes: ["a sentence the journal never had"] }, QUESTIONS.questions[1]])),
+    (error) => error.code === "COLD_KEY_QUOTE_NOT_IN_JOURNAL" && error.details?.question_id === "q-colleague");
+  await assert.rejects(run(consumer(), withQuestions([{ ...QUESTIONS.questions[0], extra: "no" }, QUESTIONS.questions[1]])), { code: "COLD_QUESTIONS_INVALID" });
+});
+
+// ---- The commands ------------------------------------------------------------------------------------------------------------
+
+test("the journal import's export writes the sealed copy whole to a new private file, its settings from the private configuration only", async (t) => {
+  const server = await serverJournal(t);
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-copy-export-"));
+  t.after(() => fs.rm(dir, { recursive: true, force: true }));
+  const keyPair = createJournalCopyKeyPair();
+  const output = path.join(dir, "copy.sealed.json");
+  const config = { schema_version: 1, target_profile: { case_id: SERVER_CASE }, private_runtime_root: server.rootDir,
+    runner_trial_export: { corpus_id: SERVER_CORPUS, recipient_public_key: keyPair.publicKey, output_path: output } };
+  const configPath = path.join(dir, "run.json");
+  await fs.writeFile(configPath, JSON.stringify(config), { mode: 0o600 });
+  const loader = () => ({ rootDir: server.rootDir, authorizationProvider: allowAll([SERVER_CASE]), keyProvider: { async getCaseKeyMaterial() {
+    return { routineKek: Buffer.from(server.keys.routineKek), recoverySecretBytes: Buffer.from(server.keys.recoverySecretBytes), accessAssurance: "managed_secret_provider", managedSecretProvider: true };
+  } }, close() {} });
+  const cli = async (argv, file = configPath) => {
+    let stdout = "", stderr = "";
+    const code = await runJournalImportCli([...argv, "--config", file], { stdout: { write: (chunk) => { stdout += chunk; } }, stderr: { write: (chunk) => { stderr += chunk; } },
+      environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: "synthetic-operator" }, exportProvidersLoader: loader });
+    return { code, stdout, stderr };
+  };
+  const exported = await cli(["export"]);
+  assert.equal(exported.code, 0, exported.stderr);
+  assert.equal(JSON.parse(exported.stdout).exported, true);
+  assert.equal(await modeOf(output), 0o600);
+  assert.ok(openJournalCopy(JSON.parse(await fs.readFile(output, "utf8")), keyPair).graph.nodes.length > 0);
+  // Never over another file.
+  assert.deepEqual(JSON.parse((await cli(["export"])).stderr), { error: "JOURNAL_COPY_FILE_EXISTS" });
+  // Without its settings, it stops before any env file is read (this one doesn't exist).
+  const bare = path.join(dir, "bare.json");
+  await fs.writeFile(bare, JSON.stringify({ ...config, runner_trial_export: undefined }), { mode: 0o600 });
+  assert.deepEqual(JSON.parse((await cli(["export", "--env-file", path.join(dir, "missing.env")], bare)).stderr), { error: "JOURNAL_EXPORT_CONFIG_INVALID" });
+  const badKey = path.join(dir, "bad-key.json");
+  await fs.writeFile(badKey, JSON.stringify({ ...config, runner_trial_export: { ...config.runner_trial_export, recipient_public_key: "bm90IGEga2V5" } }), { mode: 0o600 });
+  assert.deepEqual(JSON.parse((await cli(["export"], badKey)).stderr), { error: "JOURNAL_EXPORT_RECIPIENT_INVALID" });
+});
+
+test("the laptop commands: the trial folder's key, the import while the trial is stopped, and a cold test whose receipt opens the gate", async (t) => {
+  const server = await serverJournal(t);
+  const home = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-copy-commands-"));
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  await prepareTrialFolder({ home, provider: "codex" });
+  await addClient({ home, label: "Synthetic client one" });
+  await addClient({ home, label: "Synthetic client two" });
+  assert.deepEqual(parseJournalArguments(["--cold-test", path.join(home, "q.json"), "--provider", "claude"]), { command: "cold-test", file: path.join(home, "q.json"), provider: "claude", dir: null });
+  assert.throws(() => parseJournalArguments(["--import", "--provider", "claude"]), /--provider goes with --cold-test only/u);
+
+  // The key: made once, its private half mode 0600 in the trial folder.
+  const made = await ensureJournalCopyKey({ home });
+  assert.equal(made.made, true);
+  assert.equal(await modeOf(path.join(home, COPY_KEY_FILE)), 0o600);
+  assert.deepEqual(await ensureJournalCopyKey({ home }), { publicKey: made.publicKey, made: false });
+
+  // The export for that key (as the server's step would write it), then the import while the "trial" holds the vault.
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-copy-transfer-"));
+  t.after(() => fs.rm(outside, { recursive: true, force: true }));
+  const sealedPath = path.join(outside, "copy.sealed.json");
+  await writeSealedJournalCopy(sealedPath, await exportJournalCopy({ caseAccessService: server.service, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, authContext: server.auth, recipientPublicKey: made.publicKey }));
+  const prepared = await prepareTrialFolder({ home, provider: "codex" });
+  const providers = await loadDevelopmentPrivateCaseProviders(prepared.credentialsPath);
+  t.after(() => providers.close());
+  const clientCase = (await readRunnerClients(home)).clients[0].case_id;
+  const staged = path.join(clientJournalFolder(home, clientCase), STAGED_COPY_FILE);
+  const running = await acquirePrivateRootWriterLock({ rootDir: providers.rootDir });
+  await assert.rejects(importClientJournal({ home, number: 1, sealedPath }), /The trial is running/u);
+  await running.release();
+  await assert.rejects(fs.access(sealedPath), "the sealed file was moved into the client's folder");
+  assert.equal(await modeOf(staged), 0o600);
+  await assert.rejects(importClientJournal({ home, number: 1, sealedPath: staged }), /already waits/u);
+  const imported = await importClientJournal({ home, number: 1 });
+  assert.ok(imported.passages_verified >= 3);
+  await assert.rejects(fs.access(staged), "removed once the copy is published");
+  const clients = (await readRunnerClients(home)).clients;
+  assert.equal(clients[0].journal.corpus_id, imported.corpus_id);
+  assert.equal(clients[1].journal.corpus_id, null);
+
+  // The cold test: refused without consent; with it, a miss records nothing and a pass records the receipt the gate then accepts.
+  const questionsPath = path.join(outside, "questions.json");
+  await fs.writeFile(questionsPath, JSON.stringify(QUESTIONS), { mode: 0o600 });
+  await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: consumer() }), /no confirmed journal consent/u);
+  await setJournalConsent({ home, number: 1, action: "confirm" });
+  await assert.rejects(runClientColdTest({ home, number: 2, questionsPath, port: consumer() }), /no confirmed journal consent/u);
+  const receiptPath = path.join(clientJournalFolder(home, clientCase), COLD_TEST_RECEIPT_FILE);
+  assert.equal((await runClientColdTest({ home, number: 1, questionsPath, port: consumer({ miss: true }) })).passed, false);
+  await assert.rejects(fs.access(receiptPath));
+  const passed = await runClientColdTest({ home, number: 1, questionsPath, port: consumer() });
+  assert.equal(passed.passed, true, JSON.stringify(passed.report));
+  assert.equal(await modeOf(receiptPath), 0o600);
+  await fs.chmod(questionsPath, 0o644);
+  await assert.rejects(runClientColdTest({ home, number: 1, questionsPath, port: consumer() }), /readable by you alone/u);
+
+  const started = await prepareTrialFolder({ home, provider: "codex" });
+  const startedProviders = await loadDevelopmentPrivateCaseProviders(started.credentialsPath);
+  t.after(() => startedProviders.close());
+  const gate = createRunnerJournalGate({ trialDir: home, caseAccessService: createPrivateCaseAccessService({ rootDir: startedProviders.rootDir,
+    authorizationProvider: startedProviders.authorizationProvider, keyProvider: startedProviders.keyProvider, allowDevelopmentFileProvider: true }) });
+  const part = await gate.freezeResponseEvidenceJournal({ caseId: clientCase, query: "colleague", authContext: { bearerToken: started.clientTokens[clientCase] } });
+  assert.equal(part.availability, "available");
+  assert.ok(part.source_items.every((item) => item.locator.corpus_id === imported.corpus_id && server.sources.repr.includes(item.exact_excerpt)));
+
+  // A new copy needs its own cold test: importing again drops the receipt, and the gate is closed until one passes.
+  await writeSealedJournalCopy(sealedPath, await exportJournalCopy({ caseAccessService: server.service, caseId: SERVER_CASE, corpusId: SERVER_CORPUS, authContext: server.auth, recipientPublicKey: made.publicKey }));
+  const again = await importClientJournal({ home, number: 1, sealedPath });
+  assert.notEqual(again.corpus_id, imported.corpus_id);
+  await assert.rejects(fs.access(receiptPath));
+  const closed = await gate.freezeResponseEvidenceJournal({ caseId: clientCase, query: "colleague", authContext: { bearerToken: started.clientTokens[clientCase] } });
+  assert.notEqual(closed.availability, "available");
 });

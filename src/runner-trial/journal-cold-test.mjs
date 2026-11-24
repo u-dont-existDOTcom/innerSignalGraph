@@ -1,5 +1,7 @@
 import { ValidationError } from "../core/errors.mjs";
+import { journalSchema, validateJournalSchema } from "../journal-import/contracts.mjs";
 import { runSavedProfileColdConsumer } from "../journal-import/cold-profile-runner.mjs";
+import { journalRoleInstruction } from "../journal-import/provider-port.mjs";
 import { validateColdTestReceipt } from "./clients.mjs";
 
 // The journal's cold test for a client's copy in the runner trial (design for clients, point 5c; the journal import's design,
@@ -8,44 +10,89 @@ import { validateColdTestReceipt } from "./clients.mjs";
 // finds, graph on and off. The controller here keeps the key and scores retrieval apart from answers. Only a pass yields the receipt
 // the journal gate asks for, naming exactly the snapshot tested (case, corpus, generation, manifest, epoch).
 //
+// The questions and their key come from a file (`journal_cold_questions`): each question says whether the journal answers it, and
+// an answerable one names its evidence by exact words from the journal, which the controller finds in the copy's passages (an exact
+// match, after Unicode normalization and with runs of white space as one space). A key quote found in no passage stops the test.
+//
 // The pass rule is strict by default (a method choice for the owner, adjustable): for every question the key marks answerable, the
-// graph-on consumer retrieved every key passage and answered "supported" citing one of them; for every question the key marks
-// unanswerable (absent, false premise), it did not answer "supported"; and graph-on got at least as many questions right as graph-off.
+// graph-on consumer retrieved a passage for each key quote and answered "supported" citing one of the key passages; for every
+// question the key marks unanswerable (absent, false premise), it answered not found, false premise or too little context; and
+// graph-on got at least as many questions right as graph-off.
 
-const invalid = (code) => { throw new ValidationError("The journal cold test is invalid.", { code }); };
+const invalid = (code, details) => { throw new ValidationError("The journal cold test is invalid.", { code, ...(details ? { details } : {}) }); };
 const UNANSWERABLE = new Set(["not_found", "false_premise", "insufficient_context"]);
+const QUESTION_KEYS = new Set(["id", "question", "answerable", "evidence_quotes"]);
+export const MAX_COLD_QUESTIONS = 64;
 
-export function validateFrozenQuestions(frozen) {
-  if (!Array.isArray(frozen) || frozen.length === 0) invalid("COLD_QUESTIONS_REQUIRED");
+export function validateColdQuestionsFile(value) {
+  if (value?.schema_version !== 1 || value.kind !== "journal_cold_questions" || !Array.isArray(value.questions)
+    || value.questions.length === 0 || value.questions.length > MAX_COLD_QUESTIONS) invalid("COLD_QUESTIONS_INVALID");
   const ids = new Set();
-  for (const entry of frozen) {
-    if (!entry || typeof entry.id !== "string" || !/^[A-Za-z0-9:_-]{1,80}$/u.test(entry.id) || ids.has(entry.id) || typeof entry.question !== "string" || !entry.question.trim()) invalid("COLD_QUESTIONS_INVALID");
+  for (const entry of value.questions) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry) || Object.keys(entry).some((key) => !QUESTION_KEYS.has(key))
+      || typeof entry.id !== "string" || !/^[A-Za-z0-9:_-]{1,80}$/u.test(entry.id) || ids.has(entry.id)
+      || typeof entry.question !== "string" || !entry.question.trim() || typeof entry.answerable !== "boolean") invalid("COLD_QUESTIONS_INVALID");
     ids.add(entry.id);
-    const key = entry.key;
-    if (!key || typeof key.answerable !== "boolean" || !Array.isArray(key.evidence_ids) || (key.answerable && key.evidence_ids.length === 0)) invalid("COLD_QUESTIONS_INVALID");
+    const quotes = entry.evidence_quotes ?? [];
+    if (!Array.isArray(quotes) || quotes.some((quote) => typeof quote !== "string" || !quote.trim())
+      || (entry.answerable ? quotes.length === 0 : quotes.length !== 0)) invalid("COLD_QUESTIONS_INVALID", { question_id: entry.id });
   }
-  if (!frozen.some((entry) => entry.key.answerable) || !frozen.some((entry) => !entry.key.answerable)) invalid("COLD_QUESTIONS_NEED_BOTH_KINDS");
-  return frozen;
+  if (!value.questions.some((entry) => entry.answerable) || !value.questions.some((entry) => !entry.answerable)) invalid("COLD_QUESTIONS_NEED_BOTH_KINDS");
+  return value;
+}
+
+const normal = (text) => text.normalize("NFC").replace(/\s+/gu, " ").trim();
+
+// Each key quote becomes the group of passages that hold it; the consumer has to retrieve one passage of every group.
+export function resolveColdKey(questions, passages) {
+  validateColdQuestionsFile(questions);
+  const texts = passages.map((passage) => ({ id: passage.id, text: normal(passage.quote) }));
+  return questions.questions.map((entry) => ({
+    id: entry.id, question: entry.question,
+    key: { answerable: entry.answerable, evidence_groups: (entry.evidence_quotes ?? []).map((quote) => {
+      const wanted = normal(quote);
+      const ids = texts.filter((passage) => passage.text.includes(wanted)).map((passage) => passage.id);
+      if (!ids.length) invalid("COLD_KEY_QUOTE_NOT_IN_JOURNAL", { question_id: entry.id });
+      return ids;
+    }) }
+  }));
 }
 
 function scoreVariant(entry, variant) {
   const retrieved = new Set((variant.retrieval?.records ?? []).map((record) => record.id));
   const output = variant.result?.output ?? {};
-  const supported = output.answerability === "supported";
-  // An unanswerable question is answered right only as not found, a false premise or too little context, never as (partly) supported.
   if (!entry.key.answerable) return { retrieved_all: null, right: UNANSWERABLE.has(output.answerability) };
-  const retrievedAll = entry.key.evidence_ids.every((id) => retrieved.has(id));
-  return { retrieved_all: retrievedAll, right: supported && output.evidence_ids?.some((id) => entry.key.evidence_ids.includes(id)) === true };
+  const keyIds = new Set(entry.key.evidence_groups.flat());
+  return {
+    retrieved_all: entry.key.evidence_groups.every((ids) => ids.some((id) => retrieved.has(id))),
+    right: output.answerability === "supported" && (output.evidence_ids ?? []).some((id) => keyIds.has(id))
+  };
 }
 
-export async function runJournalColdTest({ service, auth, caseId, corpusId, frozen, port, now = () => new Date() }) {
-  validateFrozenQuestions(frozen);
-  const access = { requiredScope: "case:read", requiredPurpose: "session_use" };
+// The copy's passages, read once by the controller (never by the consumer), from the snapshot the test runs on.
+async function copyPassages({ service, auth, caseId, corpusId, access, before }) {
+  return service.withJournalCorpus(caseId, corpusId, access, async ({ corpusStore, reference }) => {
+    if (reference?.active_generation !== before.active_generation || reference.manifest_object_id !== before.manifest_object_id) invalid("COLD_TEST_SNAPSHOT_CHANGED");
+    const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });
+    const passages = [];
+    for (const shard of manifest.record_shards) {
+      for (const record of (await corpusStore.readJsonObject({ objectId: shard.object_id })).records) {
+        if (record.kind === "passage" && typeof record.data?.quote === "string") passages.push({ id: record.id, quote: record.data.quote });
+      }
+    }
+    return passages;
+  }, auth);
+}
+
+export async function runJournalColdTest({ service, auth, caseId, corpusId, questions, port, now = () => new Date(), requiredScope = "case:read" }) {
+  validateColdQuestionsFile(questions);
+  const access = { requiredScope, requiredPurpose: "session_use" };
   const before = (await service.inspectJournalCorpus(caseId, corpusId, access, auth)).reference;
   if (!before?.active_generation) invalid("COLD_TEST_NOT_PUBLISHED");
+  const frozen = resolveColdKey(questions, await copyPassages({ service, auth, caseId, corpusId, access, before }));
   const saved = new Map();
   const results = await runSavedProfileColdConsumer({
-    service, auth, caseId, corpusId, expectedGeneration: before.active_generation,
+    service, auth, caseId, corpusId, expectedGeneration: before.active_generation, requiredScope,
     questions: frozen.map(({ id, question }) => ({ id, question })), port,
     grant: { purpose: "session_use", allowed_roles: ["cold_consumer"] },
     readIfPresent: async (key) => saved.get(key) ?? null,
@@ -62,6 +109,7 @@ export async function runJournalColdTest({ service, auth, caseId, corpusId, froz
   const sameSnapshot = after?.active_generation === before.active_generation && after.manifest_object_id === before.manifest_object_id && after.visibility_epoch === before.visibility_epoch;
   const passed = sameSnapshot && graphRight >= rawRight
     && byQuestion.every((entry) => entry.graph.right && (entry.answerable ? entry.graph.retrieved_all : true));
+  // Ids, counts and scores only: no question, answer or journal text.
   const report = {
     generation: before.active_generation, questions: byQuestion.length, graph_right: graphRight, raw_right: rawRight, same_snapshot: sameSnapshot,
     by_question: byQuestion.map(({ id, answerable, graph, raw }) => ({ id, answerable, graph, raw })), passed
@@ -69,4 +117,19 @@ export async function runJournalColdTest({ service, auth, caseId, corpusId, froz
   const receipt = passed ? validateColdTestReceipt({ schema_version: 1, kind: "journal_cold_test", result: "pass", case_id: caseId, corpus_id: corpusId,
     generation: before.active_generation, manifest_object_id: before.manifest_object_id, visibility_epoch: before.visibility_epoch, tested_at: now().toISOString() }) : null;
   return { passed, report, receipt };
+}
+
+// The fresh consumer on one of the trial's own signed-in workers (`claude -p` or `codex exec`, sealed: no tools, an empty folder, no
+// session kept), one call per question and variant, with the cold consumer's instruction and the packet and nothing else. Its answer
+// is checked against the answer schema. `beforeSend` runs right before each packet leaves.
+export function createSealedColdConsumerPort({ worker, timeoutMs = 10 * 60_000, beforeSend = null }) {
+  if (!worker || typeof worker.call !== "function") invalid("COLD_PORT_INVALID");
+  return Object.freeze({
+    async invoke({ role, packet, outputSchema }) {
+      if (role !== "cold_consumer" || outputSchema !== "answer-result") invalid("COLD_PORT_ROLE_INVALID");
+      const { value, receipt } = await worker.call({ system: journalRoleInstruction("cold_consumer"), user: JSON.stringify(packet),
+        schema: journalSchema("answer-result"), timeoutMs, stage: "cold_consumer", beforeSend });
+      return { output: validateJournalSchema("answer-result", value), receipt: { provider: receipt?.provider ?? null, model: receipt?.model ?? null } };
+    }
+  });
 }

@@ -34,7 +34,9 @@ One folder outside the checkout, only yours (mode 0700): `$HOME/.local/share/inn
   snapshot is published through an atomically replaced commit link, never an in-progress extraction.
 - `runner-log.jsonl` (mode 0600): the word-free run log described below, for your own case; each client's case has its own,
   `runner-log-<case id>.jsonl`.
-- `journal/<case id>/`: a client's journal folder, with the cold-test receipt for their journal copy (below).
+- `journal/<case id>/`: a client's journal folder, with the cold-test receipt for their journal copy (below), and a sealed copy
+  while it waits to be imported.
+- `journal-copy-key.json` (mode 0600), once you make it with `--copy-key`: the trial folder's key for journal copies (below).
 - `settings-<provider>.json` (mode 0600, `INNER_SIGNAL_RUNNER_TRIAL_SETTINGS`), written at every start: the arrangement that
   measured best, the whole writer with one whole checker, readers and checkers at low effort and the writer at medium, each worker
   on the provider the choice gives it.
@@ -88,12 +90,45 @@ A client's journal can inform their replies only through the session-use journal
    finishing (a crash, say) leaves its lock behind: the next one names the file, to be removed by hand once no runner-trial
    command is running. A start holds the lock until its server has read the credentials.
 2. **A published copy.** The client's journal copy in their runner case, with an active generation published for session use.
-   The copy step (an export on the server, on your go each time, and an import into the client's runner case checked against the
-   export) **isn't built yet**, so no client has a copy.
+   The copy step has two halves, each run only on your go:
+   - **Where the journal lives**, the journal import's `export` (`npm run journal:import -- export --config ...`), with
+     `runner_trial_export` in the import's private configuration: `corpus_id` (the client's published corpus there),
+     `recipient_public_key` (what `--copy-key` prints), `output_path` (a new file outside the checkout) and, when the import's
+     operator grant holds write only, `"scope": "case:write"`. It reads the active generation published for session use, seals it
+     for this trial folder's key alone (X25519, HKDF-SHA-256, AES-256-GCM) and writes it whole to a new file (mode 0600), never
+     over another. Carrying the file to this laptop is your step.
+   - **On this laptop**, with the trial stopped:
+
+     ```bash
+     node scripts/runner-trial-journal.mjs --copy-key
+     node scripts/runner-trial-journal.mjs --import /absolute/path/copy.sealed.json
+     ```
+
+     `--copy-key` makes the key once (its private half stays in the trial folder) and prints its public half. `--import` asks
+     the client's number, moves the sealed file into `journal/<case id>/`, opens it with the key and, under a grant made for that
+     command and that case alone, imports it into a new corpus of the client's runner case: rebuilt under that case, published
+     for session use, every quotation checked against the stored bytes and against the export. The client list then names that
+     corpus and the sealed file is removed. While the trial runs (it holds the vault) the import is refused and the file waits in
+     the client's folder for `--import` without a file. A new copy drops the earlier copy's receipt, so it needs its own cold
+     test; the earlier copy stays in the case, unused, until the client's Delete.
 3. **A passing cold test of exactly that copy.** A receipt at `journal/<case id>/cold-test-receipt.json` (mode 0600) naming the
-   case, corpus, generation, manifest and visibility epoch the reader opens; a pass on another generation doesn't carry over. The
-   cold test that writes it **isn't built yet** either; the receipt's shape is `validateColdTestReceipt` in
-   `src/runner-trial/clients.mjs`.
+   case, corpus, generation, manifest and visibility epoch the reader opens; a pass on another generation doesn't carry over.
+
+   ```bash
+   node scripts/runner-trial-journal.mjs --cold-test /absolute/path/questions.json --provider claude
+   ```
+
+   The questions file (mode 0600, outside the checkout) is `{"schema_version": 1, "kind": "journal_cold_questions",
+   "questions": [...]}`, each question `{"id", "question", "answerable", "evidence_quotes"}`: an answerable one names its
+   evidence by exact words of the journal (found in the copy's passages exactly, after Unicode normalization and with runs of
+   white space as one), an unanswerable one (absent, a false premise) names none, and the file has at least one of each. A fresh
+   consumer, the trial's whole-reply checker worker (`claude -p` or `codex exec`, signed in and sealed: no tools, nothing kept),
+   gets each question with what the session-use reader finds in the copy, graph on and off, and never the key. The copy passes
+   only if, with the graph, every answerable question retrieved a passage for each key quote and was answered "supported"
+   citing one, every unanswerable one was answered not found, false premise or too little context, and the graph did at least
+   as well as without it. Only a pass writes the receipt. The test sends excerpts of the client's journal to that worker's
+   company, so it needs the client's confirmed consent, read again before each question leaves and before the receipt is
+   written. It prints ids and scores only. Who writes the questions, and this pass rule, are method choices for you.
 
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
 `cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.
