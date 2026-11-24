@@ -89,7 +89,11 @@ test("the first answer holds the start of the rules and the whole section on som
   assert.ok(rules.length >= end, "through the end of the crisis section");
   // It names each group to load before the first reply, with what is in it.
   delivery.groups.forEach((group, index) => assert.ok(first.includes(`\n- \`${GROUP_PREFIX}${index + 1}\`: ${group.join(", ")}`), `group ${index + 1}`));
-  assert.match(first, /Before your first reply, load every group listed below: one call to load_therapy_protocol per group \(the calls may run at the same time\), with `parts` set to a list holding the group's name, such as `\["group\/1"\]`/u);
+  assert.match(first, /Before your first reply, load every group listed below, each in a step of its own: one call to load_therapy_protocol per step, with `parts` set to a list holding the group's name, such as `\["group\/1"\]`/u);
+  // ChatGPT cuts the combined output of several calls: each group alone, what was cut again, and the calls at the same time in Claude only.
+  assert.match(first, /Never print several calls' results in one output: an app can cut a combined output at about 10,000 tokens, and most of the rules with it \(in Claude, which shows each call's result by itself, the calls may run at the same time\)\. If a result says it was truncated or shortened, load what is missing again, alone, before you reply\. Then follow the rules and their files\./u);
+  assert.equal(first.split("at the same time").length, 2, "said once, of Claude");
+  assert.match(first, /If an answer loaded alone looks cut off, ask again for fewer parts at a time\./u);
   // Someone who may want to die gets a reply at once, from the section this answer holds in full.
   assert.match(first, /if the person says they want to die, may act on it or has already taken something, reply at once from the section on someone who may want to die, which this answer holds in full, and load the groups before your next reply\./u);
   // An app holding the old tool list: no therapy from this part alone, the crisis section first, the refresh after.
