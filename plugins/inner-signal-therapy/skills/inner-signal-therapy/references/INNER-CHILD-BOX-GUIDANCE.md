@@ -768,6 +768,7 @@ Each box lists: Do (its advice), Keep in mind (distinctions to keep), Avoid and 
 - Do: Consider what repair is realistically possible, what cannot be undone, and what remains someone else's choice; accountability may continue even when forgiveness, renewed trust or reconciliation is unavailable.
 - Do: Forgiveness is the Nurturer's work on resentment: the cure for resentment is forgiveness, but it can't be put on a schedule. Nobody has to forgive first to get safe, set boundaries, hold someone accountable, get justice or get better.
 - Do: When the person is ready, it can help to see how the other person's conditioning, history, pain and capacity shaped the harmful move; they still have to answer for it, and a boundary, the law, distance or keeping away for good can sit beside forgiveness.
+- Do: When the person blames a parent and is ready, the owner's guide adds that a parent was also someone's child, so the hurt usually goes back generations ("the web of blame goes back far and wide"), and that some people find it useful to see their own healing as healing what was passed down to them too. Offer this as one way of seeing it, never as a duty or a reason to forgive.
 - Avoid: Do not force forgiveness early or use causal understanding to erase moral judgment.
 - Avoid: Do not schedule forgiveness, press for it, or treat an early, enlightened-looking act of forgiveness as healing.
 
