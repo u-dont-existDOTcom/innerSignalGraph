@@ -7,7 +7,7 @@ source_id: AMEND.IC.SCAFFOLDED_CHALLENGE
 guide_id: owner-amendments
 heading: AMEND.IC.SCAFFOLDED_CHALLENGE
 source_role: owner-approved-extension
-source_hash: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+source_hash: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
 section_hash: a081e87f21c84cc25bca00487c05cacd5e8d7baf9bb26974bd60e4b15b01f028
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -15,7 +15,7 @@ cited_by_node_ids:
   - IC.SCAFFOLDED_CHALLENGE
   - ROUTE.EXTERNAL_EMBODIMENT
   - ROUTE.GO_INWARD
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.IC.SCAFFOLDED_CHALLENGE

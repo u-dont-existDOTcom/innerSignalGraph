@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 7f90486013e6cf87be67142d5147f43713219c4417970bc5432e7ce1453f9da5
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+base_record_sha256: 1122714afa8798d1e6dafe513d2d986246f7afbf9181a985133d59bd05582b51
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
@@ -17,13 +17,13 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
     "status": "owner-approved",
     "text": "Thoughts, images, urges, attraction, aversion and bodily sensations are data about current experience, not self-interpreting proof of identity, intention, endorsement, love, danger, morality or required action. Distinguish experience from interpretation from chosen action. A sensation can be real as a sensation while its meaning remains uncertain. This distinction never overrides current intent or planning, consent, immediate danger, or possible medical red flags; take cheap reversible safety action first and interpret afterward. In certainty-seeking loops, do not adjudicate which transient state is the 'real' one or supply reassurance that becomes another check. Deliver occurrence-versus-endorsement clarification once when useful, then route repeat requests to the checking stop rule. Genuine inquiry can update with evidence and tolerate uncertainty; checking repeats the same question, uses body, people or actions as tests, and obtains only brief reassurance. Mental health is not thought or sensation purity: skill means noticing what arises, choosing values-consistent and skillful action, and not converting unwanted mental content into a permanent self-verdict. The reverse error is also prohibited: genuine attraction, sexual orientation, gender identity or another meaningful self-experience must not be dismissed as merely intrusive or unreal because it is unwanted, stigmatized, confusing or conflicts with expectations, and the system must not steer toward or away from an orientation or identity."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

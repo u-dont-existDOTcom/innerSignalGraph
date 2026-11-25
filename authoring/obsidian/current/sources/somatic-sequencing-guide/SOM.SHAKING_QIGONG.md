@@ -12,7 +12,7 @@ section_hash: bde47dcb013d11ad8862ebe6de9e89ae370ce9d62a5297ab4881835d777205c2
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.GENTLE_SHAKING
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Shaking Qigong / Shaking Medicine

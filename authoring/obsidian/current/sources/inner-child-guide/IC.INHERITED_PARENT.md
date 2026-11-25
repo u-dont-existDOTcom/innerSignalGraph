@@ -7,7 +7,7 @@ source_id: IC.INHERITED_PARENT
 guide_id: inner-child-guide
 heading: The Parent You Inherited
 source_role: primary-framework
-source_hash: e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a
+source_hash: ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc
 section_hash: a5cc97e79125929961ea84806d35111597f4a917d71a5ca4f14671098a95cc46
 locator_kind: text-lines
 cited_by_node_ids:
@@ -15,7 +15,7 @@ cited_by_node_ids:
   - IC.CRITICISM_KERNEL
   - IC.MEET_GUARD
   - IC.PROTECTOR_ACTION
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # The Parent You Inherited

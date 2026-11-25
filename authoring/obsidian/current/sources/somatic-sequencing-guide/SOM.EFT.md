@@ -12,7 +12,7 @@ section_hash: 1022d40f825e066651e928b9a5b367c04fb7584fbe28c7fabf9674b233986fb1
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.EFT_PORTABLE
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # EFT / Tapping

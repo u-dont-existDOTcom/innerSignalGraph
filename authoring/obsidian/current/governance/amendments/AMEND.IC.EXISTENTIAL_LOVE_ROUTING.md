@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EXISTENTIAL_LOVE_ROUTING
 status: owner-approved
 domain: inner-child
-base_record_sha256: 02c696f121142a5f777b1be61cd3a1701424c2935a9c8f25b1ddace5739df133
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+base_record_sha256: 952b1910504bd376190eda6383c74b501a935cb8208f237c09397e2260bd419f
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.IC.EXISTENTIAL_LOVE_ROUTING
@@ -17,13 +17,13 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
     "status": "owner-approved",
     "text": "Deep spiritual love is not a universal prerequisite for healing. First distinguish whether the love, meaning, belonging, beauty, purpose, and wellbeing already available feel sufficient, whether the person is curious for something deeper, or whether ordinary life feels radically insufficient. Do not push spiritual exploration on somebody who is satisfied and not curious. When hopelessness is profound, immediate safety and human support remain first, but do not pretend a tiny behavioral action answers the person’s existential question. Never romanticize suicidality or suggest an NDE, psychedelic experience, conversion, or other dangerous or extraordinary event as the route to hope."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

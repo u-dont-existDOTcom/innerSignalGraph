@@ -97,9 +97,9 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-decision-live-guide-generational-trauma-2026-11-25-r12");
+  assert.equal(active.version, "owner-decisions-live-guide-passages-2026-11-25-r12");
   assert.equal(active.file, "inner-child-guide-2026-11-25-r12.txt");
-  assert.equal(active.sha256, "e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a");
+  assert.equal(active.sha256, "ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc"); // r12 with answer i79 2a (25 Nov 2026)
   const r5 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-10-r5.txt", import.meta.url), "utf8");
   assert.equal(hash(r5), "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-10-r5.txt" && item.sha256 === "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31"));
@@ -302,7 +302,7 @@ test("October 31 r9 also carries exactly the three owner-approved refinements of
   // the spiritual-source paragraph) is the active revision, so the active entry names r10 and the history gains r9.
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-decision-live-guide-generational-trauma-2026-11-25-r12");
+  assert.equal(active.version, "owner-decisions-live-guide-passages-2026-11-25-r12");
   assert.equal(active.file, "inner-child-guide-2026-11-25-r12.txt");
   assert.equal(active.sha256, hash(await fs.readFile(new URL("../guides/inner-child-guide-2026-11-25-r12.txt", import.meta.url), "utf8")));
   assert.ok((await fs.readFile(new URL("../guides/inner-child-guide-2026-11-25-r12.txt", import.meta.url), "utf8")).startsWith(r10.replace(/\n*$/u, "")), "r12 (25 Nov 2026) appends after r11 (owner answers of 20 Nov 2026), which keeps r10 as its first part");

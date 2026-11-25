@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 05d3c4a6286b3e68d79827b9b71581c9f16783bf4f37a8b82706e701f945cad9
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+base_record_sha256: accfe0f329c8737a0a02b23189d285eabff487ed6485068e3ac0159348e044a4
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.EARLY_REGULATION_CONDITION_20261026
@@ -17,7 +17,7 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "approvedAt": "2026-10-26",
     "domain": "cross-guide",
@@ -25,6 +25,6 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
     "status": "owner-approved",
     "text": "When longitudinal history establishes that coping attempts do not sufficiently relieve the worst crisis peak, do not re-ask the same question without new information. Examine earlier moments when existing methods sometimes helped and compare timing, first cues, sleep, pain, social environment, practical capacity, amount of relief, duration and after-effects. Prefer the smallest discriminating question that could improve early use. Preserve the reports of failed efforts without assuming inactivity. Prioritize feasible practical corrections to identified sleep and environment disruptions when appropriate, distinguishing effects from unproven causal theories. Do not overload the client with tracking assignments; urgent safety and consent remain independently operative."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

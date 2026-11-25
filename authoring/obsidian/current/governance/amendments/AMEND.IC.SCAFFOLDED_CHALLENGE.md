@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SCAFFOLDED_CHALLENGE
 status: owner-approved
 domain: inner-child
-base_record_sha256: 5f73fb634e75bfabec6c2843d202cdbe5ca77c9e55c7b04d96b898d2bf043b92
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+base_record_sha256: 78209182f5a105579931ad8896a451e5afa97b790360ff7d37a5dc587d0aee4b
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.IC.SCAFFOLDED_CHALLENGE
@@ -17,13 +17,13 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.SCAFFOLDED_CHALLENGE",
     "status": "owner-approved",
     "text": "Distress is not identical to harm. Difficult dreams, grief, fear, tears, activation, or emotionally challenging material can be workable and informative about present feelings, needs, and capacities, but intensity does not prove progress, historical truth, or correct depth. Call challenge workable only when orientation and voluntary stopping/return remain intact, the person is willing to re-approach, their own appraisal is not that the experience was too much or unwanted, and recovery/later functioning have not meaningfully deteriorated. If difficult material appeared but appraisal, willingness, or recovery is still unknown, ask how it landed and how they have been since before deciding whether to re-approach or step down. Scaffold and pendulate: when calibrating, adjust one dimension at a time when possible, or several at once if distress is climbing—shorter duration, less depth or imagery intensity, better timing, more symbolic or indirect representation, eyes open or more external anchors, less isolation, and more support. Re-approach by restoring challenge gradually when both the person's appraisal and observed functioning support it and they want to continue. Do not protect a person from every difficult experience, and do not push them into overwhelm as a character-building test. A request to stop or not return is honored rather than treated as avoidance. Dream and imagery content is not evidence of historical events; do not confirm, suggest, or reconstruct memories from it—work with its present meaning and needs."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

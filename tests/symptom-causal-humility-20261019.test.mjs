@@ -24,11 +24,11 @@ const BOXES = ["../docs/INNER-CHILD-BOX-GUIDANCE.md", "../plugins/inner-signal-t
 
 test("the owner's 19 Oct 2026 symptom amendment is recorded once, in his approved words, and the ordinary-want amendment is not ported", () => {
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.version, "owner-amendments-2026-11-21-r24");
+  assert.equal(amendments.version, "owner-amendments-2026-11-25-r25"); // i79 1a (25 Nov 2026) adds one after it
   const items = amendments.items.filter((item) => item.id === AMEND);
   assert.equal(items.length, 1);
   assert.deepEqual(items[0], { id: AMEND, domain: "cross-guide", status: "owner-approved", approvedAt: "2026-10-19", text: AMEND_TEXT });
-  assert.equal(amendments.items.at(-1).id, AMEND, "appended last; no earlier item changed");
+  assert.deepEqual(amendments.items.slice(-2).map((item) => item.id), [AMEND, "AMEND.IC.GENERATIONAL_VIEW_20261125"], "appended after every earlier item; only answer i79 1a's amendment (25 Nov 2026) comes after it");
   assert.ok(!amendments.items.some((item) => item.id === "AMEND.IC.ORDINARY_DESIRE_NO_TRAUMA_20261019"), "the ordinary-want amendment stays on its branch");
   assert.equal(json("../guides/manifest.json").sources.find((source) => source.id === "owner-amendments").version, amendments.version);
 });

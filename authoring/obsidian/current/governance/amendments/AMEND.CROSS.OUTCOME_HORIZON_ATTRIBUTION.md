@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
 status: owner-approved
 domain: cross-guide
-base_record_sha256: d31fa31551eaa2a0c060aa9a7b1b676beebc1d2ec65fecbff2d7dfb2e19454d4
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+base_record_sha256: e73043b07fdc1ed00f281847d60408dc35eceeddd457bdfd931b42a77afc0e51
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION
@@ -17,13 +17,13 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.OUTCOME_HORIZON_ATTRIBUTION",
     "status": "owner-approved",
     "text": "Match treatment and causal claims to the observed horizon. Brief relief followed by recurrence is evidence of brief relief or temporal association, not resolution, durable improvement or proof of mechanism. Review onset, duration, recurrence and later functioning in a brief bounded way; tracking must not become another checking ritual. Apply this to ordinary actions and somatic methods, not only one named technique."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

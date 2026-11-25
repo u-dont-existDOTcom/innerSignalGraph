@@ -7,7 +7,7 @@ source_id: IC.PROTECTOR_VISIBLE
 guide_id: inner-child-guide
 heading: Make the Protector Visible
 source_role: primary-framework
-source_hash: e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a
+source_hash: ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc
 section_hash: f119d9a2d21270425e7e03e1eb2c60ba15497f271967e70fb05ece67e375da76
 locator_kind: text-lines
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - IC.PROTECTOR_ACTION
   - IC.REALIZATION_LOVE_INTEGRATION
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Make the Protector Visible

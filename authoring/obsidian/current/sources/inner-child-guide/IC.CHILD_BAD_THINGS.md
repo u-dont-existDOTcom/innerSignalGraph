@@ -7,12 +7,12 @@ source_id: IC.CHILD_BAD_THINGS
 guide_id: inner-child-guide
 heading: Let the Child Be Bad at Things
 source_role: primary-framework
-source_hash: e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a
+source_hash: ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc
 section_hash: 06f98e9d8e4e162abc6c2602733fc06c784e1f727145dbdfa8ddc8ade6d48b80
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.IDENTITY_FORMATION
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Let the Child Be Bad at Things

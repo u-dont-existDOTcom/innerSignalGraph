@@ -7,12 +7,12 @@ source_id: IC.PHOTOS
 guide_id: inner-child-guide
 heading: Use Childhood Photographs Without Interrogating Them
 source_role: primary-framework
-source_hash: e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a
+source_hash: ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc
 section_hash: 0defff175f1394ced6c9ed6d5f77b158f2cbda1af1ed9a45f7044fef5e382db1
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.PHOTO_EPISTEMIC_CAUTION
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Use Childhood Photographs Without Interrogating Them

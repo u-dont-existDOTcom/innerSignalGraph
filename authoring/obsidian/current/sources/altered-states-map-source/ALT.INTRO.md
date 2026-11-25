@@ -11,7 +11,7 @@ source_hash: 2c6435769931222afc125973b8e71bf88f94e099e0185c951ebce680c14f18ab
 section_hash: 5ecc254e8003259016d22cbdf5ebd100c604b077c22fd90ddb27bb2e60fa018e
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Altered States / Bad Trips — Operational Map Source

@@ -10,7 +10,7 @@ from_node_id: ROUTE.THREE_WAY_GATE
 to_node_id: ROUTE.ACT_OUTWARD
 relation: routes-to
 base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # ROUTE.THREE_WAY_GATE routes-to ROUTE.ACT_OUTWARD

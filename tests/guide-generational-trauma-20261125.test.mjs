@@ -11,6 +11,9 @@ import { assessGuideChangeProvenance } from "../scripts/check-guide-change-prove
 // plus one appended section quoting the passage word for word from the live post (as updated 2026-11-24T22:39:08Z, where it is an h4 under
 // "Forgiving, Not Forgetting"), and the forgiveness node cites that section. His message names only where it goes, so no owner amendment,
 // node line or served rule is added. These static tests show where the passage is written, cited and recorded.
+// Later that day his answer to question i79 ("1a 2a") added to the same revision: the section's heading names two passages, the section also
+// quotes the forgiveness section's newer wording (2a), and the node gained one served line with an owner amendment (1a). Those are tested in
+// tests/owner-answer-i79-20261125.test.mjs; the assertions below that his answer changed say so.
 
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), "utf8");
 const json = (path) => JSON.parse(read(path));
@@ -21,9 +24,10 @@ const R11_FILE = "inner-child-guide-2026-11-20-r11.txt";
 const R11_SHA256 = "6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f";
 const R11_VERSION = "owner-decisions-live-guide-passages-2026-11-20-r11";
 const R12_FILE = "inner-child-guide-2026-11-25-r12.txt";
-const R12_VERSION = "owner-decision-live-guide-generational-trauma-2026-11-25-r12";
+const R12_VERSION = "owner-decisions-live-guide-passages-2026-11-25-r12"; // renamed for answer i79 2a, like r11's
 const SECTION = "IC.LIVE_GUIDE_DECISIONS_20261125";
-const HEADING = "Owner Decision of 25 November 2026: A Passage From the Live Guide";
+const HEADING = "Owner Decisions of 25 November 2026: Passages From the Live Guide"; // plural since answer i79 2a
+const I79_AMENDMENT = "AMEND.IC.GENERATIONAL_VIEW_20261125";
 const FROM = "From “Generational Trauma (25 Nov: subheading under forgiving, not forgetting)”:";
 // Both paragraphs as the live post has them, typographic apostrophes included; there "Beloved" is an italic link, and guide text carries neither.
 const PASSAGE = [
@@ -51,7 +55,8 @@ test("guide r12 is r11 byte for byte plus one appended section, and is the activ
   const appended = r12.slice(r11.length).split("\n");
   assert.deepEqual([appended[1], appended[5], appended[7], appended[9]], [HEADING, FROM, PASSAGE[0], PASSAGE[1]]);
   assert.deepEqual([0, 2, 4, 6, 8, 10].map((index) => appended[index]), ["", "", "", "", "", ""]);
-  assert.equal(appended.length, 11);
+  // Answer i79 2a then appends its intro, From line and paragraph, each apart (tests/owner-answer-i79-20261125.test.mjs).
+  assert.equal(appended.length, 17);
   const intro = appended[3];
   for (const part of ["quoted word for word from the owner's live public guide", "the Substack post as updated 2026-11-24T22:39:08Z", "“Generational Trauma” is a subheading of “Forgiving, Not Forgetting”",
     "the forgiveness section quoted above as “How to Forgive Without Forgetting”", "just before “Forgiving Yourself”", "On 25 November 2026", "“subheading under forgiving, not forgetting”", "the video that follows them in his guide is not brought in"]) {
@@ -82,7 +87,7 @@ test("the passage is in r12 word for word, once, under its From line, in the sec
   const sourceMap = json("../guide-graphs/source-maps/inner-child-guide.json");
   assert.equal(sourceMap.file, R12_FILE);
   const section = sourceMap.sections.find((entry) => entry.id === SECTION);
-  assert.deepEqual([section.lineStart, section.lineEnd], [1227, 1236]);
+  assert.deepEqual([section.lineStart, section.lineEnd], [1227, 1242]); // to the end of the file, with answer i79 2a's passage
   const text = lines.slice(section.lineStart - 1, section.lineEnd).join("\n");
   for (const part of [FROM, ...PASSAGE]) assert.ok(text.includes(part), part.slice(0, 40));
   assert.equal(sha256(text.trim()), section.sha256);
@@ -98,9 +103,12 @@ test("the forgiveness node cites the section, and nothing else about the node ch
   const citers = graphFiles.flatMap((file) => json(`../guide-graphs/candidates/${file}`).nodes.filter((candidate) => (candidate.sourceRefs ?? []).includes(SECTION)).map((candidate) => candidate.id));
   assert.deepEqual(citers, [NODE], "only the forgiveness node cites it");
   const node = json("../guide-graphs/candidates/inner-child.graph.json").nodes.find((candidate) => candidate.id === NODE);
-  assert.deepEqual(node.sourceRefs.slice(-2), ["IC.LIVE_GUIDE_DECISIONS_20261120", SECTION]);
+  assert.deepEqual(node.sourceRefs.slice(-3), ["IC.LIVE_GUIDE_DECISIONS_20261120", SECTION, I79_AMENDMENT], "answer i79 1a's amendment follows the section");
   assert.ok(node.sourceRefs.includes("IC.FORGIVENESS"));
-  assert.equal(sha256(JSON.stringify({ ...node, sourceRefs: node.sourceRefs.filter((ref) => ref !== SECTION) })), NODE_ON_MAIN_SHA256, "without the reference, the node is main's: no line, gate or effect added");
+  // Answer i79 1a later added one recommendation and its amendment reference (tests/owner-answer-i79-20261125.test.mjs).
+  const withoutI79 = { ...node, sourceRefs: node.sourceRefs.filter((ref) => ref !== I79_AMENDMENT), recommendations: node.recommendations.filter((line) => !line.startsWith("When the person blames a parent and is ready,")) };
+  assert.equal(withoutI79.recommendations.length, node.recommendations.length - 1);
+  assert.equal(sha256(JSON.stringify({ ...withoutI79, sourceRefs: withoutI79.sourceRefs.filter((ref) => ref !== SECTION) })), NODE_ON_MAIN_SHA256, "without the reference and answer i79 1a's line, the node is main's: this passage adds no line, gate or effect");
 
   const bundle = await compileGuideGraphs({ write: false });
   assert.ok(bundle.graphs.flatMap((graph) => graph.nodes).find((candidate) => candidate.id === NODE).sourceRefs.includes(SECTION));
@@ -110,14 +118,16 @@ test("the forgiveness node cites the section, and nothing else about the node ch
   assert.ok(note.includes(`Authority path: \`guides/${R12_FILE}\``));
   assert.ok(read(`../authoring/obsidian/current/nodes/inner-child-directed-graph/${NODE}.md`).includes(`[[current/sources/inner-child-guide/${SECTION}]]`));
 
-  // No owner amendment, and no served rule: the passage reaches the guide and the node's citations, not the text chats are given.
+  // No owner amendment for the passage, and the passage is not served: it reaches the guide and the node's citations, not the text chats
+  // are given. Chats get only answer i79 1a's line, in the owner's approved words, with its own amendment.
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.version, "owner-amendments-2026-11-21-r24");
-  assert.equal(amendments.items.length, 96);
-  assert.equal(amendments.items.some((item) => /generational|web of blame|Toni Morrison/iu.test(item.text)), false);
+  assert.equal(amendments.version, "owner-amendments-2026-11-25-r25");
+  assert.equal(amendments.items.length, 97);
+  assert.deepEqual(amendments.items.filter((item) => /generational|web of blame|Toni Morrison/iu.test(item.text)).map((item) => item.id), [I79_AMENDMENT]);
   const protocol = loadTherapyProtocol();
   const served = [protocol.instructions, ...protocol.files.map((file) => file.content)].join("\n");
-  for (const part of [...PASSAGE, "Generational Trauma", "web of blame", "crocodile", "Toni Morrison", SECTION]) assert.equal(served.includes(part), false, part.slice(0, 40));
+  for (const part of [...PASSAGE, "Generational Trauma", "crocodile", "Toni Morrison", SECTION]) assert.equal(served.includes(part), false, part.slice(0, 40));
+  assert.equal(count(served, "web of blame"), 1, "only in answer i79 1a's line");
 });
 
 test("the queue entry and the sync record name r12's lines and the live post, and pass the provenance rules continuous integration applies", () => {
@@ -134,13 +144,14 @@ test("the queue entry and the sync record name r12's lines and the live post, an
   assert.equal(record.liveGuide.updatedAt, "2026-11-24T22:39:08.694Z");
   assert.equal(record.liveGuide.bodyHtmlSha256, "5bc1434b646566975892760e053ea81407077f3b01f8b4bed04f258a1aeb0a79");
   assert.equal(record.ownerRequest.words, "so that may go into innersignal also (subheading under forgiving, not forgetting)");
-  assert.deepEqual(record.canonical, { path: `guides/${R12_FILE}`, version: R12_VERSION, sha256: sha256(r12), section: HEADING, lines: [1227, 1235] });
-  assert.deepEqual(record.graph, { node: NODE, sourceRef: SECTION });
-  assert.deepEqual(record.obligations.map((entry) => [entry.id, entry.r12Lines, entry.queue]), [["PGQ-090", [1231, 1235], "PENDING"]]);
+  // With answer i79: the section ends at 2a's paragraph, the node also carries 1a's amendment, and PGQ-091 and PGQ-092 follow.
+  assert.deepEqual(record.canonical, { path: `guides/${R12_FILE}`, version: R12_VERSION, sha256: sha256(r12), section: HEADING, lines: [1227, 1241] });
+  assert.deepEqual(record.graph, { node: NODE, sourceRef: SECTION, amendment: I79_AMENDMENT });
+  assert.deepEqual(record.obligations.map((entry) => [entry.id, entry.r12Lines, entry.queue]), [["PGQ-090", [1231, 1235], "PENDING"], ["PGQ-091", null, "PENDING"], ["PGQ-092", [1239, 1241], "PENDING"]]);
   assert.equal(lines[record.obligations[0].r12Lines[0] - 1], FROM);
   assert.equal(lines[record.obligations[0].r12Lines[1] - 1], PASSAGE[1]);
 
-  // Against the queue as it stood before (r24, without this bundle), the change passes the rules continuous integration applies.
+  // Against the queue as it stood before (r24, without this bundle and answer i79's after it), the change passes the rules continuous integration applies.
   const start = queue.indexOf("## Pending: the owner's decision of 25 November 2026 (PGQ-090)");
   const before = (queue.slice(0, start) + queue.slice(queue.indexOf("## EMPTY sentinel"))).replace("Queue version: 2026-11-25-r25", "Queue version: 2026-11-21-r24");
   const changedPaths = [`guides/${R12_FILE}`, "guides/manifest.json", "guides/source-layout.json", "guide-graphs/candidates/inner-child.graph.json", "authoring/PENDING-PUBLIC-GUIDE-CHANGES.md", "authoring/public-guide-sync.json"];

@@ -53,7 +53,7 @@ const BORROW_LOVE_BEFORE_SHA256 = "7fb68c7cf4e75619389136bbb3afdd5ff217c3b8a03ab
 // Re-pinned on 20 Nov 2026, when the owner's answers to questions 368 to 378 changed other nodes (IC.BORROW_LOVE itself is unchanged), and again
 // the same day for the fix round after Fable's check (IC.DIFFERENTIATION, IC.GUIDE_LATER, ROUTE.INFLUENCE_INTERNAL, ROUTE.COMMUNITY_SUPPORT),
 // and once more after Codex's review, when IC.PRACTICE_TO_LIFE_TRANSFER's 376a success sign also became a served "Keep in mind" line.
-const OTHER_NODES_AND_EDGES_SHA256 = "64f5cebb6dc36406ea9f1b6347e5c26692af5643a48b2f578bb3b7da9a5ee5d9"; // re-pinned 25 Nov 2026 for guide r12: IC.FORGIVENESS_LATER gains one source reference, IC.LIVE_GUIDE_DECISIONS_20261125 (with that node as on main the digest is still 94de5814…6c6). 21 Nov 2026: IC.MEET_GUARD and IC.CRITICISM_KERNEL gain the point-16 line; re-pinned 21 Nov 2026 for IS7 (IC.SOLAR_PLEXUS_RELAXATION gains the owner's 19 Oct symptom line; with that node as on main the digest is still b34f773a…a484)
+const OTHER_NODES_AND_EDGES_SHA256 = "6aca14f132c55b2329361a53368df740df3c1c63325687ae1d5bf25c50447fcf"; // re-pinned 25 Nov 2026 for answer i79 1a: IC.FORGIVENESS_LATER gains the owner's generational line and its amendment reference (with that node as before i79 the digest is still 64f5cebb…5d9). Re-pinned 25 Nov 2026 for guide r12: IC.FORGIVENESS_LATER gains one source reference, IC.LIVE_GUIDE_DECISIONS_20261125 (with that node as on main the digest is still 94de5814…6c6). 21 Nov 2026: IC.MEET_GUARD and IC.CRITICISM_KERNEL gain the point-16 line; re-pinned 21 Nov 2026 for IS7 (IC.SOLAR_PLEXUS_RELAXATION gains the owner's 19 Oct symptom line; with that node as on main the digest is still b34f773a…a484)
 
 const manifest = json("../guides/manifest.json");
 const active = manifest.sources.find((source) => source.id === "inner-child-guide");
@@ -165,8 +165,8 @@ test("everything that names the active revision names r10 and its hash, and r9 m
   assert.equal(read("../docs/CONCEPT-SOURCE-READING.md").includes(CURRENT_R9_SHA256), false);
   // The owner amendments are not touched by this change.
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.version, "owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
-  assert.equal(amendments.items.length, 96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(amendments.version, "owner-amendments-2026-11-25-r25"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
+  assert.equal(amendments.items.length, 97); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
   assert.equal(manifest.sources.find((source) => source.id === "owner-amendments").version, amendments.version);
 });
 
@@ -209,8 +209,8 @@ test("IC.BORROW_LOVE gains the one line, last, once, and it is the only node tha
   const compiled = await compileGuideGraphs({ write: false });
   assert.equal(compiled.stats.nodeCount, 87);
   assert.equal(compiled.stats.edgeCount, 126);
-  assert.equal(compiled.stats.sourceSectionCount, 177); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; guide r12's Generational Trauma section (25 Nov 2026) adds one
-  assert.equal(compiled.stats.ownerAmendmentCount, 96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(compiled.stats.sourceSectionCount, 178); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; guide r12's Generational Trauma section (25 Nov 2026) adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
+  assert.equal(compiled.stats.ownerAmendmentCount, 97); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
   assert.equal(candidateGraph.nodes.length, 46);
   assert.equal(candidateGraph.edges.length, 58);
   const ids = candidateGraph.nodes.map((candidate) => candidate.id);

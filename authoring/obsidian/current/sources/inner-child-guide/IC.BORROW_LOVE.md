@@ -7,7 +7,7 @@ source_id: IC.BORROW_LOVE
 guide_id: inner-child-guide
 heading: Borrow Love—or Borrow the Perspective of Care
 source_role: primary-framework
-source_hash: e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a
+source_hash: ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc
 section_hash: 6291e0210e9f4b45a0168096b63607a1875afe6cb04d58a866ccfc4703d0d7f0
 locator_kind: text-lines
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
   - IC.DEEP_LOVE_TO_CHILD
   - IC.MUSIC_EMOTIONAL_ACCESS
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Borrow Love—or Borrow the Perspective of Care

@@ -961,6 +961,16 @@
       "excerpt": "The owner approved this clarification after checking unsupported psychosomatic inferences in a reparenting book (19 Oct 2026): bodily sensations, pain, illness or a physical symptom do not by themselves establish their medical cause, emotional suppression, an unmet inner-child need, or a hidden childhood event. A person's interpretation remains a revisable hypothesis rather than a diagnosis or recovered memory. Emotional care can accompany medical evaluation, practical safety, and ongoing treatment, but must not replace indicated assessment or imply that the person caused their illness. Preserve urgency for new/severe medical red flags and avoid assuming prior workups or care did not happen.",
       "status": "owner-approved",
       "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.IC.GENERATIONAL_VIEW_20261125",
+      "heading": "AMEND.IC.GENERATIONAL_VIEW_20261125",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "6ed9d511fdf19f94190bdda2b0691718626920ddecedbb8e5a427908bbd1f1fe",
+      "excerpt": "Owner answer i79 1a (25 Nov 2026, about 12:20 UTC): \"Yes: add this line to the forgiveness box, then release it as 0.2.9 once the tests and GPT's review pass (asked again only if anything differs)\". The line, word for word, is a Do line of IC.FORGIVENESS_LATER, right after its line on the other person's conditioning, history, pain and capacity: \"When the person blames a parent and is ready, the owner's guide adds that a parent was also someone's child, so the hurt usually goes back generations (\"the web of blame goes back far and wide\"), and that some people find it useful to see their own healing as healing what was passed down to them too. Offer this as one way of seeing it, never as a duty or a reason to forgive.\" Its source is his live guide's \"Generational Trauma\", a subheading of \"Forgiving, Not Forgetting\", which guide r12 quotes word for word (IC.LIVE_GUIDE_DECISIONS_20261125).",
+      "status": "owner-approved",
+      "domain": "inner-child"
     }
   ]
 }

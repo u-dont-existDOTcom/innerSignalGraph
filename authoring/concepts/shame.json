@@ -3,7 +3,7 @@
   "guideId": "inner-child-guide",
   "source": {
     "file": "inner-child-guide-2026-11-25-r12.txt",
-    "sha256": "e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a"
+    "sha256": "ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc"
   },
   "method": "Human-curated conceptual/countercase anchors; exact source citation integrity can be tested, but semantic completeness cannot be mechanically proved.",
   "concepts": [

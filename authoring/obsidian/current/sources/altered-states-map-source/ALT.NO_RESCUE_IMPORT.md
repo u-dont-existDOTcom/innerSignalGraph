@@ -12,7 +12,7 @@ section_hash: c1970d10b23d9fc45860ae0aa714b8de68a68f284c7553fd782943202c4ed511
 locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.ALTERED_MEDICAL_SAFETY
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # No Rescue-Regimen Import

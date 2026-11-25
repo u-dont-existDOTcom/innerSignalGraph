@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017
 status: owner-approved
 domain: inner-child
-base_record_sha256: 99993d03a3b318fdf10af858b88c54f561fdae6b5072897884df949573f041fc
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+base_record_sha256: d7d85d7d5294726e0ddce2713a42f3150740f74b676c8f87c9c43bd51dad911a
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.IC.PROTECTIVE_ACTS_ARE_REPARENTING_20261017
@@ -17,7 +17,7 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "approvedAt": "2026-10-17",
     "domain": "inner-child",
@@ -25,6 +25,6 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
     "status": "owner-approved",
     "text": "The owner, 17 Oct 2026 (issue #172), after a supervisor answer once again set everyday protective action and practical safety against reparenting, a false distinction the rules already forbid: ordinary self-protective acts should be recognized as reparenting when that is the client-welcomed frame, not reclassified as a separate therapy. Appropriate independent medical and safety actions remain independently available. Protective care is recognized as part of reparenting without labeling medical navigation itself as an exercise. Safety needs and consent can override ordinary priorities. The client keeps the ability to revise or decline the frame (AMEND.IC.REPARENTING_NOT_AN_EXERCISE_20261016, AMEND.IC.COMMUNITY_REPARENTING)."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

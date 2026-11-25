@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 5a4fa1ea3efc5c857717fb42249df395d8d9799c48cfadc414c32d16ad3b2380
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+base_record_sha256: fdb2db2ce9d95befc4f97a08b143d15a708af3ddb04d04214918634ed95a6159
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.REPLY_FOCUS_AND_DELIVERY_20261025
@@ -17,7 +17,7 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "approvedAt": "2026-10-25",
     "domain": "cross-guide",
@@ -25,6 +25,6 @@ projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214c
     "status": "owner-approved",
     "text": "Owner-approved 25 October 2026 method changes (no case material): before composing any supervised reply distinguish actual delivered messages from draft-only suggestions; never treat an unsent proposal as something the recipient has heard. In a multi-topic reply assemble one contiguous block per topic and keep the active client's evidence, method-specific inquiry, and highest-value question adjacent, preferably last when the question is the reply's focus. Safety and explicit agenda changes override this order. Query available prior intervention history and journals before generic withdrawal, stopping or relapse advice; stopping previously without major difficulty and returning later are different problems. Explore the valued immediate function of risky coping and already-found safer ways to meet that need, with realistic constraints on executive functioning, sleep, money, access routes, and acceptance of proposed environmental changes. A physical sign of relaxation is partial observable relief, not proof that subjective anxiety has stopped; attend to variation, exact method, duration, after-effects and ordinary-life carryover, preserving evidence of mixed outcomes. Ask directly what part of a powerful felt experience matters most and what non-harmful prior experiences have delivered some of it. Preserve the original inclusive scope and attribution in translations and paraphrases, including both monks and nuns when monastics is intended. These changes neither alter any graph activation or emergency gates, nor impose a specific retreat, move or treatment."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

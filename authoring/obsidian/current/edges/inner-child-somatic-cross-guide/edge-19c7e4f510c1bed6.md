@@ -10,7 +10,7 @@ from_node_id: ROUTE.INFLUENCE_LOVE_CAPACITY
 to_node_id: ROUTE.GO_INWARD
 relation: builds-nurturer-protector-guide
 base_graph_sha256: 897752bf50221828d784020ccd4b98cbdb9271432bc4b7baaab3c49dbfd3f23c
-projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # ROUTE.INFLUENCE_LOVE_CAPACITY builds-nurturer-protector-guide ROUTE.GO_INWARD
