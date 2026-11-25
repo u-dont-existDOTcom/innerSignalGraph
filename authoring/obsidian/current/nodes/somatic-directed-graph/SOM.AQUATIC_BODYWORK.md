@@ -20,7 +20,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 8dac161105fa038af3b7278cceb00fc5e100f1df62c7381d203ed933a96d9ec7
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Use aquatic bodywork as an optional emotionally opening bridge with explicit aftercare

@@ -21,8 +21,8 @@ regression_refs:
   - G001
   - G012
 base_record_sha256: 79edfb36dffb16c2670c7d479094e371bf7be00629a56637843006eaa46ad943
-base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+base_graph_sha256: a757a341d88d71f3f5a1ede615e16e0746b86c0b002a35585bc7fa1feb8628e1
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Separate developmental ages and responsibility

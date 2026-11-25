@@ -1040,6 +1040,103 @@
             "queue": "PENDING"
           }
         ]
+      },
+      "ownerDecision20261125": {
+        "what": "Provenance of the queue entries PGQ-090 to PGQ-092 (queue version 2026-11-25-r25). Guide r12 quotes word for word the live guide's subheading 'Generational Trauma' under 'Forgiving, Not Forgetting', which the owner asked to have in InnerSignal, and, at his answer i79 2a, that forgiveness section's newer wording; his answer i79 1a adds one line, in his approved words, to the forgiveness box.",
+        "direction": "Public guide to canonical source, at the owner's request: the passage was public-guide text that no canonical source carried until he asked for it in InnerSignal. Nothing in the public guide changed. His answer i79 1a is an InnerSignal line in his approved words, not public-guide text (PGQ-091).",
+        "liveGuide": {
+          "url": "https://ibogaqueen.substack.com/p/inner-child-self-love-tips-and-guided",
+          "postId": 189761959,
+          "updatedAt": "2026-11-24T22:39:08.694Z",
+          "fetchedAt": "2026-11-25T01:31Z",
+          "bodyHtmlSha256": "5bc1434b646566975892760e053ea81407077f3b01f8b4bed04f258a1aeb0a79",
+          "heading": "Generational Trauma",
+          "underHeading": "Forgiving, Not Forgetting",
+          "notes": "An h4 under the h3 'Forgiving, Not Forgetting' (the section r11 quotes as 'How to Forgive Without Forgetting'), right before the h4 'Forgiving Yourself'. Its two paragraphs are quoted; the video embedded after them is not. The live post sets 'Beloved' as an italic link; the guide text files carry no links or formatting, so r12 has the word as plain text.",
+          "refetchedAt": "2026-11-25T12:31:21Z",
+          "refetchedFileSha256": "8fd65138eef4332f579c31c610eea7404f5a96fd6ce7bdb1813428192f3a8b95",
+          "refetchNotes": "Fetched again through the Substack API for answer i79 2a: the same updated_at and body_html as the first capture. There the forgiveness section is the h3 'Forgiving, Not Forgetting' (r11 quotes it as 'How to Forgive Without Forgetting'), and its third paragraph says 'When you see the causal sequence for yourself' where r11 has 'When you see it for yourself'; its other four paragraphs and the h4 'Forgiving Yourself' match r11's quotes. That paragraph's link on 'secret burning thread' and its italic 'they must have no clue' are plain text in the guide, as in r11."
+        },
+        "ownerRequest": {
+          "at": "2026-11-25, about 01:20 UTC",
+          "words": "so that may go into innersignal also (subheading under forgiving, not forgetting)",
+          "notes": "His chat message, with the new section of his live guide."
+        },
+        "ownerAnswerI79": {
+          "at": "2026-11-25, about 12:20 UTC",
+          "words": "1a 2a",
+          "options": {
+            "1a": "Yes: add this line to the forgiveness box, then release it as 0.2.9 once the tests and GPT's review pass (asked again only if anything differs); the line, exactly: When the person blames a parent and is ready, the owner's guide adds that a parent was also someone's child, so the hurt usually goes back generations (\"the web of blame goes back far and wide\"), and that some people find it useful to see their own healing as healing what was passed down to them too. Offer this as one way of seeing it, never as a duty or a reason to forgive.",
+            "2a": "Yes, in the same revision: his newer wording of the forgiveness section, word for word (the heading 'Forgiving, Not Forgetting', and 'When you see the causal sequence for yourself')."
+          }
+        },
+        "canonical": {
+          "path": "guides/inner-child-guide-2026-11-25-r12.txt",
+          "version": "owner-decisions-live-guide-passages-2026-11-25-r12",
+          "sha256": "ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc",
+          "section": "Owner Decisions of 25 November 2026: Passages From the Live Guide",
+          "lines": [
+            1227,
+            1241
+          ]
+        },
+        "graph": {
+          "node": "IC.FORGIVENESS_LATER",
+          "sourceRef": "IC.LIVE_GUIDE_DECISIONS_20261125",
+          "amendment": "AMEND.IC.GENERATIONAL_VIEW_20261125"
+        },
+        "amendments": {
+          "path": "guides/owner-amendments.json",
+          "version": "owner-amendments-2026-11-25-r25",
+          "notes": "AMEND.IC.GENERATIONAL_VIEW_20261125 records his answer i79 1a and the line word for word. The passage itself needed none: his request of 01:20 UTC names only where it goes."
+        },
+        "status": "The entries are PENDING in the queue. As in queueConsumption, each gets its fate and status (SYNCED, NOT_PUBLIC or PROPOSED_UPSTREAM) when a humanizer consumes it.",
+        "obligations": [
+          {
+            "id": "PGQ-090",
+            "title": "Generational trauma: the web of blame goes back far and wide",
+            "source": "live guide, word for word",
+            "liveHeading": "Generational Trauma",
+            "r12Lines": [
+              1231,
+              1235
+            ],
+            "decisions": [
+              "his request of 25 Nov 2026, about 01:20 UTC"
+            ],
+            "amendments": [],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-091",
+            "title": "The generational view is one way of seeing it, never a duty or a reason to forgive",
+            "source": "his answer i79 1a, a served line in his approved words",
+            "liveHeading": null,
+            "r12Lines": null,
+            "decisions": [
+              "i79 1a"
+            ],
+            "amendments": [
+              "AMEND.IC.GENERATIONAL_VIEW_20261125"
+            ],
+            "queue": "PENDING"
+          },
+          {
+            "id": "PGQ-092",
+            "title": "Forgiving, not forgetting: when you see the causal sequence for yourself",
+            "source": "live guide, word for word",
+            "liveHeading": "Forgiving, Not Forgetting",
+            "r12Lines": [
+              1239,
+              1241
+            ],
+            "decisions": [
+              "i79 2a"
+            ],
+            "amendments": [],
+            "queue": "PENDING"
+          }
+        ]
       }
     },
     {

@@ -1,9 +1,9 @@
 {
-  "version": "source-layout-v17-2026-11-20",
+  "version": "source-layout-v18-2026-11-25",
   "textGuides": [
     {
       "guideId": "inner-child-guide",
-      "file": "inner-child-guide-2026-11-20-r11.txt",
+      "file": "inner-child-guide-2026-11-25-r12.txt",
       "sections": [
         {
           "id": "IC.CHICKEN_EGG",
@@ -160,6 +160,10 @@
         {
           "id": "IC.LIVE_GUIDE_DECISIONS_20261120",
           "heading": "Owner Decisions of 20 November 2026: Passages From the Live Guide"
+        },
+        {
+          "id": "IC.LIVE_GUIDE_DECISIONS_20261125",
+          "heading": "Owner Decisions of 25 November 2026: Passages From the Live Guide"
         }
       ]
     },

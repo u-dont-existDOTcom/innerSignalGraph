@@ -221,8 +221,8 @@ test("the guide carries the issue's approved wording for the qualified example a
   // (the file read above) and r9 is kept in the manifest's history with its digest.
   const manifest = json("../guides/manifest.json");
   const active = manifest.sources.find((source) => source.id === "inner-child-guide");
-  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
-  assert.ok(read(`../guides/${active.file}`).startsWith(guideText.replace(/\n*$/u, "")), "r11 (owner answers of 20 Nov 2026) keeps r10 as its first part");
+  assert.equal(active.file, "inner-child-guide-2026-11-25-r12.txt"); // r12 (25 Nov 2026) appends one section after r11, which appends after r10
+  assert.ok(read(`../guides/${active.file}`).startsWith(guideText.replace(/\n*$/u, "")), "r11 (owner answers of 20 Nov 2026) and r12 (25 Nov 2026) keep r10 as their first part");
   const r9Text = read("../guides/inner-child-guide-2026-10-31-r9.txt");
   assert.equal(sha256(r9Text), CURRENT_R9_SHA256);
   assert.ok(manifest.sourceHistory.some((entry) => entry.id === "inner-child-guide" && entry.file === "inner-child-guide-2026-10-31-r9.txt" && entry.sha256 === CURRENT_R9_SHA256), "r9 is in the history with its digest");
@@ -376,15 +376,15 @@ test("IC.SHAME_APPRAISAL already separates real responsibility from global self-
   const compiled = await compileGuideGraphs({ write: false });
   assert.equal(compiled.stats.nodeCount, 87);
   assert.equal(compiled.stats.edgeCount, 126);
-  assert.equal(compiled.stats.sourceSectionCount, 176); // the point-16 amendment of 20 Nov 2026 adds one; IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
-  assert.equal(compiled.stats.ownerAmendmentCount, 96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(compiled.stats.sourceSectionCount, 178); // the point-16 amendment of 20 Nov 2026 adds one; IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; guide r12's Generational Trauma section (25 Nov 2026) adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
+  assert.equal(compiled.stats.ownerAmendmentCount, 97); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
   const ids = candidateGraph.nodes.map((node) => node.id);
   assert.deepEqual(ids.filter((id) => /CRITIC/u.test(id)), [KERNEL]);
   assert.deepEqual(ids.filter((id) => /INNER_BRAT|SPIRITUAL_CHILD|DRAWING|SCRIBBL/u.test(id)), []);
   assert.equal(new Set(ids).size, ids.length);
   const amendments = json("../guides/owner-amendments.json");
-  assert.equal(amendments.version, "owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
-  assert.equal(amendments.items.length, 96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(amendments.version, "owner-amendments-2026-11-25-r25"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
+  assert.equal(amendments.items.length, 97); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
   assert.equal(amendments.items.some((item) => item.id !== "AMEND.IC.GUARDS_USUALLY_A_MIX_20261120" && /reject the insult|critical voice|self-critical strategy/iu.test(item.text)), false, "the guide text carries the behavior, so no amendment was added (the owner's later answer on guards, point 16 of 20 Nov 2026, is its own amendment)");
   const overlay = json("../authoring/overlays/inner-child.overlay.json");
   assert.ok(JSON.stringify(overlay).includes("OVERLAY.IC.DYNAMIC_PARTS_MODEL"), "the parts-flexibility overlay is still there");

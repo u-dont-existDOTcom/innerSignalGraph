@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 99be617963ba46507845b9193996afb3ed9bc311e596bda31e83076ae848a61b
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+base_record_sha256: 32dd2da603150997a56228f4eda98084da0d4f52620ff77ea8c433a94be6c0e3
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.REFRACTORY_PAIN_CARE_PATHWAY
@@ -17,7 +17,7 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "approvedAt": "2026-10-11",
     "domain": "cross-guide",
@@ -25,6 +25,6 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
     "status": "owner-approved",
     "text": "With frequent debilitating chronic pain despite substantial workups or unsatisfactory treatment, prioritize a feasible referral to specialist chronic pain care, a clinician-justified urgency request when local policy allows, and a written flare protocol instead of treating repeated emergency visits as a long-term strategy. Emergency assessment remains available for genuinely urgent or unmanageable acute episodes. Preserve prior harmful treatment, whether drugs were taken or only prescribed, real access barriers and outcomes. Do not promise triage, ambulance, fast appointment, medicine, diagnosis or cure; evaluate tDCS/rTMS only as evidence-limited specialist options, not diagnostic confirmation or repair. The French SDC care pathway is documented in the Haute Autorité de Santé 2024 chronic-pain guide (https://has-sante.fr/jcms/p_3218057/fr/parcours-de-sante-d-une-personne-presentant-une-douleur-chronique); named services must be verified locally, and a familiar pain history never removes the need to assess new acute symptoms."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

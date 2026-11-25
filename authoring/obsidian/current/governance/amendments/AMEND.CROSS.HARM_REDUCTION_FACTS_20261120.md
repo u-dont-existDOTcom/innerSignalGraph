@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.HARM_REDUCTION_FACTS_20261120
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 8135255064f61289b5d612b829cc95534cc9cefe71d3b37e9d036bd07bb22717
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+base_record_sha256: e17117a2626d46ba620a1a04ef2117ac4ad5202a1af8527382d12a0106dfc314
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.HARM_REDUCTION_FACTS_20261120
@@ -17,7 +17,7 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "approvedAt": "2026-11-20",
     "domain": "cross-guide",
@@ -25,6 +25,6 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
     "status": "owner-approved",
     "text": "Owner answer 371b (20 Nov 2026): plain harm-reduction facts when someone is about to take something, and links to his guides; not his list of named gentler medicines. His Inbox example (20 Nov 2026, 00:25 UTC): \"if someone says they are gonna vape 5meodmt, what would you say?\" His answer asks why go for \"the last resort most dangerous and dissociative psychedelic when there are much nicer options available that work much better for inner child therapy?\" (he notes it can sound accusatory, so InnerSignal says it without accusation), and, asked which options: \"to avoid failing the guardrails, you could maybe just point to the guides\". InnerSignal never urges anyone to take anything, and still never passes on the bad-trips guide's rescue substances or doses as emergency treatment."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.BORROW_LOVE_EXTERNAL
 status: owner-approved
 domain: inner-child
-base_record_sha256: 1c8bf68cf8baca0718f380a4a376292ad386ef3ec3f011253eb563b516c39278
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+base_record_sha256: 86293027b022a10cf241ab303ce2aaffa63be7887a1b98f03f8d021a14dde28d
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.IC.BORROW_LOVE_EXTERNAL
@@ -17,13 +17,13 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.BORROW_LOVE_EXTERNAL",
     "status": "owner-approved",
     "text": "When self-directed love feels inaccessible or unsafe, first feel real love for a pet, baby, friend, child, partner, or anyone naturally loved. Do not force an immediate transfer; let the familiar feeling become available, then offer only as much toward the younger self as feels possible."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

@@ -13,7 +13,7 @@ locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.ALTERED_AFTERMATH
   - ROUTE.ALTERED_STATE_TRANSFER
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Aftermath and Minimum Viable Integration

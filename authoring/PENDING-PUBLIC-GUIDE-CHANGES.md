@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: 2026-11-21-r24
+Queue version: 2026-11-25-r25
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -265,6 +265,35 @@ Teaching point: Pain or illness is real, but it doesn't show its own cause: don'
 Reader need: A reader with pain or illness could take it as their own emotional failure, put off care they need, or expect reparenting to tell them what is wrong.
 Already covered: Partly: the live guide's “Physical Pain Makes It Harder” and “Listen To Your Body, Or Else!” (PGQ-075 and PGQ-076; r11 lines 1171–1183) say that normal test results don't prove pain imaginary, that a treatment that helps doesn't explain the cause, and that not all illness is emotional; that a symptom alone doesn't show a suppressed feeling or a neglected little one is not said as such.
 Where: The public guide's “Listen To Your Body, Or Else!”, beside pain's emotional side; the humanizer chooses.
+
+## Pending: the owner's decision of 25 November 2026 (PGQ-090)
+
+Guide r12 (`guides/inner-child-guide-2026-11-25-r12.txt`) appends this passage quoted word for word from the owner's live public guide (https://ibogaqueen.substack.com/p/inner-child-self-love-tips-and-guided, as updated 2026-11-24T22:39:08Z): its subheading “Generational Trauma” under “Forgiving, Not Forgetting”, the forgiveness section r11 quotes as “How to Forgive Without Forgetting”. He asked on 25 November 2026, about 01:20 UTC, for it to go into InnerSignal ("subheading under forgiving, not forgetting"). The obligation started in the public guide and moved upstream at his request, so the live guide already carries it in his own words; consume it once the registered humanized draft carries its point, or once the live guide is registered as the derivative, which needs no new prose. No owner amendment is added for the passage: the forgiveness node `IC.FORGIVENESS_LATER` cites it (his answer i79 1a, later that day, adds the served line of PGQ-091). Its provenance is also recorded in `authoring/public-guide-sync.json` under `inner-child` → `ownerDecision20261125`.
+
+### PGQ-090 — Generational trauma: the web of blame goes back far and wide
+Caused by: Guide r12 (`guides/inner-child-guide-2026-11-25-r12.txt` lines 1231–1235) quotes this word for word from the owner's live guide (Substack post as updated 2026-11-24T22:39:08Z), where it is a subheading of “Forgiving, Not Forgetting”, and he asked for it in InnerSignal on 25 Nov 2026, about 01:20 UTC ("subheading under forgiving, not forgetting"). No owner amendment; `IC.FORGIVENESS_LATER` cites it.
+Teaching point: A parent was also the child of their own parents, so the web of blame for a parent's shortcomings goes back far and wide (as Toni Morrison's Beloved shows the trauma of slavery continuing for generations); healing one's own trauma can be seen as healing the ancestors' too, since nothing is only one's own, everything gets passed on, and whatever heals oneself also heals the whole world now and in the future.
+Reader need: Readers who blame their parents for their shortcomings need the wider view, that the web of blame goes back far and wide, and a way to see their own healing as reaching past themselves.
+Already covered: The live guide carries it in his own words under “Generational Trauma”, a subheading of “Forgiving, Not Forgetting” (as updated 2026-11-24T22:39:08Z); r12 quotes it from there.
+Where: The public guide's “Forgiving, Not Forgetting”, under its subheading “Generational Trauma”, just before “Forgiving Yourself”; in the registered humanized draft, the matching forgiveness section once that draft is reconciled with the live guide.
+
+## Pending: the owner's answer to question i79 of 25 November 2026 (PGQ-091 and PGQ-092)
+
+His answer "1a 2a" (25 November 2026, about 12:20 UTC). 1a adds one line, in his approved words, to the forgiveness box `IC.FORGIVENESS_LATER`, served to chats (owner amendment AMEND.IC.GENERATIONAL_VIEW_20261125, r25). 2a brings his forgiveness section's newer wording into guide r12, quoted word for word from the same live post (as updated 2026-11-24T22:39:08Z; fetched again on 25 November 2026 at 12:31 UTC, unchanged): its heading “Forgiving, Not Forgetting” and its paragraph that now says “When you see the causal sequence for yourself”. The live guide already carries 2a in his own words; 1a is an InnerSignal line drawn from his “Generational Trauma” (PGQ-090), whose limit the live guide carries only in part. Their provenance is also recorded in `authoring/public-guide-sync.json` under `inner-child` → `ownerDecision20261125`.
+
+### PGQ-091 — The generational view is one way of seeing it, never a duty or a reason to forgive
+Caused by: Owner answer i79 1a (25 Nov 2026, about 12:20 UTC): owner amendment AMEND.IC.GENERATIONAL_VIEW_20261125 (r25), served word for word as a Do line of `IC.FORGIVENESS_LATER`, right after its line on the other person's conditioning, history, pain and capacity. It draws on the live guide's “Generational Trauma” (PGQ-090; r12 lines 1231–1235). Not an r12 passage.
+Teaching point: When someone blames a parent and is ready, it can help to see that a parent was also someone's child, so the hurt usually goes back generations, and some people find it useful to see their own healing as healing what was passed down to them too; this is one way of seeing it, never a duty or a reason to forgive.
+Reader need: A reader who blames a parent could hear the generational view as an excuse for what the parent did, or as a push to forgive before they are ready.
+Already covered: Partly: the live guide's “Generational Trauma” (as updated 2026-11-24T22:39:08Z) gives the view in his words and calls it “a useful way to look at it”, and “Forgiving, Not Forgetting” says forgiveness can't be put on a schedule; that the view is never a duty or a reason to forgive is not said there as such.
+Where: The public guide's “Generational Trauma”, under “Forgiving, Not Forgetting”; the humanizer chooses.
+
+### PGQ-092 — Forgiving, not forgetting: when you see the causal sequence for yourself
+Caused by: Guide r12 (`guides/inner-child-guide-2026-11-25-r12.txt` lines 1239–1241) quotes word for word the newer wording of the live guide's forgiveness section (Substack post as updated 2026-11-24T22:39:08Z), at his answer i79 2a of 25 Nov 2026: its heading “Forgiving, Not Forgetting”, where r11 quotes “How to Forgive Without Forgetting”, and “When you see the causal sequence for yourself”, where r11 has “When you see it for yourself” (PGQ-064). No owner amendment; `IC.FORGIVENESS_LATER` cites the section.
+Teaching point: Forgiveness may come when a person sees the causal sequence for themselves, how the other person's conditioning, history, pain and capacity led to the harm, rather than being told to forgive; then the rage of holding them uniquely to blame can soften into something more accurate.
+Reader need: Readers told to forgive because "hurt people hurt people" need to know that what helps is seeing the sequence that led to the harm for themselves, not accepting a slogan.
+Already covered: The live guide carries it in his own words under “Forgiving, Not Forgetting” (as updated 2026-11-24T22:39:08Z); r12 quotes it from there.
+Where: The public guide's “Forgiving, Not Forgetting”; in the registered humanized draft, the matching forgiveness section once that draft is reconciled with the live guide.
 
 ## EMPTY sentinel
 

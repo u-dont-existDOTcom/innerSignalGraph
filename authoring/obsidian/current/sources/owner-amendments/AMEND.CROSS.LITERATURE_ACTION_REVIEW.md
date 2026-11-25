@@ -7,7 +7,7 @@ source_id: AMEND.CROSS.LITERATURE_ACTION_REVIEW
 guide_id: owner-amendments
 heading: AMEND.CROSS.LITERATURE_ACTION_REVIEW
 source_role: owner-approved-extension
-source_hash: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+source_hash: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
 section_hash: 888ddef39f6952a4bc6762b597d3769475841d5bc418644f8782e6bfda960ba0
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -15,7 +15,7 @@ cited_by_node_ids:
   - IC.PRACTICE_TO_LIFE_TRANSFER
   - IC.PROTECTOR_ACTION
   - ROUTE.ACT_OUTWARD
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.LITERATURE_ACTION_REVIEW

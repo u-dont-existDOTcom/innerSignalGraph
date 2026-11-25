@@ -44,16 +44,17 @@ test("every answer is recorded as an owner-approved amendment, with his words", 
   assert.match(amendment("AMEND.CROSS.STRICTER_THAN_GUIDE_20261120").text, /too quickly validating some fleeting feeling as identity/u);
   assert.match(amendment("AMEND.CROSS.KEEP_CAREFUL_LINES_20261120").text, /fasting in chronic pain is not brought in/u);
   assert.match(amendment("AMEND.CROSS.SENSITIVE_DISCLOSURE_APP_BOUNDARY_20261022").text, /answer 369c applied/u);
-  assert.equal(json("../guides/owner-amendments.json").version, "owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(json("../guides/owner-amendments.json").version, "owner-amendments-2026-11-25-r25"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
 });
 
 test("the AI guide r11 is r10 plus the live-guide passages, word for word, without the fasting passage", () => {
   const manifest = json("../guides/manifest.json");
   const source = manifest.sources.find((entry) => entry.id === "inner-child-guide");
-  assert.equal(source.file, "inner-child-guide-2026-11-20-r11.txt");
+  assert.equal(source.file, "inner-child-guide-2026-11-25-r12.txt"); // since 25 Nov 2026: r11 plus one appended section (tests/guide-generational-trauma-20261125.test.mjs)
   const r10 = read("../guides/inner-child-guide-2026-10-31-r10.txt");
   const r11 = read("../guides/inner-child-guide-2026-11-20-r11.txt");
-  assert.equal(source.sha256, sha256(r11));
+  assert.ok(manifest.sourceHistory.some((entry) => entry.file === "inner-child-guide-2026-11-20-r11.txt" && entry.sha256 === sha256(r11)), "r11 kept in history");
+  assert.ok(read(`../guides/${source.file}`).startsWith(r11), "r11 is unchanged inside r12");
   assert.ok(manifest.sourceHistory.some((entry) => entry.file === "inner-child-guide-2026-10-31-r10.txt" && entry.sha256 === sha256(r10)), "r10 kept in history");
   assert.ok(r11.startsWith(r10.replace(/\n*$/u, "")), "r10 is unchanged inside r11");
   const added = r11.slice(r10.length);
@@ -67,7 +68,7 @@ test("the AI guide r11 is r10 plus the live-guide passages, word for word, witho
   ]) assert.ok(added.includes(passage), passage);
   for (const absent of ["Compassionate Exit", "fasting", "Like MDMA, female iboga"]) assert.equal(added.includes(absent), false, absent);
   const layout = json("../guides/source-layout.json").textGuides.find((entry) => entry.guideId === "inner-child-guide");
-  assert.equal(layout.file, "inner-child-guide-2026-11-20-r11.txt");
+  assert.equal(layout.file, "inner-child-guide-2026-11-25-r12.txt");
   assert.ok(layout.sections.some((section) => section.id === "IC.LIVE_GUIDE_DECISIONS_20261120"));
 });
 

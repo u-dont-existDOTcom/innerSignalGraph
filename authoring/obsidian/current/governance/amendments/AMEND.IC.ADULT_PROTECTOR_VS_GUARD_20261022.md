@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022
 status: owner-approved
 domain: inner-child
-base_record_sha256: 2da6bb6e517c05dafb892c31298f77b47d039c22a19943312df181e5b3915682
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+base_record_sha256: 3914119d0ea8d5c663c959f50874a0e2def502536b3561fe02d6922252e8da30
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.IC.ADULT_PROTECTOR_VS_GUARD_20261022
@@ -17,7 +17,7 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "approvedAt": "2026-10-22",
     "domain": "inner-child",
@@ -25,6 +25,6 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
     "status": "owner-approved",
     "text": "The developing Inner Adult is one adult with Nurturer, Adult Protector and Guide functions. The Adult Protector is a chosen caring/protective function. Existing proactive/reactive guards and inherited critic scripts are learned responses that may be helpful or harmful; avoid using 'Protector' ambiguously for both. Do not assume any strong urge is a part or a trauma-derived protector. These roles are optional descriptions, not separate inner people."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

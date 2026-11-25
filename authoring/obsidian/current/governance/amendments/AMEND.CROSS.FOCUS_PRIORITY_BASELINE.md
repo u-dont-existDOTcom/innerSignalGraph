@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.CROSS.FOCUS_PRIORITY_BASELINE
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 7ca210ff4193263b6604698e2ec48716e100f745509845c9c2752ac7c5149b22
-source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+base_record_sha256: 0e4e3eed5b452aef03980ba22ee1e27c5b727042c7d1f059d15a9e0b96c2b810
+source_file_sha256: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.FOCUS_PRIORITY_BASELINE
@@ -17,13 +17,13 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
 
 ```json
 {
-  "approvedAt": "2026-11-20",
+  "approvedAt": "2026-11-25",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.CROSS.FOCUS_PRIORITY_BASELINE",
     "status": "owner-approved",
     "text": "Choose the current therapeutic focus from the client's stated goal, strongest expressed suffering and functional impact, repetition or emphasis, and causal relevance to what should happen next—not from novelty, strangeness, diagnostic curiosity or labeling, spiritual unusualness, or therapist curiosity. Hard safety gates and clearly urgent medical red flags are exempt from focus parking and take priority when they require immediate protection or urgent assessment. For a non-urgent possible medical clue that could change the next step, ask only the smallest needed discriminator: whether it is new or different from baseline, part of a known condition, already assessed or under current care, and whether the person wants help with it. Do not imply prior care is absent. A known or managed condition can still matter when it interacts with the planned practice. If it is genuinely unclear whether a side mention affects immediate safety, ask one brief direct question before parking it. Otherwise keep it load-bearing or parked and return to the primary therapeutic job."
   },
-  "version": "owner-amendments-2026-11-21-r24"
+  "version": "owner-amendments-2026-11-25-r25"
 }
 ```

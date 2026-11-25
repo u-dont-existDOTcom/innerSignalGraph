@@ -41,8 +41,8 @@ test("owner amendment and guide projections match current source",()=>{
  const m=json("../guides/manifest.json");
  const a=json("../guides/owner-amendments.json");
  assert.equal(m.sources.find(x=>x.id==="owner-amendments").version,a.version);
- assert.equal(a.items.length,96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
- assert.equal(a.version,"owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+ assert.equal(a.items.length,97); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
+ assert.equal(a.version,"owner-amendments-2026-11-25-r25"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
  assert.equal(a.items.find(x=>x.id===a1)?.status,"owner-approved");
  assert.equal(a.items.find(x=>x.id===a2)?.status,"owner-approved");
  const groups=[

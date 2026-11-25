@@ -53,7 +53,7 @@ test("app and served protocol use the same expanded fidelity and focus rules", (
 test("delivery, functional coping and focus nuance reach compiled guide sources with unchanged safety routing", () => {
   const owner = json("../guides/owner-amendments.json");
   const manifest = json("../guides/manifest.json");
-  assert.equal(owner.version, "owner-amendments-2026-11-21-r24"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(owner.version, "owner-amendments-2026-11-25-r25"); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; i79 1a (25 Nov 2026): the owner's generational line adds one
   assert.equal(owner.items.find(x=>x.id===name)?.status, "owner-approved");
   assert.equal(manifest.sources.find(x=>x.id==="owner-amendments")?.version, owner.version);
   const paths = [

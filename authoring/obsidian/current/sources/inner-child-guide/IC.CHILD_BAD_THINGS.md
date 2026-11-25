@@ -7,19 +7,19 @@ source_id: IC.CHILD_BAD_THINGS
 guide_id: inner-child-guide
 heading: Let the Child Be Bad at Things
 source_role: primary-framework
-source_hash: 6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f
+source_hash: ac280ffb85801864bfc783fce70d51f1b137dc46aaffd6d622890c16e80f20bc
 section_hash: 06f98e9d8e4e162abc6c2602733fc06c784e1f727145dbdfa8ddc8ade6d48b80
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.IDENTITY_FORMATION
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # Let the Child Be Bad at Things
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-11-20-r11.txt`
+Authority path: `guides/inner-child-guide-2026-11-25-r12.txt`
 
 Locator: Lines 613–620
 

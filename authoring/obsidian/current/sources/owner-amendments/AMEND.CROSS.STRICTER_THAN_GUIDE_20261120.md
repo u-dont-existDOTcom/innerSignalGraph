@@ -7,14 +7,14 @@ source_id: AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
 guide_id: owner-amendments
 heading: AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
 source_role: owner-approved-extension
-source_hash: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
+source_hash: 2219059723967b7f7022a5a54c310cf0f0a881afaa5c0d5ad8f825a6127d6782
 section_hash: ba3b06fa1725f1b1a7e2817afd4b73d3f65c20d2d3bbf397c892bb3d1932681c
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.WISER_SELF_PERSPECTIVE
   - ROUTE.INFLUENCE_INTERNAL
   - ROUTE.RELATIONAL_REALITY_CHECK
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: 1af4fa8d1b56af3ee7d4dfce8cac182006477e75f5d39960c5535b7223b5b58a
 ---
 
 # AMEND.CROSS.STRICTER_THAN_GUIDE_20261120
