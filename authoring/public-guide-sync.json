@@ -1040,6 +1040,62 @@
             "queue": "PENDING"
           }
         ]
+      },
+      "ownerDecision20261125": {
+        "what": "Provenance of the queue entry PGQ-090 (queue version 2026-11-25-r25). Guide r12 quotes word for word the live guide's subheading 'Generational Trauma' under 'Forgiving, Not Forgetting', which the owner asked to have in InnerSignal.",
+        "direction": "Public guide to canonical source, at the owner's request: the passage was public-guide text that no canonical source carried until he asked for it in InnerSignal. Nothing in the public guide changed.",
+        "liveGuide": {
+          "url": "https://ibogaqueen.substack.com/p/inner-child-self-love-tips-and-guided",
+          "postId": 189761959,
+          "updatedAt": "2026-11-24T22:39:08.694Z",
+          "fetchedAt": "2026-11-25T01:31Z",
+          "bodyHtmlSha256": "5bc1434b646566975892760e053ea81407077f3b01f8b4bed04f258a1aeb0a79",
+          "heading": "Generational Trauma",
+          "underHeading": "Forgiving, Not Forgetting",
+          "notes": "An h4 under the h3 'Forgiving, Not Forgetting' (the section r11 quotes as 'How to Forgive Without Forgetting'), right before the h4 'Forgiving Yourself'. Its two paragraphs are quoted; the video embedded after them is not. The live post sets 'Beloved' as an italic link; the guide text files carry no links or formatting, so r12 has the word as plain text."
+        },
+        "ownerRequest": {
+          "at": "2026-11-25, about 01:20 UTC",
+          "words": "so that may go into innersignal also (subheading under forgiving, not forgetting)",
+          "notes": "His chat message, with the new section of his live guide."
+        },
+        "canonical": {
+          "path": "guides/inner-child-guide-2026-11-25-r12.txt",
+          "version": "owner-decision-live-guide-generational-trauma-2026-11-25-r12",
+          "sha256": "e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a",
+          "section": "Owner Decision of 25 November 2026: A Passage From the Live Guide",
+          "lines": [
+            1227,
+            1235
+          ]
+        },
+        "graph": {
+          "node": "IC.FORGIVENESS_LATER",
+          "sourceRef": "IC.LIVE_GUIDE_DECISIONS_20261125"
+        },
+        "amendments": {
+          "path": "guides/owner-amendments.json",
+          "version": "owner-amendments-2026-11-21-r24",
+          "notes": "None added: his request names only where the passage goes."
+        },
+        "status": "The entry is PENDING in the queue. As in queueConsumption, it gets its fate and status (SYNCED, NOT_PUBLIC or PROPOSED_UPSTREAM) when a humanizer consumes it.",
+        "obligations": [
+          {
+            "id": "PGQ-090",
+            "title": "Generational trauma: the web of blame goes back far and wide",
+            "source": "live guide, word for word",
+            "liveHeading": "Generational Trauma",
+            "r12Lines": [
+              1231,
+              1235
+            ],
+            "decisions": [
+              "his request of 25 Nov 2026, about 01:20 UTC"
+            ],
+            "amendments": [],
+            "queue": "PENDING"
+          }
+        ]
       }
     },
     {

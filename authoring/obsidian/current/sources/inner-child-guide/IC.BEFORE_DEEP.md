@@ -7,7 +7,7 @@ source_id: IC.BEFORE_DEEP
 guide_id: inner-child-guide
 heading: Before You Try to Go Deep
 source_role: primary-framework
-source_hash: 6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f
+source_hash: e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a
 section_hash: 71199c0bed8dad23902962cf205ce41121bb9adfb758380ee69ceebbb6f7f776
 locator_kind: text-lines
 cited_by_node_ids:
@@ -16,14 +16,14 @@ cited_by_node_ids:
   - IC.MUSIC_EMOTIONAL_ACCESS_STOP
   - IC.REACTIVATION
   - IC.SAFETY_ORIENTATION
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
 ---
 
 # Before You Try to Go Deep
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-11-20-r11.txt`
+Authority path: `guides/inner-child-guide-2026-11-25-r12.txt`
 
 Locator: Lines 67–94
 

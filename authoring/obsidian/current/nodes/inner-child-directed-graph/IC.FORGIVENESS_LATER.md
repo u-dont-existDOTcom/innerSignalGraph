@@ -19,11 +19,12 @@ source_refs:
   - AMEND.IC.SHAME_APPRAISAL_REPARABILITY_20261029
   - AMEND.IC.NEWER_GUIDE_PARTS_20261120
   - IC.LIVE_GUIDE_DECISIONS_20261120
+  - IC.LIVE_GUIDE_DECISIONS_20261125
 regression_refs:
   - G152
-base_record_sha256: 11155c44e4fd005c632c71dcf074f052fa02525cbffc1f9c4a4b90394e5ce656
-base_graph_sha256: ce32de79718f698e5051277ebfab6d31ef36b073338d1facbe2cbd68f5ef4519
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+base_record_sha256: fcb5e2a35a53c603568c8992043e84774829b86229c954c96ef509dd9a7abfd2
+base_graph_sha256: 96be7acfe46a74efc119891c7df805bdbbe635157b08561b5dc6962adb89fd4e
+projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
 ---
 
 # Forgiveness as the Nurturer's work on resentment, never on a schedule
@@ -77,3 +78,5 @@ projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df
 [[current/governance/amendments/AMEND.IC.NEWER_GUIDE_PARTS_20261120]]
 
 [[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261120]]
+
+[[current/sources/inner-child-guide/IC.LIVE_GUIDE_DECISIONS_20261125]]

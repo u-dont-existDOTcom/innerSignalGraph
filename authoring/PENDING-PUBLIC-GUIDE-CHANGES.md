@@ -1,7 +1,7 @@
 # Pending public guide changes
 
 Status: **PENDING**
-Queue version: 2026-11-21-r24
+Queue version: 2026-11-25-r25
 Guide family: `inner-child`
 
 This is a downstream **humanization queue**, not therapy authority. Canonical guide/source files, owner amendments, and executable graphs remain upstream authority under `docs/PUBLIC-GUIDE-HUMANIZATION.md`.
@@ -265,6 +265,17 @@ Teaching point: Pain or illness is real, but it doesn't show its own cause: don'
 Reader need: A reader with pain or illness could take it as their own emotional failure, put off care they need, or expect reparenting to tell them what is wrong.
 Already covered: Partly: the live guide's “Physical Pain Makes It Harder” and “Listen To Your Body, Or Else!” (PGQ-075 and PGQ-076; r11 lines 1171–1183) say that normal test results don't prove pain imaginary, that a treatment that helps doesn't explain the cause, and that not all illness is emotional; that a symptom alone doesn't show a suppressed feeling or a neglected little one is not said as such.
 Where: The public guide's “Listen To Your Body, Or Else!”, beside pain's emotional side; the humanizer chooses.
+
+## Pending: the owner's decision of 25 November 2026 (PGQ-090)
+
+Guide r12 (`guides/inner-child-guide-2026-11-25-r12.txt`) appends one passage quoted word for word from the owner's live public guide (https://ibogaqueen.substack.com/p/inner-child-self-love-tips-and-guided, as updated 2026-11-24T22:39:08Z): its subheading “Generational Trauma” under “Forgiving, Not Forgetting”, the forgiveness section r11 quotes as “How to Forgive Without Forgetting”. He asked on 25 November 2026, about 01:20 UTC, for it to go into InnerSignal ("subheading under forgiving, not forgetting"). The obligation started in the public guide and moved upstream at his request, so the live guide already carries it in his own words; consume it once the registered humanized draft carries its point, or once the live guide is registered as the derivative, which needs no new prose. No owner amendment is added: the forgiveness node `IC.FORGIVENESS_LATER` cites the passage. Its provenance is also recorded in `authoring/public-guide-sync.json` under `inner-child` → `ownerDecision20261125`.
+
+### PGQ-090 — Generational trauma: the web of blame goes back far and wide
+Caused by: Guide r12 (`guides/inner-child-guide-2026-11-25-r12.txt` lines 1231–1235) quotes this word for word from the owner's live guide (Substack post as updated 2026-11-24T22:39:08Z), where it is a subheading of “Forgiving, Not Forgetting”, and he asked for it in InnerSignal on 25 Nov 2026, about 01:20 UTC ("subheading under forgiving, not forgetting"). No owner amendment; `IC.FORGIVENESS_LATER` cites it.
+Teaching point: A parent was also the child of their own parents, so the web of blame for a parent's shortcomings goes back far and wide (as Toni Morrison's Beloved shows the trauma of slavery continuing for generations); healing one's own trauma can be seen as healing the ancestors' too, since nothing is only one's own, everything gets passed on, and whatever heals oneself also heals the whole world now and in the future.
+Reader need: Readers who blame their parents for their shortcomings need the wider view, that the web of blame goes back far and wide, and a way to see their own healing as reaching past themselves.
+Already covered: The live guide carries it in his own words under “Generational Trauma”, a subheading of “Forgiving, Not Forgetting” (as updated 2026-11-24T22:39:08Z); r12 quotes it from there.
+Where: The public guide's “Forgiving, Not Forgetting”, under its subheading “Generational Trauma”, just before “Forgiving Yourself”; in the registered humanized draft, the matching forgiveness section once that draft is reconciled with the live guide.
 
 ## EMPTY sentinel
 

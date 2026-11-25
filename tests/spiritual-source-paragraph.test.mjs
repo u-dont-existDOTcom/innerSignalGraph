@@ -53,7 +53,7 @@ const BORROW_LOVE_BEFORE_SHA256 = "7fb68c7cf4e75619389136bbb3afdd5ff217c3b8a03ab
 // Re-pinned on 20 Nov 2026, when the owner's answers to questions 368 to 378 changed other nodes (IC.BORROW_LOVE itself is unchanged), and again
 // the same day for the fix round after Fable's check (IC.DIFFERENTIATION, IC.GUIDE_LATER, ROUTE.INFLUENCE_INTERNAL, ROUTE.COMMUNITY_SUPPORT),
 // and once more after Codex's review, when IC.PRACTICE_TO_LIFE_TRANSFER's 376a success sign also became a served "Keep in mind" line.
-const OTHER_NODES_AND_EDGES_SHA256 = "94de58142e1720e643875ebe9ee87cd964677107447eb3f1207382551fb226c6"; // 21 Nov 2026: IC.MEET_GUARD and IC.CRITICISM_KERNEL gain the point-16 line; re-pinned 21 Nov 2026 for IS7 (IC.SOLAR_PLEXUS_RELAXATION gains the owner's 19 Oct symptom line; with that node as on main the digest is still b34f773a…a484)
+const OTHER_NODES_AND_EDGES_SHA256 = "64f5cebb6dc36406ea9f1b6347e5c26692af5643a48b2f578bb3b7da9a5ee5d9"; // re-pinned 25 Nov 2026 for guide r12: IC.FORGIVENESS_LATER gains one source reference, IC.LIVE_GUIDE_DECISIONS_20261125 (with that node as on main the digest is still 94de5814…6c6). 21 Nov 2026: IC.MEET_GUARD and IC.CRITICISM_KERNEL gain the point-16 line; re-pinned 21 Nov 2026 for IS7 (IC.SOLAR_PLEXUS_RELAXATION gains the owner's 19 Oct symptom line; with that node as on main the digest is still b34f773a…a484)
 
 const manifest = json("../guides/manifest.json");
 const active = manifest.sources.find((source) => source.id === "inner-child-guide");
@@ -100,12 +100,12 @@ test("AI guide r10 is r9 plus exactly one paragraph, and r9 stays immutable", ()
 
 test("the paragraph sits in Ask God for a Loan, right after the feast problem, and every later section moves down two lines", () => {
   const r9Lines = read(`../guides/${R9_FILE}`).split("\n");
-  // Since 20 Nov 2026 the source map describes r11, which is r10 with passages appended, so r10's lines keep their numbers.
+  // Since 20 Nov 2026 the source map describes r11, and since 25 Nov 2026 r12, each r10 with passages appended, so r10's lines keep their numbers.
   const r10Lines = read(`../guides/${sourceMap.file}`).split("\n");
   const layout = json("../guides/source-layout.json");
   const headings = new Map(layout.textGuides.find((guide) => guide.guideId === "inner-child-guide").sections.map((section) => [section.id, section.heading]));
-  assert.equal(sourceMap.file, "inner-child-guide-2026-11-20-r11.txt", "r11 (20 Nov 2026) appends after r10, so these r10 lines keep their numbers");
-  assert.equal(sourceMap.sections.filter((section) => section.id !== "IC.LIVE_GUIDE_DECISIONS_20261120").length, 38, "no section is added or removed (r11 appends one section on 20 Nov 2026)");
+  assert.equal(sourceMap.file, "inner-child-guide-2026-11-25-r12.txt", "r11 (20 Nov 2026) and r12 (25 Nov 2026) append after r10, so these r10 lines keep their numbers");
+  assert.equal(sourceMap.sections.filter((section) => !/^IC\.LIVE_GUIDE_DECISIONS_/u.test(section.id)).length, 38, "no section is added or removed (r11 appends one section on 20 Nov 2026, r12 one on 25 Nov 2026)");
 
   const loan = sourceMap.sections.find((section) => section.id === SECTION);
   assert.deepEqual([loan.lineStart, loan.lineEnd], [281, 294], "two lines longer than in r9 (281 to 292)");
@@ -121,7 +121,7 @@ test("the paragraph sits in Ask God for a Loan, right after the feast problem, a
 
   // Every section starts at its own heading in r10; sections up to this one are where they were; the later ones start exactly two lines lower.
   let reachedLoan = false;
-  for (const section of sourceMap.sections.filter((entry) => entry.id !== "IC.LIVE_GUIDE_DECISIONS_20261120")) { // appended by r11, after every r10 line
+  for (const section of sourceMap.sections.filter((entry) => !/^IC\.LIVE_GUIDE_DECISIONS_/u.test(entry.id))) { // appended by r11 and r12, after every r10 line
     assert.equal(r10Lines[section.lineStart - 1], headings.get(section.id), `${section.id} starts at its heading`);
     if (section.id === SECTION) reachedLoan = true;
     const moved = reachedLoan && section.id !== SECTION ? 2 : 0;
@@ -137,13 +137,13 @@ test("the paragraph sits in Ask God for a Loan, right after the feast problem, a
 });
 
 test("everything that names the active revision names r10 and its hash, and r9 moves into the history", () => {
-  // r11 (the owner's answers of 20 Nov 2026) is active now; r10 moved into the history like r9 before it.
-  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
-  assert.ok(read(`../guides/${active.file}`).startsWith(read(`../guides/${R10_FILE}`).replace(/\n*$/u, "")), "r11 keeps r10 as its first part");
+  // r11 (the owner's answers of 20 Nov 2026) became active then and r12 (25 Nov 2026) since; r10, then r11, moved into the history like r9 before them.
+  assert.equal(active.file, "inner-child-guide-2026-11-25-r12.txt");
+  assert.ok(read(`../guides/${active.file}`).startsWith(read(`../guides/${R10_FILE}`).replace(/\n*$/u, "")), "r12, like r11, keeps r10 as its first part");
   assert.ok(manifest.sourceHistory.some((item) => item.file === R10_FILE && item.sha256 === R10_SHA256 && item.version === R10_VERSION), "r10 is in the history");
   const history = manifest.sourceHistory.filter((item) => item.id === "inner-child-guide");
-  assert.equal(history.length, 18, "every earlier revision is kept; r10 is the newest of them since 20 Nov 2026");
-  assert.deepEqual(history.at(-2), { id: "inner-child-guide", version: R9_VERSION, file: R9_FILE, sha256: CURRENT_R9_SHA256, role: "primary-framework", format: "text" });
+  assert.equal(history.length, 19, "every earlier revision is kept; r10 was the newest of them from 20 Nov 2026, r11 is since 25 Nov 2026");
+  assert.deepEqual(history.at(-3), { id: "inner-child-guide", version: R9_VERSION, file: R9_FILE, sha256: CURRENT_R9_SHA256, role: "primary-framework", format: "text" });
   assert.equal(history.some((item) => item.file === active.file), false, "the active revision is not in its own history");
   assert.equal(history.filter((item) => item.file === R9_FILE).length, 1);
   assert.match(manifest.notes, /October 31 owner-approved spiritual-source paragraph \(owner question 52, option A, answered 31 October 2026 at 23:29 UTC, with the owner's follow-up recorded on issue 215, comment 6546274735, item 2\) is a new revision, r10, that adds one paragraph to r9, in the Ask God for a Loan section directly after the paragraph that begins 'This is the feast problem\.'/u);
@@ -154,14 +154,14 @@ test("everything that names the active revision names r10 and its hash, and r9 m
   const layout = json("../guides/source-layout.json");
   const bindings = json("../tasks/guide-fidelity-20260906/case-source-bindings-2026-09-07.json");
   const concept = json("../authoring/concepts/shame.json");
-  assert.equal(layout.version, "source-layout-v17-2026-11-20");
+  assert.equal(layout.version, "source-layout-v18-2026-11-25");
   assert.equal(layout.textGuides.find((guide) => guide.guideId === "inner-child-guide").file, active.file);
   assert.equal(bindings.sourceFile, `guides/${active.file}`);
   assert.equal(bindings.sourceSha256, active.sha256);
   assert.equal(concept.source.file, active.file);
   assert.equal(concept.source.sha256, active.sha256);
   assert.equal(json("../guide-graphs/compiled/bundle.json").sourceMaps.find((map) => map.guideId === "inner-child-guide").file, active.file);
-  assert.match(read("../docs/CONCEPT-SOURCE-READING.md"), /The exact current authority is the November 20 r11 AI-guide candidate/u);
+  assert.match(read("../docs/CONCEPT-SOURCE-READING.md"), /The exact current authority is the November 25 r12 AI-guide candidate/u);
   assert.equal(read("../docs/CONCEPT-SOURCE-READING.md").includes(CURRENT_R9_SHA256), false);
   // The owner amendments are not touched by this change.
   const amendments = json("../guides/owner-amendments.json");
@@ -209,7 +209,7 @@ test("IC.BORROW_LOVE gains the one line, last, once, and it is the only node tha
   const compiled = await compileGuideGraphs({ write: false });
   assert.equal(compiled.stats.nodeCount, 87);
   assert.equal(compiled.stats.edgeCount, 126);
-  assert.equal(compiled.stats.sourceSectionCount, 176); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
+  assert.equal(compiled.stats.sourceSectionCount, 177); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one; guide r12's Generational Trauma section (25 Nov 2026) adds one
   assert.equal(compiled.stats.ownerAmendmentCount, 96); // IS7: the owner's 19 Oct 2026 symptom line, ported 21 Nov 2026, adds one
   assert.equal(candidateGraph.nodes.length, 46);
   assert.equal(candidateGraph.edges.length, 58);
@@ -274,7 +274,7 @@ test("PGQ-055 is consumed from the humanized-guide queue, and the AI guide's lin
   assertEntriesConsumed([["PGQ-055", "in", "SYNCED"], ["PGQ-050", "core point in", "SYNCED"]]);
 
   // The AI guide's own anchors: each quoted sentence is on the r10 line, in the section, under the heading it was anchored to.
-  // Since 20 Nov 2026 the source map describes r11, which is r10 with passages appended, so r10's lines keep their numbers.
+  // Since 20 Nov 2026 the source map describes r11, and since 25 Nov 2026 r12, each r10 with passages appended, so r10's lines keep their numbers.
   const r10Lines = read(`../guides/${sourceMap.file}`).split("\n");
   const at = (label, sectionId, lineNumber, quote) => {
     assert.ok(r10Lines[lineNumber - 1].includes(quote), `${label} is on r10 line ${lineNumber}`);
@@ -333,7 +333,7 @@ test("the plugin map copy is the repository's, byte for byte, and no plugin file
   assert.ok(map.includes(`> Projection input: \`${projection.projectionInputSha256}\``), "the map was regenerated from the current projection");
   const note = read(`../authoring/obsidian/current/nodes/inner-child-directed-graph/${NODE}.md`);
   assert.ok(note.includes(NODE_LINE), "the projected node note carries the line");
-  assert.ok(read(`../authoring/obsidian/current/sources/inner-child-guide/${SECTION}.md`).includes(`Authority path: \`guides/inner-child-guide-2026-11-20-r11.txt\``));
+  assert.ok(read(`../authoring/obsidian/current/sources/inner-child-guide/${SECTION}.md`).includes(`Authority path: \`guides/inner-child-guide-2026-11-25-r12.txt\``));
   const files = [];
   const walk = (directory) => {
     for (const entry of fs.readdirSync(new URL(directory, import.meta.url), { withFileTypes: true })) {

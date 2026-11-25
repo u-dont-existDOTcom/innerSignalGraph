@@ -144,9 +144,10 @@ test("the 20 Nov 2026 entries record where each r11 passage came from, and pass 
   ]);
   assert.match(queue, /^Status: \*\*PENDING\*\*$/m);
   // r24 (21 Nov 2026) adds PGQ-089, the owner's 19 Oct 2026 symptom line (IS7), after the 20 Nov entries; its own test is below.
-  assert.match(queue, /^Queue version: 2026-11-21-r24$/m);
+  // r25 (25 Nov 2026) adds PGQ-090, guide r12's Generational Trauma passage (tests/guide-generational-trauma-20261125.test.mjs).
+  assert.match(queue, /^Queue version: 2026-11-25-r25$/m);
   const expected = Array.from({ length: 33 }, (_, index) => `PGQ-${String(56 + index).padStart(3, "0")}`);
-  assert.deepEqual([...queue.matchAll(/^### (PGQ-\d+) — /gm)].map((match) => match[1]), [...expected, "PGQ-089"], "PGQ-056 to PGQ-088 (the owner's answer on guards, point 16, 22:27 UTC), then PGQ-089, once each, in order");
+  assert.deepEqual([...queue.matchAll(/^### (PGQ-\d+) — /gm)].map((match) => match[1]), [...expected, "PGQ-089", "PGQ-090"], "PGQ-056 to PGQ-088 (the owner's answer on guards, point 16, 22:27 UTC), then PGQ-089 and PGQ-090, once each, in order");
 
   const bundle = record.ownerDecisions20261120;
   assert.deepEqual(bundle.obligations.map((entry) => entry.id), expected, "one provenance record per queued entry");

@@ -2,8 +2,8 @@
   "schema": "guide-concept-evidence-v1",
   "guideId": "inner-child-guide",
   "source": {
-    "file": "inner-child-guide-2026-11-20-r11.txt",
-    "sha256": "6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f"
+    "file": "inner-child-guide-2026-11-25-r12.txt",
+    "sha256": "e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a"
   },
   "method": "Human-curated conceptual/countercase anchors; exact source citation integrity can be tested, but semantic completeness cannot be mechanically proved.",
   "concepts": [

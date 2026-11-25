@@ -12,7 +12,7 @@ section_hash: a81b622768e565508efd3870e2a704d76cbd302c15f5c4360e70093cf99841a9
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.GUIDE_LATER
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
 ---
 
 # AMEND.IC.FORCED_ADULTHOOD_AND_CLAMPING_DOWN_20261120

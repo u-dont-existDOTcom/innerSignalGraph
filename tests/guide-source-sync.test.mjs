@@ -97,9 +97,9 @@ test("October 4 r4 adds only the approved missing-to-love, support-mode and conc
 
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-decisions-live-guide-passages-2026-11-20-r11");
-  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
-  assert.equal(active.sha256, "6e13a5c9493d2dc6a6bcf971c0fe4dfebe47fb9e610ce4b18cfa62562583656f");
+  assert.equal(active.version, "owner-decision-live-guide-generational-trauma-2026-11-25-r12");
+  assert.equal(active.file, "inner-child-guide-2026-11-25-r12.txt");
+  assert.equal(active.sha256, "e7f618cc5b7fc65a7a2f60a9754f1650b9ac956af57f26e978440c216a4aa25a");
   const r5 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-10-r5.txt", import.meta.url), "utf8");
   assert.equal(hash(r5), "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-10-r5.txt" && item.sha256 === "96115af33451a16b0321f9fc3832d818247df042d2c29e2b68772dd815eccb31"));
@@ -217,7 +217,7 @@ test("October 31 r9 is October 30 r8 plus exactly the owner's two approved sente
   // (The source map describes the active revision, r10, which adds its one paragraph far below line 153, so this line has not moved.)
   const sourceMap = JSON.parse(await fs.readFile(new URL("../guide-graphs/source-maps/inner-child-guide.json", import.meta.url), "utf8"));
   assert.equal(sourceMap.sections.find(section => section.lineStart <= 153 && 153 <= section.lineEnd)?.id, "IC.RELATIONAL_REALITY");
-  assert.equal(sourceMap.sections.filter(section => section.id !== "IC.LIVE_GUIDE_DECISIONS_20261120").length, 38, "no section is added or removed (r11 appends one section of live-guide passages)");
+  assert.equal(sourceMap.sections.filter(section => !/^IC\.LIVE_GUIDE_DECISIONS_/u.test(section.id)).length, 38, "no section is added or removed (r11 and r12 each append one section of live-guide passages)");
 
   // r10 (owner question 52) is the active revision now: everything that names the active revision names r10 and its hash, and r9 is kept in the history.
   const r10 = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-31-r10.txt", import.meta.url), "utf8");
@@ -226,16 +226,16 @@ test("October 31 r9 is October 30 r8 plus exactly the owner's two approved sente
   const bindings = JSON.parse(await fs.readFile(new URL("../tasks/guide-fidelity-20260906/case-source-bindings-2026-09-07.json", import.meta.url), "utf8"));
   const concept = JSON.parse(await fs.readFile(new URL("../authoring/concepts/shame.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
-  assert.equal(active.sha256, hash(await fs.readFile(new URL("../guides/inner-child-guide-2026-11-20-r11.txt", import.meta.url), "utf8")));
-  assert.ok((await fs.readFile(new URL("../guides/inner-child-guide-2026-11-20-r11.txt", import.meta.url), "utf8")).startsWith(r10.replace(/\n*$/u, "")), "r11 (owner answers of 20 Nov 2026) keeps r10 as its first part");
-  assert.equal(layout.version, "source-layout-v17-2026-11-20");
+  assert.equal(active.file, "inner-child-guide-2026-11-25-r12.txt");
+  assert.equal(active.sha256, hash(await fs.readFile(new URL("../guides/inner-child-guide-2026-11-25-r12.txt", import.meta.url), "utf8")));
+  assert.ok((await fs.readFile(new URL("../guides/inner-child-guide-2026-11-25-r12.txt", import.meta.url), "utf8")).startsWith(r10.replace(/\n*$/u, "")), "r12 (25 Nov 2026) appends after r11 (owner answers of 20 Nov 2026), which keeps r10 as its first part");
+  assert.equal(layout.version, "source-layout-v18-2026-11-25");
   assert.equal(layout.textGuides.find(guide => guide.guideId === "inner-child-guide").file, active.file);
   assert.equal(bindings.sourceFile, `guides/${active.file}`);
   assert.equal(bindings.sourceSha256, active.sha256);
   assert.equal(concept.source.file, active.file);
   assert.equal(concept.source.sha256, active.sha256);
-  assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 18, "every earlier revision is kept in the history");
+  assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 19, "every earlier revision is kept in the history (r11 since 25 Nov 2026)");
   assert.ok(manifest.sourceHistory.some(item => item.id === "inner-child-guide" && item.file === "inner-child-guide-2026-10-31-r9.txt" && item.sha256 === hash(r9Now)), "r9 is in the history with its own hash");
   assert.equal(sourceMap.file, active.file);
 });
@@ -295,20 +295,20 @@ test("October 31 r9 also carries exactly the three owner-approved refinements of
   assert.ok(mapped[lineOf(CRITICAL_VOICE) + 1].startsWith("Borrowed adulthood helps because"), "and before the paragraph that follows it");
   assert.equal(mapped[lineOf(DRAWING_HEADING) - 3].endsWith(JOURNAL_ANCHOR), true, "directly after Journal With Each Hand");
   assert.equal(mapped[lineOf(DRAWING) + 1], NEXT_HEADING, "and before the next heading");
-  assert.equal(sourceMap.sections.filter(section => section.id !== "IC.LIVE_GUIDE_DECISIONS_20261120").length, 38, "no section is added or removed (r11 appends one section of live-guide passages)");
-  assert.equal(sourceMap.file, "inner-child-guide-2026-11-20-r11.txt");
+  assert.equal(sourceMap.sections.filter(section => !/^IC\.LIVE_GUIDE_DECISIONS_/u.test(section.id)).length, 38, "no section is added or removed (r11 and r12 each append one section of live-guide passages)");
+  assert.equal(sourceMap.file, "inner-child-guide-2026-11-25-r12.txt");
 
   // The manifest's notes still say the issue's edits were made inside r9. r9 keeps its issue 215 digest in the history; r10 (owner question 52,
   // the spiritual-source paragraph) is the active revision, so the active entry names r10 and the history gains r9.
   const manifest = JSON.parse(await fs.readFile(new URL("../guides/manifest.json", import.meta.url), "utf8"));
   const active = manifest.sources.find(source => source.id === "inner-child-guide");
-  assert.equal(active.version, "owner-decisions-live-guide-passages-2026-11-20-r11");
-  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
-  assert.equal(active.sha256, hash(await fs.readFile(new URL("../guides/inner-child-guide-2026-11-20-r11.txt", import.meta.url), "utf8")));
-  assert.ok((await fs.readFile(new URL("../guides/inner-child-guide-2026-11-20-r11.txt", import.meta.url), "utf8")).startsWith(r10.replace(/\n*$/u, "")), "r11 (owner answers of 20 Nov 2026) keeps r10 as its first part");
+  assert.equal(active.version, "owner-decision-live-guide-generational-trauma-2026-11-25-r12");
+  assert.equal(active.file, "inner-child-guide-2026-11-25-r12.txt");
+  assert.equal(active.sha256, hash(await fs.readFile(new URL("../guides/inner-child-guide-2026-11-25-r12.txt", import.meta.url), "utf8")));
+  assert.ok((await fs.readFile(new URL("../guides/inner-child-guide-2026-11-25-r12.txt", import.meta.url), "utf8")).startsWith(r10.replace(/\n*$/u, "")), "r12 (25 Nov 2026) appends after r11 (owner answers of 20 Nov 2026), which keeps r10 as its first part");
   assert.match(manifest.notes, /Inner Child refinements, filed as issue 215 on 31 October 2026 at 13:39 UTC, are made inside this same r9 file rather than a new revision/u);
   assert.match(manifest.notes, /revised in place after the owner's follow-up correction of 31 October 2026 at 15:11 UTC, recorded on issue 215/u, "the notes say the paragraph was revised in place");
-  assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 18);
+  assert.equal(manifest.sourceHistory.filter(item => item.id === "inner-child-guide").length, 19);
   assert.deepEqual(manifest.sourceHistory.filter(item => /r9|r10/u.test(item.file)).map(item => [item.file, item.sha256]), [["inner-child-guide-2026-10-31-r9.txt", CURRENT_R9_SHA256], ["inner-child-guide-2026-10-31-r10.txt", "0ad32952057b1fbf4c8407bef8035475c9629ad4be7545adee76652ba7774ab2"]], "r9 is in the history with its issue 215 digest, and the active r10 is not");
 });
 

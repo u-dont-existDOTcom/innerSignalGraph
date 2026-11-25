@@ -12,7 +12,7 @@ section_hash: ba8f82e3626dccc79d85a14e99e79f2a14e7a557f5389e24f8b21e1a49b245a6
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.GRATITUDE_PRACTICE
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
 ---
 
 # AMEND.IC.GRATITUDE_WITHOUT_COMPARISON_20261022

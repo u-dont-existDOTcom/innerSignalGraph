@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: cfdd132b9ee91d0d39d63adbe9c8102aaadcc9c21de9898637355963d0f64dc8
 source_file_sha256: 699098043eb18d64c1eb3705edb313af34702d62f0baf3f143d3c0b79400ae75
-projection_input_sha256: 9871a63c8240a1413f67f7da724b7a07e7c7069f2a41c45d1fdd6df3c2921de2
+projection_input_sha256: ca228b45125d951ffbb19c36c86387dff748e7cc6f6abc8f32f214cae2844b06
 ---
 
 # AMEND.IC.THREE_JOBS_WORK_TOGETHER_20261118

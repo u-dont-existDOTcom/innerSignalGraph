@@ -445,8 +445,8 @@ test("AI guide r9 is r8 plus the owner's two sentences directly after the going-
   const active = manifest.sources.find((source) => source.id === "inner-child-guide");
   // Later the same day the owner answered question 52, and r10 (r9 plus one paragraph; tested in the spiritual-source-paragraph test) became the
   // active revision. r9 stays immutable in the manifest's source history, which is the file this test is about.
-  assert.equal(active.file, "inner-child-guide-2026-11-20-r11.txt");
-  assert.equal(active.version, "owner-decisions-live-guide-passages-2026-11-20-r11");
+  assert.equal(active.file, "inner-child-guide-2026-11-25-r12.txt");
+  assert.equal(active.version, "owner-decision-live-guide-generational-trauma-2026-11-25-r12");
   const r9Entry = manifest.sourceHistory.find((entry) => entry.version === "owner-approved-conflict-appraisal-addition-2026-10-31-r9");
   assert.equal(r9Entry?.file, "inner-child-guide-2026-10-31-r9.txt");
   // The same day the owner also approved three Inner Child refinements (issue 215), made inside r9 itself. They are tested in the
