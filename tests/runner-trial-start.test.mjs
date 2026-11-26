@@ -138,6 +138,7 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_RESPONSE_EVIDENCE: "on",
     INNER_SIGNAL_RUNNER_TRIAL_CLIENT_TOKENS: "{\"case-55555555-5555-4555-8555-555555555555\":\"synthetic-inherited\"}",
     INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR: "/synthetic/inherited-claude",
+    INNER_SIGNAL_RUNNER_LAUNCHER: "on",
     INNER_SIGNAL_MODE: "cli",
     LEDGER_MODE: "full"
   };
@@ -158,9 +159,11 @@ test("the server gets exactly the trial's settings: the shell's InnerSignal sett
     INNER_SIGNAL_OWNER_FALLBACK: "off",
     INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE: "off",
     INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE: "off",
-    INNER_SIGNAL_RESPONSE_EVIDENCE: "off"
+    INNER_SIGNAL_RESPONSE_EVIDENCE: "off",
+    INNER_SIGNAL_RUNNER_LAUNCHER: "off"
   }, "the usual app's vault, the shell's switches and its client tokens never reach the trial's server, and a Codex run names no Claude folder");
   assert.equal(serverEnvironment({ ...common, provider: "codex", responseEvidence: true }).INNER_SIGNAL_RESPONSE_EVIDENCE, "on", "--response-evidence turns it on");
+  assert.equal(serverEnvironment({ ...common, provider: "codex", launcher: true }).INNER_SIGNAL_RUNNER_LAUNCHER, "on", "only the icon's launcher turns its own switch on");
   assert.deepEqual([codex.PORT, codex.LEDGER_MODE, codex.PATH, codex.HOME, codex.CODEX_COMMAND], ["9123", "off", "/synthetic/bin", "/synthetic/home", "/synthetic/bin/codex"]);
   const flagged = serverEnvironment({ ...common, provider: "codex", keptPlan: true, numberNow: true, feedbackLink: true, ownerFallback: true, fixedMessageOnFailure: true });
   assert.deepEqual([flagged.INNER_SIGNAL_RUNNER_KEPT_PLAN, flagged.INNER_SIGNAL_RUNNER_NUMBER_NOW, flagged.INNER_SIGNAL_RUNNER_FEEDBACK_LINK, flagged.INNER_SIGNAL_OWNER_FALLBACK, flagged.INNER_SIGNAL_RUNNER_FIXED_MESSAGE_ON_FAILURE], ["on", "on", "on", "on", "on"]);
@@ -316,6 +319,10 @@ test("a real start serves the trial page on loopback in its own vault, names its
   assert.deepEqual((await own.json()).turns, []);
   const refused = await post({ caseId: "case-synthetic-not-granted", conversation: "current" });
   assert.deepEqual([refused.status, (await refused.json()).code], [404, "RUNNER_CASE_UNKNOWN"], "a case the credentials don't name is refused");
+  // Started from a terminal: no launcher to ask, so the page says to restart from the terminal, and the server refuses a Restart.
+  assert.equal(health.runnerLauncher, "off");
+  const restart = await fetch(`${base}/v1/runner/restart`, { method: "POST", headers: { "content-type": "application/json", origin: base }, body: JSON.stringify({ confirmed: true }) });
+  assert.deepEqual([restart.status, (await restart.json()).code], [409, "RUNNER_STARTED_FROM_TERMINAL"]);
   child.kill("SIGTERM");
   assert.deepEqual(await exited, { code: 0, signal: null });
   assert.equal(`${stdout}${stderr}`.includes(credentials.grants[0].token_sha256), false);

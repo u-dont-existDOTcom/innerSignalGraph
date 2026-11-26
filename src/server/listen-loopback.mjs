@@ -42,6 +42,9 @@ export async function listenInnerSignalLoopback({
   privateTherapyController = null,
   privateSupervisorService = null,
   runnerTrialEvents = null,
+  // The channel to the launcher that started this server (src/runner-trial/launcher-link.mjs), or null: one for both listeners, as
+  // the trial's controller and its work gate are.
+  runnerLauncher = null,
   port = config.port
 }) {
   const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
@@ -79,7 +82,8 @@ export async function listenInnerSignalLoopback({
     privateSupervisorService: sharedPrivateSupervisorService,
     runnerTrialEvents: sharedRunnerTrialEvents,
     // The trial's settings, so /health can show the page its arrangement.
-    runnerTrialSettings: runnerTrial?.settings ?? null
+    runnerTrialSettings: runnerTrial?.settings ?? null,
+    runnerLauncher
   };
   const ipv4 = createInnerSignalServer(serverOptions);
   await listen(ipv4, port, "127.0.0.1");

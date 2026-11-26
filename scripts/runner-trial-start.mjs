@@ -9,6 +9,10 @@
 //   node scripts/runner-trial-start.mjs --add-client [--dir PATH]
 //   node scripts/runner-trial-start.mjs --journal-consent confirm|withdraw [--dir PATH]
 //
+// The icon's launcher (scripts/runner-launcher.mjs) makes the same start without a terminal (launchTrialServer below), with the
+// owner's flags from launcher.json, and the page's Restart and Stop then work; a start from here gives the page "Restart from the
+// terminal" instead.
+//
 // Everything the trial keeps is in one folder outside the checkout, never the app's usual vault (default
 // $HOME/.local/share/inner-signal-runner-trial, or --dir), mode 0700:
 //   vault/                    the trial's encrypted vault (one AES-256-GCM file per case, made and checked by the app's store)
@@ -18,6 +22,7 @@
 //   clients.json              the owner's clients (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md), mode 0600:
 //                             each one's label, case and journal consent; labels are shown only by the page on this computer
 //   settings-<provider>.json  the trial settings (INNER_SIGNAL_RUNNER_TRIAL_SETTINGS), mode 0600, written at every start
+//   launcher.json, launcher.log  the icon's launcher's settings and its log (scripts/runner-launcher.mjs), mode 0600, once installed
 // A new random token is made for every grant at every start. Only its SHA-256 goes into credentials.json; the tokens themselves go
 // to the server through its environment and nowhere else: never on a command line, into a file or into the output. Nothing here
 // prints a key. The server is told the owner's own case (INNER_SIGNAL_RUNNER_TRIAL_CASE_ID); the page asks it which cases it may
@@ -54,6 +59,7 @@ import {
   RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING,
   RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING,
   RUNNER_KEPT_PLAN_SETTING,
+  RUNNER_LAUNCHER_SETTING,
   RUNNER_NUMBER_NOW_SETTING,
   RUNNER_TRIAL_CASE_ID_PATTERN,
   RUNNER_TRIAL_CASE_ID_SETTING,
@@ -197,8 +203,9 @@ export function trialSettings(provider) {
 // and then exactly the trial's, with the case its credentials grant. The rest of the page runs in mock mode, so nothing but the
 // trial's own workers calls a model, and no decision ledger is written into the checkout. The kept plan, the number now, the
 // feedback link, the owner's fixed message, that message after the plan's limit, the sign-in or the time, and after every failure,
-// are off unless their flag is given; the last two only with the ones they extend.
-export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, clientTokens = {}, rulesRoot = null, trialDir = path.dirname(settingsPath), claudeConfigDir = null, keptPlan = false, numberNow = false, feedbackLink = false, ownerFallback = false, fixedMessageOnFailure = false, fixedMessageOnAnyFailure = false, responseEvidence = false }) {
+// are off unless their flag is given; the last two only with the ones they extend. The launcher's switch is on only for a server the
+// icon's launcher starts with its IPC channel (scripts/runner-launcher.mjs); a start from the terminal turns it off.
+export function serverEnvironment({ base = process.env, provider, port, credentialsPath, settingsPath, token, caseId, clientTokens = {}, rulesRoot = null, trialDir = path.dirname(settingsPath), claudeConfigDir = null, keptPlan = false, numberNow = false, feedbackLink = false, ownerFallback = false, fixedMessageOnFailure = false, fixedMessageOnAnyFailure = false, responseEvidence = false, launcher = false }) {
   if (typeof caseId !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(caseId)) throw new StartError("The trial's case id isn't of the form the credentials hold.");
   if (!clientTokens || typeof clientTokens !== "object" || Array.isArray(clientTokens)
     || Object.entries(clientTokens).some(([id, value]) => !RUNNER_TRIAL_CASE_ID_PATTERN.test(id) || id === caseId || typeof value !== "string" || !value)) {
@@ -224,7 +231,8 @@ export function serverEnvironment({ base = process.env, provider, port, credenti
     [OWNER_FALLBACK_SETTING]: ownerFallback ? "on" : "off",
     [RUNNER_FIXED_MESSAGE_ON_FAILURE_SETTING]: fixedMessageOnFailure ? "on" : "off",
     [RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING]: fixedMessageOnAnyFailure ? "on" : "off",
-    [RESPONSE_EVIDENCE_SETTING]: responseEvidence ? "on" : "off"
+    [RESPONSE_EVIDENCE_SETTING]: responseEvidence ? "on" : "off",
+    [RUNNER_LAUNCHER_SETTING]: launcher ? "on" : "off"
   });
   // Each client's token, for that client's case alone, beside the owner's own token; only with clients.
   if (Object.keys(clientTokens).length) environment[RUNNER_TRIAL_CLIENT_TOKENS_SETTING] = JSON.stringify(clientTokens);
@@ -505,9 +513,34 @@ const executable = (file) => {
   try { fs.accessSync(file, fs.constants.X_OK); return fs.statSync(file).isFile(); } catch { return false; }
 };
 
-function onPath(command, environment = process.env) {
-  if (command.includes(path.sep)) return executable(command);
-  return String(environment.PATH ?? "").split(path.delimiter).some((folder) => folder && executable(path.join(folder, command)));
+// Where a command is, as an absolute path: the one it names when it has a folder, otherwise the first executable file of that name in
+// a folder of PATH; null when there is none.
+export function commandPath(command, environment = process.env) {
+  if (typeof command !== "string" || !command) return null;
+  if (command.includes(path.sep)) return executable(command) ? path.resolve(command) : null;
+  for (const folder of String(environment.PATH ?? "").split(path.delimiter)) {
+    if (folder && executable(path.join(folder, command))) return path.resolve(folder, command);
+  }
+  return null;
+}
+const onPath = (command, environment = process.env) => commandPath(command, environment) !== null;
+
+// The workers' commands a start needs, as the provider uses them: Codex's and Claude's (CODEX_COMMAND and CLAUDE_COMMAND name others,
+// as the tests' stand-ins do). `setting` is the variable that names each.
+export function workerCommands(provider, environment = process.env) {
+  return [
+    ...(usesCodex(provider) ? [{ name: "Codex", setting: "CODEX_COMMAND", command: environment.CODEX_COMMAND || "codex", help: " Install Codex and sign in with `codex login`." }] : []),
+    ...(usesClaude(provider) ? [{ name: "Claude", setting: "CLAUDE_COMMAND", command: environment.CLAUDE_COMMAND || "claude", help: "" }] : [])
+  ];
+}
+
+// The Claude workers' sign-in folder (INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR, default $HOME/.config/claude-innersignal), or null when no
+// worker of the provider runs on Claude.
+export function claudeFolderFor(provider, environment = process.env) {
+  if (!usesClaude(provider)) return null;
+  const folder = environment[RUNNER_CLAUDE_CONFIG_DIR]?.trim() || defaultClaudeConfigDir();
+  if (!path.isAbsolute(folder)) throw new StartError(`${RUNNER_CLAUDE_CONFIG_DIR} must be an absolute path.`);
+  return folder;
 }
 
 // InnerSignal runs on Node 24 (.nvmrc). This script may run on another Node; it then starts the server with the nvm copy of
@@ -592,12 +625,8 @@ async function main(argv) {
   const options = parseArguments(argv);
   const home = options.dir ?? defaultTrialHome();
   if (options.addClient || options.journalConsent !== null) return runListCommand(options, home);
-  const commands = [
-    ...(usesCodex(options.provider) ? [{ name: "Codex", command: process.env.CODEX_COMMAND || "codex", help: " Install Codex and sign in with `codex login`." }] : []),
-    ...(usesClaude(options.provider) ? [{ name: "Claude", command: process.env.CLAUDE_COMMAND || "claude", help: "" }] : [])
-  ];
-  const claudeConfigDir = usesClaude(options.provider) ? process.env[RUNNER_CLAUDE_CONFIG_DIR]?.trim() || defaultClaudeConfigDir() : null;
-  if (claudeConfigDir !== null && !path.isAbsolute(claudeConfigDir)) throw new StartError(`${RUNNER_CLAUDE_CONFIG_DIR} must be an absolute path.`);
+  const commands = workerCommands(options.provider);
+  const claudeConfigDir = claudeFolderFor(options.provider);
   // The folder's lock is held from making this start's tokens until the server has read them (Codex's review 3): no other start,
   // addition or consent change can rotate the credentials in between, which would leave the server refusing every request.
   const resolvedHome = checkTrialHome(home);
@@ -613,45 +642,56 @@ async function main(argv) {
   return code;
 }
 
-async function startServer({ options, home, commands, claudeConfigDir, startLock }) {
+// What a start says, line by line: this command prints it; the launcher writes it to its log (scripts/runner-launcher.mjs). Every line
+// is the script's own fixed words, with numbers, paths and codes: never a label or anything a person wrote.
+const TERMINAL_OUTPUT = Object.freeze({ say: (line) => console.log(line), warn: (line) => console.warn(line), fail: (line) => console.error(line) });
+
+// Codes the server names on its standard error (`code: 'BAD_CONFIG'`, as Node prints an error it stops on), never its words: for the
+// launcher's log, which holds codes and no words (design of 26 Nov 2026, sections 8 and 10). At most eight, each once.
+function serverCodes(stream) {
+  const seen = new Set();
+  let tail = "";
+  stream.setEncoding("utf8");
+  stream.on("data", (chunk) => {
+    const text = tail + chunk;
+    for (const match of text.matchAll(/\bcode: '([A-Z][A-Z0-9_]{1,63})'/gu)) if (seen.size < 8) seen.add(match[1]);
+    tail = text.slice(-80);
+  });
+  stream.on("error", () => {});
+  return () => Object.freeze([...seen]);
+}
+
+// One start of the server, as this command and the icon's launcher make it (docs/RUNNER-TRIAL.md): the folder and this start's grants
+// from the client list (so clients added and consents recorded since the last start take effect), the released rules, and the server,
+// until it answers. The caller holds the folder's lock, which is let go here once the server has read its credentials (or stopped).
+// `released`: the rules the launcher already runs, for a restart from the page; a new release reaches the runner only by a start that
+// fetches it (design of 26 Nov 2026, section 10). `launcher`: the server gets an IPC channel to the launcher, and its own output goes
+// nowhere (the launcher's log holds the start's lines and codes, never the server's words); otherwise it goes to this terminal.
+// Returns the server's process and end, the rules, what the folder holds and what /health said (`ready.health`), or, when it didn't
+// answer (said already) or stopped first, `ready.timedOut` or `ready.stopped`.
+export async function launchTrialServer({ options, home, commands, claudeConfigDir, startLock, released = null, launcher = false, output = TERMINAL_OUTPUT, stopHint = "  Stop with Ctrl+C.", onSpawn = () => {} }) {
   const prepared = await prepareTrialFolder({ home, provider: options.provider, locked: true });
-  if (options.prepareOnly) {
-    console.log(`Runner trial folder ready, server not started: ${prepared.home}`);
-    console.log(`  vault ${prepared.vault}, credentials.json and ${path.basename(prepared.settingsPath)} (only you can read them).`);
-    return 0;
-  }
   for (const { name, command, help } of commands) {
     if (!onPath(command)) throw new StartError(`The ${name} command (${command}) isn't on PATH, so the trial's workers couldn't run.${help}`);
   }
   if (claudeConfigDir !== null && !fs.existsSync(claudeConfigDir)) {
-    console.warn(`No Claude sign-in folder at ${claudeConfigDir}: sign in there first with  CLAUDE_CONFIG_DIR=${claudeConfigDir} claude  then /login.`);
+    output.warn(`No Claude sign-in folder at ${claudeConfigDir}: sign in there first with  CLAUDE_CONFIG_DIR=${claudeConfigDir} claude  then /login.`);
   }
   const node = nodeForServer();
   if (!(await portIsFree(options.port))) {
     throw new StartError(`Port ${options.port} on 127.0.0.1 is in use: is the trial already running? Stop it, or start with --port and another number (the page then starts with a new case).`);
   }
-  const released = await prepareReleasedRules(prepared.home);
-  console.log(released.rulesRoot ? `  Rules from ${released.source}.` : "  No local origin/stable ref: using rules from this checkout, not the release.");
-  const environment = serverEnvironment({ rulesRoot: released.rulesRoot, trialDir: prepared.home, provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, clientTokens: prepared.clientTokens, claudeConfigDir, keptPlan: options.keptPlan, numberNow: options.numberNow, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback, fixedMessageOnFailure: options.fixedMessageOnFailure, fixedMessageOnAnyFailure: options.fixedMessageOnAnyFailure, responseEvidence: options.responseEvidence });
-  console.log(`Starting InnerSignal's runner trial on ${PROVIDER_WORDS[options.provider]}, with its own vault: ${prepared.vault}`);
-  const child = spawn(node, [serveEntry], { cwd: repositoryRoot, env: environment, stdio: ["ignore", "inherit", "inherit"] });
+  const rules = released ?? await prepareReleasedRules(prepared.home);
+  output.say(rules.rulesRoot ? `  Rules from ${rules.source}.` : "  No local origin/stable ref: using rules from this checkout, not the release.");
+  const environment = serverEnvironment({ rulesRoot: rules.rulesRoot, trialDir: prepared.home, provider: options.provider, port: options.port, credentialsPath: prepared.credentialsPath, settingsPath: prepared.settingsPath, token: prepared.token, caseId: prepared.caseId, clientTokens: prepared.clientTokens, claudeConfigDir, keptPlan: options.keptPlan, numberNow: options.numberNow, feedbackLink: options.feedbackLink, ownerFallback: options.ownerFallback, fixedMessageOnFailure: options.fixedMessageOnFailure, fixedMessageOnAnyFailure: options.fixedMessageOnAnyFailure, responseEvidence: options.responseEvidence, launcher });
+  output.say(`Starting InnerSignal's runner trial on ${PROVIDER_WORDS[options.provider]}, with its own vault: ${prepared.vault}`);
+  const child = spawn(node, [serveEntry], { cwd: repositoryRoot, env: environment, stdio: launcher ? ["ignore", "ignore", "pipe", "ipc"] : ["ignore", "inherit", "inherit"] });
   const exited = new Promise((resolve) => {
     child.once("exit", (code, signal) => resolve({ code, signal }));
     child.once("error", () => resolve({ code: 1, signal: null }));
   });
-  let stopping = false;
-  // Ctrl+C reaches the server too (one process group); if it hasn't stopped a few seconds later, it is asked again.
-  process.on("SIGINT", () => {
-    if (stopping) return;
-    stopping = true;
-    setTimeout(() => { if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM"); }, 3_000).unref();
-  });
-  for (const signal of ["SIGTERM", "SIGHUP"]) {
-    process.on(signal, () => {
-      stopping = true;
-      if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
-    });
-  }
+  const codes = launcher ? serverCodes(child.stderr) : () => Object.freeze([]);
+  onSpawn(child, exited);
   const ready = await untilReady(options.port, exited, 120_000);
   // The server has read its credentials once it answers (or it stopped): the folder is free again for other commands. A lock that can't
   // be let go would keep them all out while the trial runs, a withdrawal of a journal consent included, so it isn't run like that.
@@ -660,26 +700,61 @@ async function startServer({ options, home, commands, claudeConfigDir, startLock
     await exited;
     throw error;
   }
+  const launched = Object.freeze({ prepared, released: rules, child, exited, ready, codes });
   if (ready.timedOut) {
-    console.error(`The server didn't answer on port ${options.port} within two minutes; it was stopped.`);
+    output.fail(`The server didn't answer on port ${options.port} within two minutes; it was stopped.`);
     child.kill("SIGTERM");
     await exited;
-    return 1;
+    return launched;
   }
   if (ready.health && ready.health.runnerTrial !== "on") {
     child.kill("SIGTERM");
     await exited;
     throw new StartError("The server started without the runner trial; it was stopped.");
   }
-  if (ready.health) {
-    console.log("");
-    console.log(`Runner trial ready: http://127.0.0.1:${options.port}`);
-    console.log(`  Workers: ${WORKER_WORDS[options.provider]}; the whole writer with one whole checker.`);
-    console.log(`  Kept plan ${onOff(options.keptPlan)}, number now ${onOff(options.numberNow)}, feedback link ${onOff(options.feedbackLink)}, owner's fixed message ${onOff(options.ownerFallback)}, also after a plan limit, sign-in or timeout ${onOff(options.fixedMessageOnFailure)}.`);
-    console.log(`  The owner's fixed message after every other failure too (a refusal, a failed call, an interruption): ${onOff(options.fixedMessageOnAnyFailure)}.`);
-    console.log(`  Response evidence ${onOff(options.responseEvidence)}; clients ${prepared.clientCount} (the page asks who each conversation is with).`);
-    console.log("  Stop with Ctrl+C.");
+  // Any state but "off" shows the channel: the page may already have asked for a restart or a stop, which the launcher then reads.
+  if (ready.health && launcher && !["on", "restarting", "stopping"].includes(ready.health.runnerLauncher)) {
+    child.kill("SIGTERM");
+    await exited;
+    throw new StartError("The server started without its channel to the launcher; it was stopped.");
   }
+  if (ready.health) {
+    output.say("");
+    output.say(`Runner trial ready: http://127.0.0.1:${options.port}`);
+    output.say(`  Workers: ${WORKER_WORDS[options.provider]}; the whole writer with one whole checker.`);
+    output.say(`  Kept plan ${onOff(options.keptPlan)}, number now ${onOff(options.numberNow)}, feedback link ${onOff(options.feedbackLink)}, owner's fixed message ${onOff(options.ownerFallback)}, also after a plan limit, sign-in or timeout ${onOff(options.fixedMessageOnFailure)}.`);
+    output.say(`  The owner's fixed message after every other failure too (a refusal, a failed call, an interruption): ${onOff(options.fixedMessageOnAnyFailure)}.`);
+    output.say(`  Response evidence ${onOff(options.responseEvidence)}; clients ${prepared.clientCount} (the page asks who each conversation is with).`);
+    output.say(stopHint);
+  }
+  return launched;
+}
+
+// A start from this terminal: --prepare-only stops after the folder; otherwise the server runs until Ctrl+C or a stop signal.
+async function startServer({ options, home, commands, claudeConfigDir, startLock }) {
+  if (options.prepareOnly) {
+    const prepared = await prepareTrialFolder({ home, provider: options.provider, locked: true });
+    console.log(`Runner trial folder ready, server not started: ${prepared.home}`);
+    console.log(`  vault ${prepared.vault}, credentials.json and ${path.basename(prepared.settingsPath)} (only you can read them).`);
+    return 0;
+  }
+  let stopping = false;
+  const onSpawn = (child) => {
+    // Ctrl+C reaches the server too (one process group); if it hasn't stopped a few seconds later, it is asked again.
+    process.on("SIGINT", () => {
+      if (stopping) return;
+      stopping = true;
+      setTimeout(() => { if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM"); }, 3_000).unref();
+    });
+    for (const signal of ["SIGTERM", "SIGHUP"]) {
+      process.on(signal, () => {
+        stopping = true;
+        if (child.exitCode === null && child.signalCode === null) child.kill("SIGTERM");
+      });
+    }
+  };
+  const { ready, exited } = await launchTrialServer({ options, home, commands, claudeConfigDir, startLock, onSpawn });
+  if (ready.timedOut) return 1;
   const { code } = await exited;
   // Stopped on request (Ctrl+C, or a stop signal to this script): the server closed its listener and released the vault.
   if (stopping) return code ?? 0;

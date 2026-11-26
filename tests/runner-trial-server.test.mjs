@@ -1326,6 +1326,7 @@ async function casePickingPage(t, { health, view = { cases: [], clientsAwaitingR
     applyRunnerTrial: (on) => { context.runnerTrial.on = on; document.querySelector("#runner-client-choice").hidden = !on; },
     applyRunnerKeptPlan: () => {},
     applyRunnerFeedbackLink: () => {},
+    applyRunnerLauncher: () => {},
     reconcileRunnerCase: async () => { calls.push(["reconcile", context.state.caseId, JSON.stringify(context.state.settings), context.state.therapy.length]); },
     supervisorPanel: { clear: () => calls.push(["supervisorPanel.clear"]) },
     saveState: () => calls.push(["saveState", context.state.caseId]),

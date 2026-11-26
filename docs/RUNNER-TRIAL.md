@@ -14,7 +14,58 @@ keeps every call with one company.
 
 The command prints the page's address, `http://127.0.0.1:8797`, once the server answers with the trial on. Stop it with Ctrl+C.
 It runs on any recent Node; InnerSignal itself needs Node 24 (`.nvmrc`), so when the shell's `node` is another version, the
-command starts the server with nvm's copy of Node 24.
+command starts the server with nvm's copy of Node 24. Without a terminal, the icon does the same start (below).
+
+## Without a terminal: the icon, Restart and Stop
+
+The owner asked for the runner without the terminal (IS24, 24 Nov 2026, and his answer `i80 1a`, 26 Nov 2026; design:
+`docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md`, sections 2 and 10, pull request 2). Once installed, an
+icon starts the runner and opens its page, and the page has **Restart** and **Stop** at the top.
+
+**Installing the icon** is done once, from the checkout the icon is to run, with the start's own flags:
+
+```bash
+node scripts/runner-launcher.mjs --install --provider mixed --kept-plan --number-now --owner-fallback \
+  --fixed-message-on-failure --fixed-message-on-any-failure --feedback-link
+```
+
+It writes two files and starts nothing:
+
+- `launcher.json` in the trial folder (mode 0600): those flags, in one fixed order and checked as the start checks them (never
+  `--prepare-only`, `--add-client`, `--journal-consent` or `--dir` among them), with where the install found the workers' commands
+  (Codex's and Claude's) and, when set, `INNER_SIGNAL_RUNNER_CLAUDE_CONFIG_DIR`, so the icon runs them whatever the desktop's PATH
+  holds. The launcher refuses a file others can read, a link, or anything else in it.
+- `inner-signal-runner.desktop` in `$XDG_DATA_HOME/applications` (by default `~/.local/share/applications`): "InnerSignal runner" in
+  the applications menu, which can be pinned to the dock. It runs this checkout's `scripts/runner-launcher.mjs` with the Node 24 the
+  install ran on, without a terminal, and with `--dir` when the install was given one. A path holding `"`, `` ` ``, `$`, `\`, `%` or a
+  control character is refused rather than escaped.
+
+`--uninstall` takes both away again. A runner started from a terminal keeps running: stop it there once, then start it with the icon.
+
+**The icon.** When the runner already answers on its port, it only opens the page. Otherwise the launcher does what a start does (the
+folder, this start's grants from the client list, the released rules, the server) with the flags from `launcher.json`, opens the
+browser at the page and stays as the server's parent. A click while another start is under way waits for it, then opens the page.
+When the runner can't start, a desktop notification says so and names the log.
+
+**Restart and Stop** are at the top of the page for a runner the icon started; one started from a terminal shows "Restart from the
+terminal" instead (`/health` names the state as `runnerLauncher`: `on`, `off`, `restarting` or `stopping`). Each asks once in plain
+words, then sends `POST /v1/runner/restart` or `/v1/runner/stop` with `{"confirmed": true}` (JSON, at most 1 KiB, from the owner's page
+on this machine only, as for the page's other routes). The server refuses while a reply is being written or a case is being deleted
+(`RUNNER_BUSY`, naming which); otherwise, in the same step, it stops taking work (a turn, a reconcile or a deletion that comes after is
+refused with `RUNNER_CLOSING`) and asks the launcher over its IPC channel. The launcher stops the server (it finishes what it is
+sending and lets go of the vault; one still running 20 seconds later is ended) and, for a restart, starts it again. The page reloads
+once the restarted runner answers; after Stop it says that the icon starts it again.
+
+**What a restart takes in.** It is the same start again, so clients added and consents recorded since the last start take effect (new
+grants from the client list, a confirmed client's `session_use` purpose included), with the released rules the runner already runs: a
+new release reaches it only through a start that fetches one (Stop, then the icon).
+
+**The launcher's log**, `launcher.log` in the trial folder (mode 0600; past 512 KiB the last one is kept as `launcher.log.1`), holds
+the start's own lines and codes, each with its time: never a label, a message or anything a person wrote, and not the server's own
+output, of which it keeps only the error codes Node prints (such as `BAD_CONFIG`). An unexpected error is logged by its code alone.
+
+Limits: the icon is a desktop entry for Linux desktops. It runs the checkout it was installed from with the Node it names, so moving
+or removing either means installing it again. The launcher owns the server's life: if the launcher is ended, the server stops too.
 
 ## What it sets up
 
@@ -40,6 +91,8 @@ One folder outside the checkout, only yours (mode 0700): `$HOME/.local/share/inn
 - `settings-<provider>.json` (mode 0600, `INNER_SIGNAL_RUNNER_TRIAL_SETTINGS`), written at every start: the arrangement that
   measured best, the whole writer with one whole checker, readers and checkers at low effort and the writer at medium, each worker
   on the provider the choice gives it.
+- `launcher.json` and `launcher.log` (mode 0600), once the icon is installed: its start's flags, and its log of the start's lines and
+  codes (above).
 
 The server is told your own case (`INNER_SIGNAL_RUNNER_TRIAL_CASE_ID`), and `/health` names it, and each client's token for that
 client's case alone (`INNER_SIGNAL_RUNNER_TRIAL_CLIENT_TOKENS`). It takes the tokens out of its environment once it has read them, so
@@ -69,7 +122,7 @@ Each case keeps its own conversation, risk record, kept plan, run log and Delete
 a reply that finishes while another case is on the page shows when you switch back. Every message in a client's case is read as the
 client's own words, so your own notes don't belong there. The server refuses a case that isn't on its list (`RUNNER_CASE_UNKNOWN`),
 and each client's token opens only that client's case. A client added while the trial runs is counted on the page until the next
-start.
+start, which Restart at the top of the page makes for a runner the icon started; a consent recorded meanwhile takes effect then too.
 
 ## A client's journal
 

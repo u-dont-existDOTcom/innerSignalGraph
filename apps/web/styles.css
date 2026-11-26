@@ -176,6 +176,12 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 .runner-thinking { font-style: italic; }
 .runner-divider { margin: 1rem 0; padding-top: .5rem; border-top: 1px solid var(--line); text-align: center; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .runner-progress { margin: .25rem 0 0; }
+/* The runner's Restart and Stop, beside the status at the top; a display rule needs its own hidden rule. */
+.topbar-side { display: grid; gap: .5rem; justify-items: end; }
+.runner-controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; justify-content: flex-end; }
+.runner-controls[hidden] { display: none; }
+.runner-controls button { padding: .45rem .85rem; }
+.runner-controls p { margin: 0; }
 .runner-client-choice { display: grid; gap: .35rem; margin: 0 0 .75rem; }
 .runner-client-choice select { max-width: 28rem; }
 .runner-client-current { margin: 0; font-weight: 700; }

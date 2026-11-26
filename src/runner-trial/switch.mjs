@@ -34,6 +34,12 @@ export const RUNNER_FIXED_MESSAGE_ON_ANY_FAILURE_SETTING = "INNER_SIGNAL_RUNNER_
 // INNER_SIGNAL_RUNNER_TRIAL is on.
 export const RUNNER_FEEDBACK_LINK_SETTING = "INNER_SIGNAL_RUNNER_FEEDBACK_LINK";
 
+// The launcher that started the trial's server (scripts/runner-launcher.mjs; docs/superpowers/specs/
+// 2026-11-26-runner-journal-upload-and-tab-design.md, section 10): on only when it started the server with its IPC channel, so the
+// page's Restart and Stop can ask it. A start from a terminal passes off, and the page then says to restart from the terminal.
+// Meaningful only while INNER_SIGNAL_RUNNER_TRIAL is on.
+export const RUNNER_LAUNCHER_SETTING = "INNER_SIGNAL_RUNNER_LAUNCHER";
+
 // The case the trial's page uses: the one the trial vault's credentials grant (scripts/runner-trial-start.mjs passes it). With the
 // trial on, /health names it, and a page holding another case (a fresh browser makes up its own) takes it before its reconcile.
 // Meaningful only while INNER_SIGNAL_RUNNER_TRIAL is on.
@@ -100,6 +106,11 @@ export function readRunnerFixedMessageOnAnyFailureSwitch(raw) {
 // Read the same way as the trial's switch.
 export function readRunnerFeedbackLinkSwitch(raw) {
   return readSwitch(raw, RUNNER_FEEDBACK_LINK_SETTING);
+}
+
+// Read the same way as the trial's switch.
+export function readRunnerLauncherSwitch(raw) {
+  return readSwitch(raw, RUNNER_LAUNCHER_SETTING);
 }
 
 // Absent or blank is none. Any other value must be a case id of the start script's form, or startup stops with a message that
