@@ -47,6 +47,8 @@ import { RUNNER_TRIAL_CASE_ID_PATTERN, RUNNER_TRIAL_CASE_ID_SETTING } from "../r
 import { readColdTestReceipt, readRunnerClients, runnerCasesView } from "../runner-trial/clients.mjs";
 import { COLD_TEST_RULE } from "../runner-trial/cold-test-rule.mjs";
 import { runnerTrialDirectory } from "../runner-trial/released-rules.mjs";
+import { isRunnerLauncherLink } from "../runner-trial/launcher-link.mjs";
+import { isRunnerWorkGate } from "../runner-trial/work-gate.mjs";
 import { FEEDBACK_PAGE_URL } from "../feedback/address.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -230,6 +232,14 @@ async function readJson(req, maxBytes = 2_000_000) {
 const SUPERVISOR_PATH = /^\/v1\/case\/supervisor\/(prepare|submit|export|report-sent)$/u;
 const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/clients", "/v1/runner/log", "/v1/runner/turn-details", "/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
 const RUNNER_PAGE_GETS = Object.freeze(["/v1/runner/clients", "/v1/runner/log", "/v1/runner/turn-details"]);
+// The page's Restart and Stop (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md, sections 4.1 and 10), each
+// a JSON object of at most this many bytes that confirms it.
+const RUNNER_CONTROL_ROUTES = Object.freeze({ "/v1/runner/restart": "restart", "/v1/runner/stop": "stop" });
+const RUNNER_CONTROL_BODY_LIMIT = 1024;
+// What the page is told while it can't restart or stop, in fixed words.
+const RUNNER_BUSY_WORDS = "Restart and Stop wait while a reply is being written or a case is being deleted: try again when it has finished.";
+const RUNNER_STARTED_FROM_TERMINAL_WORDS = "This runner was started from a terminal: restart or stop it there.";
+const RUNNER_STATUS = Object.freeze({ RUNNER_BODY_TOO_LARGE: 413, RUNNER_CLOSING: 503 });
 const LOOPBACK_HOST = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/iu;
 const SUPERVISOR_STATUS = Object.freeze({
   SUPERVISOR_ARTIFACT_NOT_FOUND: 404,
@@ -277,7 +287,7 @@ function assertOwnerChannelRequest(req, { pageGet = false } = {}) {
 // What an error answers: its status and a body with a safe message. A private failure's message is fixed words, never case content.
 function failureResponse(error) {
   const code = error?.code ?? "UNEXPECTED_ERROR";
-  const status = SUPERVISOR_STATUS[code]
+  const status = SUPERVISOR_STATUS[code] ?? RUNNER_STATUS[code]
     ?? (code === "VALIDATION_ERROR" ? 400
       : code === "PRIVATE_CASE_ACCESS_DENIED" ? 403
         : code === "PRIVATE_CASE_NOT_FOUND" ? 404
@@ -377,7 +387,48 @@ async function readSupervisorBody(req) {
   return input;
 }
 
-export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateCaseAuthContexts = new Map(), privateTherapyController = null, privateSupervisorService = null, runnerTrialEvents = null, runnerTrialSettings = null }) {
+// A Restart or Stop request's body: JSON (415 otherwise), at most RUNNER_CONTROL_BODY_LIMIT bytes, declared or sent (413), an object.
+// A body over the limit is left unread rather than torn down with its request, and the answer closes the connection, so the 413
+// reaches the page whatever the rest of the body does.
+async function readRunnerControlBody(req, res) {
+  if (!/^application\/json(?:\s*;|$)/iu.test(String(req.headers["content-type"] ?? ""))) {
+    throw supervisorError("SUPERVISOR_UNSUPPORTED_MEDIA_TYPE", "Runner requests must be sent as application/json.");
+  }
+  const tooLarge = () => {
+    res.setHeader("connection", "close");
+    return Object.assign(new Error(`The request body must be at most ${RUNNER_CONTROL_BODY_LIMIT} bytes.`), { code: "RUNNER_BODY_TOO_LARGE" });
+  };
+  if (Number(req.headers["content-length"]) > RUNNER_CONTROL_BODY_LIMIT) throw tooLarge();
+  const body = await new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    let settled = false;
+    const settle = (finish, value) => {
+      if (settled) return;
+      settled = true;
+      req.off("data", onData);
+      finish(value);
+    };
+    const onData = (chunk) => {
+      size += chunk.length;
+      if (size <= RUNNER_CONTROL_BODY_LIMIT) { chunks.push(chunk); return; }
+      req.pause();
+      settle(resolve, null);
+    };
+    req.on("data", onData);
+    req.once("end", () => settle(resolve, Buffer.concat(chunks)));
+    req.once("error", (error) => settle(reject, error));
+    req.once("close", () => settle(reject, Object.assign(new Error("The request ended before its body did."), { code: "VALIDATION_ERROR" })));
+  });
+  if (body === null) throw tooLarge();
+  let input;
+  try { input = JSON.parse(body.toString("utf8")); }
+  catch { throw Object.assign(new Error("The request body must be valid JSON."), { code: "VALIDATION_ERROR" }); }
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw Object.assign(new Error("The request body must be a JSON object."), { code: "VALIDATION_ERROR" });
+  return input;
+}
+
+export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateCaseAuthContexts = new Map(), privateTherapyController = null, privateSupervisorService = null, runnerTrialEvents = null, runnerTrialSettings = null, runnerLauncher = null }) {
   const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
   // The runner trial (INNER_SIGNAL_RUNNER_TRIAL): its controller and the hub that carries its events to the page. A caller that
   // brings its own controller (the loopback launcher, which shares one between its listeners, or a test) brings the hub too.
@@ -432,6 +483,15 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
     // The switch has one state: a controller built with the kept plan on can't serve a server whose switch is off.
     throw new RuntimeError("The kept plan is off, but the runner trial controller brought in has it on.", { code: "BAD_CONFIG" });
   }
+  // The launcher that started this server (scripts/runner-launcher.mjs), when one did, and only with the trial on: the page's Restart and
+  // Stop ask it, over its channel (src/runner-trial/launcher-link.mjs), once nothing runs (the trial controller's work gate, shared by
+  // both listeners). A server started from a terminal has none, and its page says to restart from the terminal.
+  const launcherLink = runnerTrial && runnerLauncher ? runnerLauncher : null;
+  if (launcherLink && !isRunnerLauncherLink(launcherLink)) throw new RuntimeError("The runner launcher's link must be able to ask it.", { code: "BAD_CONFIG" });
+  const workGate = launcherLink ? runnerTrial.controller.workGate : null;
+  if (launcherLink && !isRunnerWorkGate(workGate)) throw new RuntimeError("A runner launcher needs the trial controller's work gate.", { code: "BAD_CONFIG" });
+  const LAUNCHER_STATES = Object.freeze({ open: "on", restart: "restarting", stop: "stopping" });
+  const launcherState = () => (workGate ? LAUNCHER_STATES[workGate.state()] : "off");
   // Built on first use, so a server that never serves a supervisor request never builds a second model runtime.
   let supervisorDrafts = privateSupervisorService;
   const supervisorDraftService = () => {
@@ -509,6 +569,9 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           // the trial on, and then with the page's one address (src/feedback/address.mjs), so the link and the served rules agree.
           runnerFeedbackLink: runnerEvents && config.runnerFeedbackLinkEnabled === true ? "on" : "off",
           ...(runnerEvents && config.runnerFeedbackLinkEnabled === true ? { feedbackPageUrl: FEEDBACK_PAGE_URL } : {}),
+          // Whether the page's Restart and Stop work: "on" when the icon's launcher started this server and it takes work, "restarting"
+          // or "stopping" once one was asked of it, and "off" with the trial off or for a runner started from a terminal.
+          runnerLauncher: launcherState(),
           // The trial's arrangement, for the page's badge: the writer's and the checkers' modes and the providers of the readers, the
           // writer and the checkers. Null with the trial off, or when a controller was brought in without its settings.
           runnerArrangement: runnerEvents ? runnerArrangementView : null,
@@ -622,6 +685,29 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           caseStateDiff,
           privateCaseStorage: privateCaseStore ? "encrypted" : "session_only"
         });
+      }
+      // The page's Restart and Stop (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md, sections 4.1, 4.8, 8 and
+      // 10): only with the trial on, only from the owner's page on this machine (no agent's bearer token, a loopback Host and a matching
+      // Origin), and only as a small JSON object that confirms it. The server doesn't restart or stop itself: once nothing runs, it closes
+      // its work gate (from then on no turn, reconcile or deletion starts) and asks the launcher that started it, which stops it and, for a
+      // restart, starts it again. A runner started from a terminal has no launcher to ask.
+      if (req.method === "POST" && Object.hasOwn(RUNNER_CONTROL_ROUTES, url.pathname)) {
+        if (!runnerEvents) return send(res, 404, { error: "Not found" });
+        if (supervisorChannelFor(req) !== "owner_ui") throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
+        assertOwnerChannelRequest(req);
+        const input = await readRunnerControlBody(req, res);
+        const action = RUNNER_CONTROL_ROUTES[url.pathname];
+        if (input.confirmed !== true) return send(res, 400, { error: action === "stop" ? "Confirm to stop the runner." : "Confirm to restart the runner.", code: "VALIDATION_ERROR" });
+        if (!launcherLink) return send(res, 409, { error: RUNNER_STARTED_FROM_TERMINAL_WORDS, code: "RUNNER_STARTED_FROM_TERMINAL" });
+        const closed = workGate.close(action);
+        if (!closed.closed && closed.reason === "busy") return send(res, 409, { error: RUNNER_BUSY_WORDS, code: "RUNNER_BUSY", running: [...closed.running] });
+        if (!closed.closed) return send(res, 409, { error: "The runner is already restarting or stopping.", code: "RUNNER_CLOSING" });
+        try { await launcherLink.ask(action); } catch {
+          // Nothing was asked of the launcher, so the runner goes on taking work.
+          workGate.reopen();
+          return send(res, 503, { error: "The launcher couldn't be reached: nothing was restarted or stopped.", code: "RUNNER_LAUNCHER_UNREACHABLE" });
+        }
+        return send(res, 202, { action, accepted: true });
       }
       // The runner trial page's own routes (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 6, 8 and 9): its
       // reconcile when it loads, "Delete this case" and, with the kept plan on, "Delete the kept plan". Only with the trial on (the

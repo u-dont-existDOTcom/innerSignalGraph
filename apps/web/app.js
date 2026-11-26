@@ -441,12 +441,41 @@ function createRunnerDetailsView({ panel, fetchDetails, isCurrent }) {
   };
 }
 
+// The page's Restart and Stop (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md, sections 2 and 10), from what
+// /health says of the launcher: "on" when the icon's launcher started this runner and it takes work (the buttons work), "restarting" or
+// "stopping" once one was asked, "off" for a runner started from a terminal; "none" with the trial off. Fixed words only.
+const RUNNER_LAUNCHER_STATES = Object.freeze(["on", "off", "restarting", "stopping"]);
+function runnerLauncherState(health) {
+  if (health?.runnerTrial !== "on") return "none";
+  return RUNNER_LAUNCHER_STATES.includes(health.runnerLauncher) ? health.runnerLauncher : "off";
+}
+const RUNNER_FROM_TERMINAL = "Restart from the terminal";
+const RUNNER_RESTART_CONFIRM = "Restart the runner? It stops and starts again in a few seconds, so that clients added and consents recorded since it started take effect. This page reloads when it's back.";
+const RUNNER_STOP_CONFIRM = "Stop the runner? This page stops working until you start it again with the InnerSignal runner icon.";
+const RUNNER_RESTARTING_LINE = "Restarting… this page reloads when the runner is back.";
+const RUNNER_STOPPING_LINE = "Stopping…";
+const RUNNER_STOPPED_LINE = "The runner is stopped. Start it again with the InnerSignal runner icon.";
+const RUNNER_NOT_BACK_LINE = "The runner hasn't come back. Start it again with the InnerSignal runner icon.";
+const RUNNER_NOT_STOPPED_LINE = "The runner hasn't stopped yet. Reload this page in a moment.";
+const RUNNER_BUSY_WORDS = Object.freeze({ reply: "a reply is being written", deletion: "a case is being deleted" });
+// What the page says when the server refused a Restart or a Stop while work runs, from the kinds it named.
+function runnerBusyText(action, running) {
+  const what = (Array.isArray(running) ? running : []).filter((kind) => typeof kind === "string" && Object.hasOwn(RUNNER_BUSY_WORDS, kind)).map((kind) => RUNNER_BUSY_WORDS[kind]);
+  return `${action === "stop" ? "Stop" : "Restart"} waits while ${what.length ? what.join(" and ") : "the runner is busy"}: try again when it has finished.`;
+}
+// The line about clients added since the runner started: a restart brings them in, from the page when the launcher started it.
+function runnerWaitingText(waiting, launcher) {
+  if (!Number.isSafeInteger(waiting) || waiting < 1) return "";
+  return `${waiting} client(s) added since the trial started: ${launcher === "on" ? "press Restart at the top to see them here." : "start it again to see them here."}`;
+}
+
 // runner-trial-page:end
 
 // `inFlight`: the exchanges of the trial turns this page is still receiving, which a reconcile leaves to their own stream.
 // `keptPlanOn`: the plan kept for next time is on; `hasConversation`: the case has a conversation (from the server, or a turn sent);
 // `resumeShown` and `resumeAnswer`: "Pick up where we left off?" is shown, and its answer (true, false, or null before one).
-const runnerTrial = { on: false, newConversation: false, inFlight: new Set(), keptPlanOn: false, hasConversation: false, resumeShown: false, resumeAnswer: null };
+// `launcher`: what /health says of the launcher (runnerLauncherState), which decides the page's Restart and Stop.
+const runnerTrial = { on: false, newConversation: false, inFlight: new Set(), keptPlanOn: false, hasConversation: false, resumeShown: false, resumeAnswer: null, launcher: "none" };
 const RUNNER_RECONCILE_LABEL = "Looking for a reply that finished while this page was closed…";
 // The page's cases (docs/superpowers/specs/2026-11-23-runner-client-cases-design.md, point 3): the choices /v1/runner/clients gave,
 // the one picked, how many clients were added since the server started, and one bucket per case this page has shown: its transcript
@@ -531,6 +560,92 @@ function applyRunnerFeedbackLink(address) {
   else link.removeAttribute("href");
   $("#runner-feedback").hidden = !valid;
 }
+
+// runner-launcher-controls:start
+// The runner's Restart and Stop at the top of the page (design of 26 Nov 2026, sections 2 and 10): shown for a runner the icon's
+// launcher started; one started from a terminal shows "Restart from the terminal" instead. Each asks once in plain words, then the
+// server, which refuses while a reply is being written or a case is being deleted. After a restart the page reloads once the runner
+// answers again, so that it shows the clients the restart brought in; after a stop it says how to start the runner again.
+const RUNNER_POLL_MS = 1_000;
+const RUNNER_BACK_POLLS = 180;
+const RUNNER_STOP_POLLS = 60;
+const runnerPause = (ms) => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+function setRunnerControlsStatus(words) {
+  const line = $("#runner-controls-status");
+  line.textContent = words;
+  line.hidden = !words;
+}
+
+function applyRunnerLauncher(state) {
+  runnerTrial.launcher = state;
+  $("#runner-controls").hidden = state === "none";
+  for (const id of ["#runner-restart", "#runner-stop"]) {
+    $(id).hidden = !["on", "restarting", "stopping"].includes(state);
+    $(id).disabled = state !== "on";
+  }
+  const note = $("#runner-from-terminal");
+  note.textContent = state === "off" ? RUNNER_FROM_TERMINAL : "";
+  note.hidden = state !== "off";
+  if (state === "none") setRunnerControlsStatus("");
+}
+
+// After a restart was taken: the runner being stopped says "restarting" until it is gone, so the first "on" is the new one's.
+async function untilRunnerBack() {
+  for (let poll = 0; poll < RUNNER_BACK_POLLS; poll += 1) {
+    await runnerPause(RUNNER_POLL_MS);
+    try {
+      const response = await fetch("/health", { cache: "no-store" });
+      const health = await response.json();
+      if (response.ok && runnerLauncherState(health) === "on") {
+        location.reload();
+        return;
+      }
+    } catch { /* not back yet */ }
+  }
+  setRunnerControlsStatus(RUNNER_NOT_BACK_LINE);
+}
+
+// After a stop was taken: once nothing answers any more, the page says so.
+async function untilRunnerStopped() {
+  for (let poll = 0; poll < RUNNER_STOP_POLLS; poll += 1) {
+    await runnerPause(RUNNER_POLL_MS);
+    try { await fetch("/health", { cache: "no-store" }); } catch {
+      setRunnerControlsStatus(RUNNER_STOPPED_LINE);
+      return;
+    }
+  }
+  setRunnerControlsStatus(RUNNER_NOT_STOPPED_LINE);
+}
+
+async function askRunnerLauncher(action) {
+  if (runnerTrial.launcher !== "on") return;
+  if (!confirm(action === "stop" ? RUNNER_STOP_CONFIRM : RUNNER_RESTART_CONFIRM)) return;
+  for (const id of ["#runner-restart", "#runner-stop"]) $(id).disabled = true;
+  let response = null;
+  let payload = {};
+  try {
+    response = await fetch(`/v1/runner/${action}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ confirmed: true }) });
+    payload = await response.json().catch(() => ({}));
+  } catch { /* the page can't reach the runner */ }
+  if (!response?.ok) {
+    applyRunnerLauncher(runnerTrial.launcher);
+    if (response?.status === 409 && payload?.code === "RUNNER_BUSY") alert(runnerBusyText(action, payload.running));
+    else alert(`The runner wasn't ${action === "stop" ? "stopped" : "restarted"}. ${typeof payload?.error === "string" && payload.error ? payload.error : "The page can't reach it."}`);
+    return;
+  }
+  applyRunnerLauncher(action === "stop" ? "stopping" : "restarting");
+  $("#therapy-send").disabled = true;
+  setRunnerControlsStatus(action === "stop" ? RUNNER_STOPPING_LINE : RUNNER_RESTARTING_LINE);
+  if (action === "stop") await untilRunnerStopped();
+  else await untilRunnerBack();
+}
+
+function initRunnerLauncherControls() {
+  $("#runner-restart").addEventListener("click", () => { void askRunnerLauncher("restart"); });
+  $("#runner-stop").addEventListener("click", () => { void askRunnerLauncher("stop"); });
+}
+// runner-launcher-controls:end
 
 // The plan kept for next time (design, section 9): the question a new conversation opens with, its two answers, the line that says
 // what happened to the kept plan, and the button that deletes it. Every word is fixed and set with textContent.
@@ -1385,9 +1500,10 @@ function showRunnerCaseChoice() {
   line.textContent = !runnerTrial.on ? "" : choice ? runnerConversationWords(choice)
     : runnerCases.choices.length ? "Choose who this conversation is with before writing." : "The trial's cases are unavailable right now.";
   const waiting = $("#runner-client-waiting");
-  waiting.textContent = [runnerTrial.on && runnerCases.waiting > 0 ? `${runnerCases.waiting} client(s) added since the trial started: start it again to see them here.` : "", runnerTrial.on ? runnerJournalNote(choice) : ""].filter(Boolean).join(" ");
+  waiting.textContent = [runnerTrial.on ? runnerWaitingText(runnerCases.waiting, runnerTrial.launcher) : "", runnerTrial.on ? runnerJournalNote(choice) : ""].filter(Boolean).join(" ");
   waiting.hidden = !waiting.textContent;
-  $("#therapy-send").disabled = runnerTrial.on && !choice;
+  // Nothing is sent while the runner restarts or stops (its server refuses it).
+  $("#therapy-send").disabled = runnerTrial.on && (!choice || ["restarting", "stopping"].includes(runnerTrial.launcher));
 }
 
 async function loadRunnerCaseState(caseId) {
@@ -1480,6 +1596,7 @@ async function checkHealth() {
     applyRunnerTrial(health.runnerTrial === "on");
     applyRunnerKeptPlan(health.runnerKeptPlan === "on");
     applyRunnerFeedbackLink(health.runnerFeedbackLink === "on" ? health.feedbackPageUrl : null);
+    applyRunnerLauncher(runnerLauncherState(health));
     state.privateStorageMode = health.privateCaseStorage?.available ? "encrypted" : "session_only";
     // With the trial on, the page doesn't take a case from /health (the design for clients, point 3): it asks which cases it may
     // use, takes the owner's own when that is the only one, and otherwise waits for the owner to pick; the pick brings back that
@@ -2019,6 +2136,7 @@ $("#guide-packet-rollback").addEventListener("click", async () => {
 });
 $("#guide-packet-export").addEventListener("click", () => downloadResponse("/v1/guides/export", "inner-signal-guide-packet-installed.zip").catch((error) => alert(error.message)));
 
+initRunnerLauncherControls();
 $("#dev-approve").addEventListener("click", () => submitDevelopmentDecision("approve").catch((error) => alert(error.message)));
 $("#dev-reject").addEventListener("click", () => submitDevelopmentDecision("reject").catch((error) => alert(error.message)));
 

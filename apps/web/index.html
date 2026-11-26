@@ -13,7 +13,15 @@
       <p class="eyebrow">LOCAL RUNTIME</p>
       <h1>Inner Signal</h1>
     </div>
-    <div id="runtime-status" class="status pending" aria-live="polite">Checking runtime…</div>
+    <div class="topbar-side">
+      <div id="runtime-status" class="status pending" aria-live="polite">Checking runtime…</div>
+      <div id="runner-controls" class="runner-controls" role="group" aria-label="The runner" hidden>
+        <button id="runner-restart" class="secondary" type="button" aria-label="Restart the runner" hidden>Restart</button>
+        <button id="runner-stop" class="secondary" type="button" aria-label="Stop the runner" hidden>Stop</button>
+        <p id="runner-from-terminal" class="small" hidden></p>
+        <p id="runner-controls-status" class="small" role="status" aria-live="polite" hidden></p>
+      </div>
+    </div>
   </header>
 
   <main>
