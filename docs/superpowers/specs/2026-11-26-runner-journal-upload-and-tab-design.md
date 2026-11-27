@@ -2,7 +2,7 @@
 
 Written 26 Nov 2026 by a helper of the InnerSignal lane, for the owner's answer `i80 1a 2a 3a` (26 Nov 2026) and the tool that his
 `i77 3a` (24 Nov 2026) asks for; revised after read-only Codex reviews (appendix), and again for his answers `i81 1b 3a 4a 5b 6a`
-(26 Nov 2026) and `i83 1a` (by 27 Nov 2026, 00:58 UTC). A design: pull request 1 (section 10) is built with it, and each of the
+(26 Nov 2026), `i83 1a` (by 27 Nov 2026, 00:58 UTC) and `i84 1c` (27 Nov 2026). A design: pull request 1 (section 10) is built with it, and each of the
 build's merges comes to the owner (promise IS27, within IS24). It extends the runner trial
 (`docs/superpowers/specs/2026-11-21-runner-trial-design.md`), its clients and journal copy
 (`docs/superpowers/specs/2026-11-23-runner-client-cases-design.md`, "the clients design" below) and the replies' journal search
@@ -28,6 +28,10 @@ a test or in a log.
   out of the Journal tab:** the reading (4.6) marks the entries about dying or wanting to die, and the word list backs it up: an
   entry either one flags is left out whole, a theme with such a word shows the support line, there is a Hide button, and the tab
   says what may be missed (5.4).
+- **i84 `1c`** (27 Nov 2026: his Inbox at 16:12 UTC, the lane's chat at 16:14 UTC), **the graph of his 18 Oct order:** the index
+  first: copies are used with the index alone, once a copy passes its test; the graph becomes its own design and build right after
+  the upload button works from the page (with Add more and the test on the page), compared with the index alone on invented
+  questions about time and contradictions, and replies use it only if it does better (4.6, "What 1b covers"; section 10, row 4b).
 - **The reading-first order (18 Oct 2026):** the index and graph built after the detailed reading, to make them more complete and
   useful (`docs/superpowers/specs/2026-10-18-reading-first-journal-import-order.md`, his words quoted there): a new journal import reads the
   whole source, by the import's model reader or by authorized page reviews, before any index is built; an incomplete reading yields a
@@ -471,12 +475,15 @@ live and under a journal consent in version 2's words, read again under the tria
   builds nothing. The page names those pages by number and reason, offers "Read again" where the reason allows it, and otherwise
   only "Cancel". So in this slice a journal with a page GPT won't answer in form, or with a page that holds a picture or no text,
   can't be copied in from a file (section 12). A copy without such pages would be his decision, made when he asks for it.
-- **What 1b covers.** He chose 1b as it was asked: "a model reads the whole journal before the copy is built ... and nothing the
-  replies use today". The copy is what the replies need, the quote index, built only after a complete reading, with the reading's
-  facets beside it as the import adds them. It holds no person, topic or event graph (the runner runs no pointer pass), so the order's
-  graph, which may only come after the index, and the order's checks of that graph (against an index-only baseline, on held-out
-  chronology and contradiction questions) aren't built at all. Whether 1b also asks the runner for those later stages of the order
-  is the owner's to say, not this design's: pull request 3 waits for his word on it (section 10), which the lane asks apart from i83.
+- **What 1b covers.** He chose 1b as his page asked it: "Reading first, as your 18 Oct order: a model reads the whole journal before
+  the copy is built (the whole journal goes to Anthropic or OpenAI; a long run on your plans)". (An earlier revision of this design
+  quoted it with "and nothing the replies use today" added; his page never said that.) The copy is what the replies need, the quote
+  index, built only after a complete reading, with the reading's facets beside it as the import adds them; no reply reads the facets.
+  It holds no person, topic or event graph (the runner runs no pointer pass). Whether 1b also asks the runner for the order's later
+  stages, the graph (which may only come after the index) and its checks (against an index-only baseline, on held-out chronology and
+  contradiction questions), was the owner's to say, asked as i84: he chose **1c**. This design's copy is the index alone, used once a
+  copy passes its test; the graph is its own design and build right after the upload button works from the page (section 10, row
+  4b), compared with the index alone, and replies use it only if it does better.
 - **Held back.** For every page left out for `tool_refused` or `reader_output_invalid`, the digests of its passages and of each of
   its sentences of four words or more (after Unicode normalization, with runs of white space as one) are kept in the person's journal
   folder (`reading-held-back.json`, digests only, mode 0600; their Delete removes it). A later reading page that holds one of them
@@ -823,8 +830,9 @@ move down one:
 | 1 | The questions tool (section 3) and the cold test's job shared by the command and, later, the server (`cold-test-job.mjs`); the command runs a test with GPT's questions (`--cold-test --gpt-questions`), only in a trial folder set apart for invented journals until the consent in version 2's words comes with 3. Built in one pull request with this design, which it carries | the owner's yes to this design (i81, given) | 1.5 to 2 days |
 | | **The measured run (i81 6a):** the tool and the test with the real models on an invented journal, about 200 calls on the owner's plans: how often a good copy passes, what the key check drops and how often an unanswerable question's subject is told of without being named (both against the journal's known contents), the calls and the minutes. The numbers come back to him, with the choice to keep 2b or loosen it (his i77 note) | 1 merged; the lane runs it | half a day, plus the calls |
 | 2 | IS24's rest: a launcher and the icon, Restart and Stop on the page, the owner's switches kept in the launcher's settings | built and merged as pull request 254 (26 Nov) | done |
-| 3 | The journal steps up to a first copy: the People tab, adding a client, both parts of the consent in version 2's words, Add journal (PDF, text, Markdown, Word, a server copy), the preview, the reading (4.6), the copy (4.7), withdraw; the owner's own journal | 1; the owner's word on whether 1b also asks for the order's graph and its checks (4.6, "What 1b covers") | 3 to 3.5 days, more if he asks for the graph |
+| 3 | The journal steps up to a first copy: the People tab, adding a client, both parts of the consent in version 2's words, Add journal (PDF, text, Markdown, Word, a server copy), the preview, the reading (4.6), the copy (4.7), withdraw; the owner's own journal | 1 | 3 to 3.5 days |
 | 4 | Add more (4.8) and the cold test from the page, with its status (4.9) | 3 | 1.5 to 2 days |
+| 4b | The graph of the 18 Oct order (i84 1c): its own design first; then the graph from the reading's findings, compared with the index alone on invented questions about time and contradictions; replies use it only if it does better | 3 and 4; its design | not estimated |
 | 5 | The Journal tab: days with writing, then and now, what i83 1a chose (5.4), Hide, the moment of showing | 3 (and 4 for a pending copy) | 1.5 to 2 days |
 | 6 | IS23's switches: the journal for each conversation, and the check of each reply, with the seconds each adds | IS22's run on invented cases | 1 day |
 
@@ -832,7 +840,7 @@ IS24's rest came first (merged as pull request 254): a consent and a new client 
 makes it without a terminal. The reading is part of a first copy, so it comes with 3; the measured run of 6a measures the questions
 tool and the test, not the reading, whose pace the reading's own progress shows (4.6). IS23 comes last: a journal is used only with
 the check of each reply on, which is IS22's question, and the seconds each switch adds come from IS22's run. The efforts are rough
-calendar days of a helper session with its reviews, not measured: about 9 to 11 days from here, the measured run included.
+calendar days of a helper session with its reviews, not measured: about 9 to 11 days from here, the measured run included, plus the graph (4b), not estimated until its design.
 
 **The launcher**, as built (pull request 254; `docs/RUNNER-TRIAL.md`, "Without a terminal"), refuses Restart and Stop while a reply or
 a deletion runs (`RUNNER_WORK_KINDS`). The copy and the test join those kinds with pull requests 3 and 4. A reading doesn't: it is
@@ -841,9 +849,8 @@ long, so Restart and Stop pause it instead (4.6).
 ## 11. The owner's choices
 
 Of the six choices this design first put to him (question i81), five were answered, `1b 3a 4a 5b 6a`; the second was asked again
-as i83 and answered `1a` (see "What the owner decided"). One choice is still his, and pull request 3 waits for it (section 10):
-whether his 1b also asks the runner for the later stages of his 18 Oct order, the graph and its checks (4.6, "What 1b covers"). The
-lane asks it as its own question.
+as i83 and answered `1a`. Whether his 1b also asks the runner for the later stages of his 18 Oct order, the graph and its checks,
+was asked as i84 and answered `1c` (see "What the owner decided"). No choice of this design is open.
 
 ## 12. Limits
 
@@ -967,7 +974,7 @@ Also: a `same` question that shares no search word is counted as `other` (3.3).
 | # | Finding | What changed |
 |---|---|---|
 | 2, 12, 13 | Blocking: the partial copy couldn't be signed as written (renumbered pages, lost date boundaries), and Add more could lose entries unseen | No partial copy in this slice: a reading with a page not read builds nothing, and the owner reads again or cancels; a copy without such pages is his decision, not made here; Add more refuses a PDF whose new entries touch an unreadable page (4.6, 4.8; R47, R50; section 12) |
-| 3 | Blocking: the order's read-derived graph and its checks | 1b as it was asked: read the whole journal before the copy is built, "nothing the replies use today"; the copy builds no graph at all, so nothing graph-like precedes the reading, and the order's later stages are the import's (4.6, "What 1b covers") |
+| 3 | Blocking: the order's read-derived graph and its checks | 1b as it was asked: read the whole journal before the copy is built (the quotation this row first gave added words his page never had: see 4.6, "What 1b covers"); the copy builds no graph at all, so nothing graph-like precedes the reading, and the order's later stages are the import's (4.6, "What 1b covers") |
 | 5 | Blocking: late answers after a stop, admission during the pause, replayed failures | Only a reading that passed the import's checks lasts; each run is an attempt, checked before keeping anything; Restart and Stop stop admitting journal work before they pause the readings; "Read again" gets a fresh answer (4.6; R49) |
 | 6 | Blocking: refused text could cross routes | With no partial copy, a page the reading couldn't read is in no copy, reply, test or tab; the questions tool's held-back passages are an ambiguous precaution, kept apart, of passages GPT read whole in the reading (4.6, 3.2) |
 | 7 | Blocking for pull request 5: the tab's days and residual misses | The one set of passages under each option of i83 (5.1; R23); 5.4 says plainly that no option can promise the line outright, and that i83 is the owner's choice of which limit to accept |
