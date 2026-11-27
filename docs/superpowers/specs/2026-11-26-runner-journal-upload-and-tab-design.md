@@ -1,7 +1,7 @@
 # Runner trial: a journal upload and a Journal tab on the page, with the tool that writes a copy's questions
 
 Written 26 Nov 2026 by a helper of the InnerSignal lane, for the owner's answer `i80 1a 2a 3a` (26 Nov 2026) and the tool that his
-`i77 3a` (24 Nov 2026) asks for; revised after read-only Codex reviews (appendix), and again for his answers `i81 1b 3a 4a 5b 6a`
+`i77 3a` (24 Nov 2026) asks for; revised after read-only Codex reviews and a Claude review (appendix), and again for his answers `i81 1b 3a 4a 5b 6a`
 (26 Nov 2026), `i83 1a` (by 27 Nov 2026, 00:58 UTC) and `i84 1c` (27 Nov 2026). A design: pull request 1 (section 10) is built with it, and each of the
 build's merges comes to the owner (promise IS27, within IS24). It extends the runner trial
 (`docs/superpowers/specs/2026-11-21-runner-trial-design.md`), its clients and journal copy
@@ -181,7 +181,8 @@ pull request 4. Today's consent (version 1's words, 4.3) names "the companies ru
 arrangement it was given under, so it can't show that OpenAI writing questions from sampled passages was named. So in pull request
 1 the command runs GPT's questions only on an invented journal, checked twice before any call: the trial folder is set apart for
 invented journals (it holds the file `invented-journals-only`, mode 0600, which no command writes and the lane puts in the measured
-run's own folder, and it isn't the default trial folder, the one the owner's runner uses, which is refused even with the file); and
+run's own folder, and it isn't the default trial folder, the one the owner's runner uses, nor a folder a runner starts from, one holding
+the icon's `launcher.json` wherever it is, both refused even with the file); and
 the very copy under test, at the publication the test reads, holds the invented-journal sentinel among the passages a reply may quote:
 a fixed sentence of the code's (`INVENTED_JOURNAL_SENTINEL`), on a line of its own, that no person's journal holds unless it was put
 there for this. The sentinel's passage is left out of the questions. Elsewhere, a normal client's copy included, and in a set-apart
@@ -212,7 +213,8 @@ with its exact words and the date its entry gives, or none. Nothing else: no cas
   kind. For a passage that holds nothing to ask about, it says so instead (`skip`).
 - *Unanswerable batches:* the program first chooses what each question asks about, so that the absence is established by the program
   and not by GPT: 15 concrete subjects from a fixed list in the code (things, places, animals, activities, each with its English and
-  French names and its common other names), each of which, in every one of those names and read as the search reads words, is in no
+  French names and its common other names), each of which, in every one of those names and in their other forms (read as the search
+  reads words, and as it reads them with a word list whatever the copy's own index), is in no
   usable passage of the whole copy. GPT then gives, for each subject, the parts of a question: a verb from the program's list of verbs
   of doing (visit, buy, cook, repair, ride, lose, borrow, give, meet, play and the like, in English and French; none of saying,
   writing, naming, mentioning, describing, thinking or remembering, which would make it a question about the journal's words, answered
@@ -223,15 +225,17 @@ with its exact words and the date its entry gives, or none. Nothing else: no cas
   answer ("Did I ever visit the planetarium after riding my bicycle?", where a passage tells of a bicycle and none of a planetarium).
   The parts are GPT's and the shape the program's: a choice within the method of 3a, said here so it can be seen.
 - Strict JSON schemas, as the trial's other workers have; an answer outside its schema is asked again at most twice, as the cold
-  test's are (`RETRYABLE_WORKER_FAILURES`). A batch still without an answer in its schema then is dropped whole, which is how a
+  test's are (`RETRYABLE_WORKER_FAILURES`), and a passing failure (a timeout) at most twice too, the two counted apart so that their
+  order changes nothing. A batch whose third answer is outside its schema is dropped whole, which is how a
   refusal by GPT would most likely come (Codex gives no sign of one): its passages are counted, and none of them goes to the questions
   tool's GPT calls again, in a later call of the run or of a later run on that person's copies, in another batch or another form (the
   order's rule for a refused passage): their digests are kept in the person's journal folder (`questions-held-back.json`, digests
   only, mode 0600, under the trial folder's lock; their Delete removes it), and the sampling leaves them out and counts them. The
   tool's worker is pinned to Codex, which gives no sign of a refusal, so such a failure is always ambiguous; should a worker say that
   it refused (`REFUSED`, as Claude's can), the batch is dropped and held back at once and never asked again. The
-  extra batches of 3.5 make up what is short. Any other failure of the worker (a plan limit, a lapsed sign-in, an action taken) stops
-  the tool with its code.
+  extra batches of 3.5 make up what is short. A third passing failure, and any other failure of the worker (a plan limit, a lapsed
+  sign-in, an action taken), stops the tool with its code and holds nothing back. A passage GPT skips in its schema (nothing to ask
+  about) isn't a refusal: it is replaced (3.1), not held back.
 
 **3.3 The program's checks.** A candidate that fails one is dropped; nothing is mended by guessing.
 - An evidence quote is found exactly in its passage (after Unicode normalization, with runs of white space as one) and in at most
@@ -254,7 +258,8 @@ trusts the key), and with not one wrong answer allowed, one is enough.
   doubts is dropped. It is never asked to answer the question. A check still without an answer in its schema after two more asks
   drops its questions, whose passages are held back as a dropped batch's are (3.2).
 - *Unanswerable questions:* no model check. Their absence is the program's (3.2): a concrete subject that no usable passage of the
-  whole copy names, in any of the names the list gives it. What remains is a journal that tells of the subject without naming it
+  whole copy names, in any of the names the list gives it or another form of one. What remains is a journal that tells of the subject
+  without naming it
   (a planetarium as "the star show"); the subjects are chosen to make that rare, and the measured run (section 10), on an invented
   journal whose contents are known, shows how often it happens.
 The run counts what each check drops. The checks lower the odds of a wrong key and can't remove them: a run failed by one is a failed
@@ -264,7 +269,10 @@ run all the same, counted on the copy.
 unanswerable ones and 20 planted answers, three of each kind (the rule); and, as the tool's own requirement, eight answerable
 questions in other words than their passages' (3a: the rule counts them and requires none). The tool aims at 48, 26, 28 and 12.
 Short of that, one more batch of each kind that's short (at most three more calls); then it stops with counts and a code ("couldn't
-write enough questions"), and the run has no test.
+write enough questions"), and the run has no test. The file keeps at most the aims of each wording, planted answers first; a wording
+with more planted answers than its aim (GPT may word them in none of their passages' words, which makes them the other wording's)
+takes them kind by kind, the kind with the fewest kept so far first, and the file itself, after that cut, is checked against the rule
+again: short of it, no test, since a test that can't pass would still spend its calls (about 200).
 
 **3.6 Kept nowhere.** The questions, their keys and what GPT returned live in the memory of the process that runs the test (the
 server's, or the command's) for that run and go when it ends.
@@ -735,7 +743,8 @@ Each has fixed words on the page and a code, never words, wherever it is recorde
   that holds a picture or no text.
 - **The cold test:** too few passages for the questions tool (section 3.1); not enough questions written (3.5), a batch or a key
   check dropped for its form included (3.2, 3.4); a refusal a worker says it made (not asked again: its batch dropped and held back);
-  GPT's questions asked for outside a trial folder set apart for invented journals in pull request 1 (refused before any call); the
+  GPT's questions asked for, in pull request 1, outside a trial folder set apart for invented journals, in the default trial folder or
+  one a runner starts from, or on a copy without the invented-journal sentinel (each refused before any call); the
   questions tool's budget spent (3.1, 3.8); the judge's company as the author (the codex arrangement); a plan limit or a lapsed
   sign-in (it stops); a refusal in the test (Claude's is counted as left out; GPT's comes as a malformed
   answer, is asked twice more, and then stops the test); a withdrawal, a Delete, another publication or a newer Add more that replaces
@@ -775,16 +784,16 @@ as pull request 245 did.
 | R13 | The questions tool samples all the passages a reply may quote, short ones included, spread over the quarters, each once while there are enough, a skipped one replaced from its quarter; passages about dying like any other (i81 5b), planted wrong answers assigned to them as to any | a sample from an invented journal with short passages and planted entries about dying: those entries are sampled, sent and given planted answers as any other, so a list that left them out, or withheld their plants, fails it |
 | R14 | GPT's packet holds only its batch's passages, under opaque names, with their dates | the packet inspected: no case or corpus id, label or other passage |
 | R15 | Each check of 3.3 | a candidate made to fail each check is dropped |
-| R16 | The key checks of 3.4: answerable ones by GPT on the evidence passage alone; an unanswerable subject chosen by the program from its list and named by no usable passage in any of its names; unanswerable questions put together in the fixed shapes from parts that pass their checks | the stand-in doubts a key or says a planted answer is true: dropped; a subject one passage names in another of its names: never chosen; parts with a question word, "or", "rather", "instead", "besides", a comma or more than eight words, or with a verb not on the list ("mention", "write about", "name"): dropped; the check's packet holds no passage the search returned |
-| R17 | Too few passages, or too few questions of any kind (the eight in other words included): no test | codes only, no call to the test's workers |
-| R18 | The author is `openai`, refused when the judge is OpenAI; in pull request 1, GPT's questions only in a trial folder set apart for invented journals, never the default one, and only on a copy whose tested publication holds the invented-journal sentinel (from pull request 3, also under a version 2 consent) | the codex arrangement, a normal trial folder's client copy, the default trial folder even with the file, and a copy without the sentinel inside a set-apart folder: each refused before any call; a questions file still runs |
+| R16 | The key checks of 3.4: answerable ones by GPT on the evidence passage alone; an unanswerable subject chosen by the program from its list and named by no usable passage in any of its names; unanswerable questions put together in the fixed shapes from parts that pass their checks | the stand-in doubts a key or says a planted answer is true: dropped; a subject one passage names in another of its names: never chosen, nor one a passage names in another form of a name, on a copy without a word list too ("camels"); parts with a question word, "or", "rather", "instead", "besides", a comma or more than eight words, or with a verb not on the list ("mention", "write about", "name"): dropped; the check's packet holds no passage the search returned |
+| R17 | Too few passages, or too few questions of any kind (the eight in other words included): no test; the file, cut to its aims, keeps planted answers first, kind by kind, and is checked against the rule again | codes only, no call to the test's workers; GPT wording seventeen planted questions in none of their passages' words: each kind keeps its three in the file; a file short of the rule after its cut: no test |
+| R18 | The author is `openai`, refused when the judge is OpenAI; in pull request 1, GPT's questions only in a trial folder set apart for invented journals, never the default one nor one a runner starts from (holding `launcher.json`), and only on a copy whose tested publication holds the invented-journal sentinel (from pull request 3, also under a version 2 consent) | the codex arrangement, a normal trial folder's client copy, the default trial folder even with the file, a set-apart folder holding `launcher.json`, and a copy without the sentinel inside a set-apart folder: each refused before any call; a questions file still runs |
 | R19 | The consent and the copy are read under the lock before each packet of the tool and of the test | a withdrawal before each kind of packet stops the run, with no receipt |
 | R20 | Of tests of one copy that overlap, the newest decides (the command's attempt marker, kept by the shared job; the page adds one test a person at a time with pull request 4); a receipt only for a pass; numbers only | the command's tests, run through the shared job; overlapping runs with GPT's questions; one wrong consumer answer in a run with GPT's questions: no receipt |
 | R21 | Two consent parts; the tab consent needs the journal consent; each withdrawal's effect | every order of confirming and withdrawing |
 | R22 | A client is in the tab's picker only with both consents; the owner's own journal needs no tab consent; the copy read is the newest, tested or not (i81 4a) | requests for a first copy and a pending copy without a receipt: both shown, the pending one when there is one; a reading that isn't a copy yet: nothing |
-| R23 | Days with writing come only from the passages the tab counts (5.1, by i83's answer, 1a), apart from what it may show, with a day's date; one mark a day; undated entries counted | an invented journal with ranges, months, years, inferred years and excluded passages, under each option of i83: under 1a and 1b an excluded-only day unmarked, under 1c and for an unmarked copy marked with no passage shown |
+| R23 | Days with writing come only from the passages the tab counts (5.1, by i83's answer, 1a), apart from what it may show, with a day's date; one mark a day; undated entries counted | an invented journal with ranges, months, years, inferred years and excluded passages, under i83's answer, 1a: an excluded-only day unmarked; for a copy the reading never read (a server copy, shown as 1c would show it), marked with no passage shown |
 | R24 | Then and now: whole sentences, one passage a month by the stated rule, at most 24 months, the entry's own date | crafted passages with a "not" beside the theme |
-| R25 | By i83's answer, 1a: a passage holding a listed word, or one the reading marked, is never shown, nor its entry (across pages, past a page not fully read, two passages each side without entry lines); a theme holding one shows the support line; a month with only such passages shows nothing; under 1c no passage at all | planted entries in English and French, of each part of the list, one running onto the next page, and marked passages without a listed word |
+| R25 | By i83's answer, 1a: a passage holding a listed word, or one the reading marked, is never shown, nor its entry (across pages, past a page not fully read, two passages each side without entry lines); a theme holding one shows the support line; a month with only such passages shows nothing; for a copy the reading never read, no passage at all | planted entries in English and French, of each part of the list, one running onto the next page, and marked passages without a listed word |
 | R26 | Hidden passages stay hidden across Add more; Delete removes them | the digest file before and after |
 | R27 | No model call from Add journal, the preview, building the copy or the tab; before a copy, the reading is the only one, and only after "Read it and copy it in" | the failing worker factory everywhere but the reading's port |
 | R28 | No words in any log: the run log, the server's console, the launcher's log, errors | the planted words |
@@ -798,12 +807,12 @@ as pull request 245 did.
 | R36 | Delete wins: no journal work admitted while a case is being deleted; each case's deletion count checked inside the queue, before each batch of object writes and before each call of the reading; Delete drains the case's journal work before it takes the queue | Delete between a preview and its reading, during the reading, during the copy's writes, and during a test; a request that arrives after the count rises and before the deletion ends: refused; nothing of the case is written again, and the case stays gone |
 | R37 | The case's queue before the folder's lock, everywhere | a turn waiting to deliver while a copy's last step and a promotion run: neither waits out the other |
 | R38 | Whatever fails after a publication tombstones that corpus; the start's sweep tombstones a published copy the list doesn't name; Cancel and the copy's last step are ordered by the case's queue and the lock | a failure of the check, of the consent and of the list's write after publication; a stop between publication and naming; a Cancel after the summary and before the publication, and one after the publication and before the naming: no copy named, the published one tombstoned |
-| R39 | One counted set for the days, the lines and the counts, and the shown set never wider than it (5.1) | under 1a and 1b, a month with only excluded entries: no mark, no line, no count, no passage |
+| R39 | One counted set for the days, the lines and the counts, and the shown set never wider than it (5.1) | under i83's answer, 1a, a month with only excluded entries: no mark, no line, no count, no passage |
 | R40 | Add more builds on the newest copy; one copy in the making a person; one whose base is no longer the newest is refused; a newer one replaces the pending copy; a pass promotes only the pending copy it tested | A, then pending A+B, then a file C: the new copy holds A, B and C; the test of A+B stops with no receipt; an old pass can't promote; two additions at once: the second refused, or refused at its end when the first changed the base |
 | R41 | One budget a run: at most 150 distinct passages to GPT and 20 calls of its worker for the questions, every call asked again included; spent, the run stops with no test | a journal whose sampled passages are mostly skipped, and a worker that fails for its form near the end: the count of passages sent and of the worker's actual calls, and no test |
 | R42 | A copy's grant holds read and write with the purposes the import asks; a tombstone's write with `delete` | the copy and its checks under the restricted one-time grant; a grant with write alone fails the check |
 | R43 | A passage of fewer than four words may be its question's evidence whole; one that holds nothing to ask about is skipped | short passages with something to ask, and a date line alone |
-| R44 | The questions tool's batch, or key check, without an answer in its schema after two more asks is dropped whole: its passages go to the tool's GPT calls in no later call of the run, nor of a later run on that person's copies (held back), and are counted | a stand-in that answers one writing batch, and then one key check, outside its schema three times, and one that says it refused a key check: none of their passages in a later packet of this run or the next, the refusal not asked again, and the report's counts |
+| R44 | The questions tool's batch, or key check, without an answer in its schema after two more asks is dropped whole: its passages go to the tool's GPT calls in no later call of the run, nor of a later run on that person's copies (held back), and are counted | a stand-in that answers one writing batch, and then one key check, outside its schema three times, and one that says it refused a key check: none of their passages in a later packet of this run or the next, the refusal not asked again, and the report's counts; an answer outside its schema and a timeout in either order: only a third answer outside it drops the batch; three timeouts stop the tool, holding nothing back |
 | R45 | The reading's pages: a PDF's pages; a text, Markdown or Word file cut into whole passages, at most 4 KB and 40 a page, ending before an entry line in a page's last quarter; each page one source text of the copy | invented files of each kind: the cut, the source texts and the dates read across them |
 | R46 | A page's packet holds only the adapter's fields; a summary packet has the batch shape (overviews, findings, page numbers, digests, references) or the level shape (child summaries, their references and meaningful changes), with the journal-only scope, and never an `exact_source_anchors` array; all go to the sealed Codex worker whatever the arrangement, one call at a time | the packets of both summary shapes and of the pages inspected, under the claude arrangement too, and Add more's summaries over carried readings: no case or corpus id, label, file name, other page, quotation array or conversation |
 | R47 | No copy without a reading of every page whose receipts verify for exactly its source and pages, and whose pages' stored texts match the signed inventory's digests; no partial copy | a missing, forged or stale receipt, a page still pending, and a stored page whose bytes changed with the page count the same: no copy, and no route builds one without the missing page |
@@ -821,13 +830,15 @@ with pull request 4), with a test that fails when each is taken out.
 
 ## 10. How it ships
 
-Six pull requests, each with GPT's review, the full test gate and its table of rules taken out, and each merge brought to the owner.
+Six pull requests, then the graph's own design and build (4b, the owner's i84 1c), each with a second review (GPT's; for pull request
+1, a separate Claude reviewer's, GPT's week being kept for the owner's daily news check), the full test gate and its table of rules
+taken out, and each merge brought to the owner.
 The reading (i81 1b) makes the journal steps too large for one, so they are split in two (3 and 4), and the tab and the switches
 move down one:
 
 | # | What | Waits for | Rough effort |
 |---|---|---|---|
-| 1 | The questions tool (section 3) and the cold test's job shared by the command and, later, the server (`cold-test-job.mjs`); the command runs a test with GPT's questions (`--cold-test --gpt-questions`), only in a trial folder set apart for invented journals until the consent in version 2's words comes with 3. Built in one pull request with this design, which it carries | the owner's yes to this design (i81, given) | 1.5 to 2 days |
+| 1 | The questions tool (section 3) and the cold test's job shared by the command and, later, the server (`cold-test-job.mjs`); the command runs a test with GPT's questions (`--cold-test --gpt-questions`), only in a trial folder set apart for invented journals (never the default one, nor one a runner starts from) and on a copy holding the invented-journal sentinel, until the consent in version 2's words comes with 3. Built in one pull request with this design, which it carries | the owner's yes to this design (i81, given) | 1.5 to 2 days |
 | | **The measured run (i81 6a):** the tool and the test with the real models on an invented journal, about 200 calls on the owner's plans: how often a good copy passes, what the key check drops and how often an unanswerable question's subject is told of without being named (both against the journal's known contents), the calls and the minutes. The numbers come back to him, with the choice to keep 2b or loosen it (his i77 note) | 1 merged; the lane runs it | half a day, plus the calls |
 | 2 | IS24's rest: a launcher and the icon, Restart and Stop on the page, the owner's switches kept in the launcher's settings | built and merged as pull request 254 (26 Nov) | done |
 | 3 | The journal steps up to a first copy: the People tab, adding a client, both parts of the consent in version 2's words, Add journal (PDF, text, Markdown, Word, a server copy), the preview, the reading (4.6), the copy (4.7), withdraw; the owner's own journal | 1 | 3 to 3.5 days |
@@ -876,7 +887,15 @@ was asked as i84 and answered `1c` (see "What the owner decided"). No choice of 
   questions, and a pass after several runs may be by chance (the count is shown). A refusal by GPT in the questions tool drops a batch
   (3.2), so the passages GPT won't write about are the ones the test covers least, and the report counts them.
 - The questions tool needs 24 passages a reply may quote (its floor, not the rule's); a shorter journal gets no cold test, so no reply
-  ever uses it, while its Journal tab still works (i81 4a).
+  ever uses it, while its Journal tab still works (i81 4a). Held-back passages stay held back until the person's Delete and count
+  against that floor: a journal of 24 to 38 passages that loses one batch of 15 falls under it for every later run (a questions file
+  can still test it).
+- Held-back passages are kept only from the questions tool's GPT calls (and a page the reading couldn't read from later readings):
+  the same passages still reach GPT and Claude through the cold test's consumer and judge, and through the replies, whose reader this
+  design leaves unchanged; and a Claude judge's refusal in the test (`REFUSED`) is counted as left out and holds nothing back. Only
+  the reading's and the questions tool's worker, Codex, can't say that it refused, so their ambiguous failures are what is held back.
+  Only a failure of a whole batch is taken as a possible refusal: a passage GPT skips in its schema is replaced, not held back, and may
+  be sent again in a later batch of the same run.
 - Once the owner's own case has read his journal, it stops like a client's while its gate is closed (a withdrawal, a lost receipt, a
   changed reader or rule): a new pass, or deleting that case, are the ways on.
 - With `--provider codex` the cold test can't run with GPT's questions.
@@ -885,7 +904,7 @@ was asked as i84 and answered `1c` (see "What the owner decided"). No choice of 
 - Nothing here is measured or run on a real journal; of the build, pull request 1 is made with this design, and the rest is not
   built.
 
-## Appendix: Codex's reviews
+## Appendix: Codex's reviews, and Claude's
 
 The tables name sections and questions as numbered in the revision each review read. The revision for i81 added 4.6 (the reading),
 so the former 4.6 to 4.9 are now 4.7 to 4.10, and section 11's questions 1 and 3 to 6 are answered.
@@ -1005,4 +1024,20 @@ is reviewed with pull request 1's code.
 | 8 | Blocking: a set-apart folder can still hold a normal copy | GPT's questions also need the invented-journal sentinel in the very publication under test, checked before any call; its passage is left out of the questions (3; R18) |
 | 9 | The data-flow table named only the batch shape | Both summary shapes in the table (6) |
 | 15 | "Copy it in" tried again after a restart had no attempt | It makes one, under the case's queue and the lock, and sends no page (4.6) |
-| 6 | Blocking: a refused sentence split across a later reading's pages can escape the digests; confirmed refusals aren't enforced on every route | Not changed beyond a stated limit (section 12): with no partial copy, a page the reading couldn't read is in no copy, reply, test or tab; both of the runner's workers are Codex, so no failure is a confirmed refusal. Enforcing refusals on the replies' and the test's routes would change the replies' reader, which this design keeps unchanged; that is for the owner or pull request 3's review |
+| 6 | Blocking: a refused sentence split across a later reading's pages can escape the digests; confirmed refusals aren't enforced on every route | Not changed beyond a stated limit (section 12): with no partial copy, a page the reading couldn't read is in no copy, reply, test or tab; the reading's and the questions tool's worker is Codex, so none of their failures is a confirmed refusal. Enforcing refusals on the replies' and the test's routes would change the replies' reader, which this design keeps unchanged; that is for the owner or pull request 3's review (after review 10, section 12 states that half of the limit too) |
+
+**Review 10** (27 Nov 2026, a separate Claude reviewer, Fable, read-only, of pull request 1's code and of this design's changes since
+review 9, given the code and not the lane's conclusions; GPT's week was kept for the owner's daily news check): review 9's 8, 9 and 15
+fixed and 6 partly; nine findings, one blocking; "changes needed". What changed after it:
+
+| # | Finding | What changed after it |
+|---|---|---|
+| 1 | Blocking: the state file still said i84 was open and pull request 3 waited for it | `state/CODEX-CURRENT-STATE.md` names i83 1a and i84 1c, and no open choice |
+| 2 | The file's cut to its aims came after the check of enough, blind to kinds: GPT wording planted questions in none of their passages' words could leave a kind with two, and a test that can't pass would still run | Planted answers taken kind by kind, the fewest kept first, and the file checked against the rule again (3.5; R17) |
+| 3 | Review 9's 6: section 12 stated only half of the limit | Section 12 says that held-back passages still reach GPT and Claude through the test and the replies, and that a Claude refusal in the test holds nothing back; the table row names the reading's and the questions tool's worker |
+| 4 | Without a word list, another form of a subject's name ("camels") didn't rule the subject out | Its other forms are read on every copy (3.2, 3.4; R16) |
+| 5 | Answers outside the schema and passing failures shared one count, so their order decided | Counted apart, two more asks each; three passing failures stop the tool, holding nothing back (3.2; R44) |
+| 6 | A skip is an in-schema way to decline, and isn't held back | Said in 3.2 and section 12 |
+| 7 | Held-back passages are permanent and count against the floor | Said in section 12 |
+| 8 | The guard's edges: the default folder is known by its path; the folder check is the command's, not the shared job's | A folder holding the icon's `launcher.json` is refused too, wherever it is (3; R18). The page's job (pull request 4) runs under the consent in version 2's words, not the set-apart folder |
+| 9 | Stale text: "six pull requests", the tests under i83's other options, the sentinel missing from sections 8 and 10 | Section 10 names the graph's build and the reviews; R23, R25 and R39 test 1a; sections 8 and 10 name the sentinel and the runner's own folder |
