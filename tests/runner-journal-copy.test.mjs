@@ -29,6 +29,7 @@ import { createRunnerTrialController } from "../src/runner-trial/trial-controlle
 import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordinator.mjs";
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { StartError, acquireTrialFolderLock, addClient, defaultTrialHome, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
+import { LAUNCHER_SETTINGS_FILE } from "../scripts/runner-launcher.mjs";
 import { CLIENT_COPY_KEY_FILE, IMPORT_PURPOSES, INVENTED_JOURNALS_ONLY_FILE, USAGE, ensureJournalCopyKey, importClientJournal, oneTimeGrant, parseJournalArguments, runClientColdTest,
   runMain } from "../scripts/runner-trial-journal.mjs";
 import { ANSWER, JUDGE_REASON, PLANTED, RECEIPTS, coldWorkers, plantOn, questionWriter, questionsFile } from "./helpers/cold-workers.mjs";
@@ -2077,7 +2078,7 @@ async function inventedClient(t, { count = 80, sentinel = true, setApart = true 
   return { ...trial, gptTest };
 }
 
-test("--gpt-questions: refused before any call with codex, outside a trial folder set apart for invented journals, in the default trial folder even with its file, and on a copy without the sentinel; a questions file runs as before", async (t) => {
+test("--gpt-questions: refused before any call with codex, outside a trial folder set apart for invented journals, in the default trial folder or one a runner starts from even with its file, and on a copy without the sentinel; a questions file runs as before", async (t) => {
   const elsewhere = path.join(os.tmpdir(), "inner-signal-trial-elsewhere");
   for (const provider of ["mixed", "claude"]) {
     assert.deepEqual(parseJournalArguments(["--cold-test", "--gpt-questions", "--provider", provider, "--dir", elsewhere]), { command: "cold-test", file: null, provider, dir: elsewhere, gptQuestions: true });
@@ -2096,7 +2097,7 @@ test("--gpt-questions: refused before any call with codex, outside a trial folde
   const plain = await copiedClient(t);
   const idle = questionWriter(), unasked = standIns();
   const gpt = (home, options = {}) => runClientColdTest({ home, number: 1, gptQuestions: true, provider: "mixed", questionWorker: idle, ...using(unasked), ...options });
-  const notSetApart = { message: `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, mode 0600), never the default trial folder. Nothing was changed.` };
+  const notSetApart = { message: `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, mode 0600), never the default trial folder or one a runner starts from (holding ${LAUNCHER_SETTINGS_FILE}). Nothing was changed.` };
   await assert.rejects(gpt(plain.home, { provider: "codex" }), { message: "GPT writes the questions, and one of OpenAI's judges the answers with --provider codex: choose mixed or claude. Nothing was changed." });
   await assert.rejects(gpt(plain.home), notSetApart);
   await assert.rejects(gpt(plain.home, { questionsPath: plain.questionsPath }), { message: "Give a questions file or --gpt-questions, not both." });
@@ -2104,6 +2105,11 @@ test("--gpt-questions: refused before any call with codex, outside a trial folde
   await fs.writeFile(marker, "", { mode: 0o644 });
   await assert.rejects(gpt(plain.home), { message: `${INVENTED_JOURNALS_ONLY_FILE} must be readable by you alone (mode 0600). Nothing was changed.` });
   await fs.chmod(marker, 0o600);
+  // A folder a runner starts from (one holding the icon's launcher.json), wherever it is and even with the file: refused before any call.
+  const launcherFile = path.join(plain.home, LAUNCHER_SETTINGS_FILE);
+  await fs.writeFile(launcherFile, "{}", { mode: 0o600 });
+  await assert.rejects(gpt(plain.home), notSetApart);
+  await fs.rm(launcherFile);
   // Set apart, but the copy doesn't hold the sentinel: refused before any call, from the publication the test reads.
   await assert.rejects(gpt(plain.home), { message: /^This copy doesn't hold the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them\. Nothing was sent; /u });
   assert.deepEqual([idle.sent.length, unasked.sent.length], [0, 0]);

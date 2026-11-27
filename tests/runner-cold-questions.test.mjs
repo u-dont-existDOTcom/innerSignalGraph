@@ -9,8 +9,8 @@ import { createPrivateCaseAccessService, PRIVATE_JOURNAL_PURPOSES } from "../src
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { QUESTIONS_HELD_BACK_FILE, clientJournalFolder, readQuestionsHeldBack } from "../src/runner-trial/clients.mjs";
 import { PLANTED_KINDS } from "../src/runner-trial/cold-test-rule.mjs";
-import { COLD_QUESTIONS_TOOL, INVENTED_JOURNAL_SENTINEL, QUESTION_SUBJECTS, QUESTION_VERBS, eligibleSubjects, journalLanguage, passageDigest, seededRandom,
-  writeColdQuestions } from "../src/runner-trial/cold-questions.mjs";
+import { COLD_QUESTIONS_TOOL, INVENTED_JOURNAL_SENTINEL, QUESTION_SUBJECTS, QUESTION_VERBS, answerableForFile, eligibleSubjects, journalLanguage, passageDigest,
+  seededRandom, writeColdQuestions } from "../src/runner-trial/cold-questions.mjs";
 import { createGptQuestionsWriter } from "../src/runner-trial/cold-test-job.mjs";
 import { resolveColdKey, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
 import { openSessionUseReader } from "../src/runner-trial/journal-gate.mjs";
@@ -294,9 +294,14 @@ test("an unanswerable question asks about a subject of the program's list that n
   const naming = ["We walked out to the phare at low tide.", "My brother kept his kayak under the stairs.", "Two dromedaries stood behind the fence at the fair."];
   const texts = [...naming, ...LONG.slice(0, 60)];
   const named = ["lighthouse", "canoe", "camel"].map((id) => QUESTION_SUBJECTS.find((entry) => entry.id === id));
-  // Its French name or another word for it names it; with a word list, so does another form of a name, as the search reads it.
-  assert.deepEqual(eligibleSubjects(texts, { wordList: true }).filter((entry) => named.includes(entry)), []);
-  assert.deepEqual(eligibleSubjects(texts, { wordList: false }).filter((entry) => named.includes(entry)).map(({ id }) => id), ["camel"]);
+  // Its French name or another word for it names it, and so does another form of a name, as the search reads it with a word list: on a
+  // copy without one too, so that a subject the journal names is never keyed as one it doesn't answer.
+  const plurals = ["We counted the lighthouses along the coast.", "The camels slept by the well.", "Two kayaks lay upside down on the beach."];
+  for (const wordList of [true, false]) {
+    assert.deepEqual(eligibleSubjects(texts, { wordList }).filter((entry) => named.includes(entry)), [], `${wordList}`);
+    assert.deepEqual(eligibleSubjects([...plurals, ...LONG.slice(0, 60)], { wordList }).filter((entry) => named.includes(entry)), [], `plurals, ${wordList}`);
+  }
+  assert.equal(eligibleSubjects(LONG.slice(0, 60), { wordList: false }).filter((entry) => named.includes(entry)).length, 3, "named nowhere, eligible");
   for (const seed of [1, 2, 3]) {
     const writer = questionWriter();
     await write(texts, writer, { seed });
@@ -474,6 +479,78 @@ test("with fewer than sixty passages each is written about twice: one a dropped 
       task === "answerable" ? [15, 0, 3, 2] : [0, 15, 4, 3], task);
     assert.deepEqual([report.passages.in_dropped_batches, report.batches.dropped_for_form, code], [15, 1, "COLD_QUESTIONS_NOT_ENOUGH"], task);
   }
+});
+
+test("an answer outside its schema and a passing failure are counted apart, so their order changes nothing: a third answer outside it drops the batch, a third passing failure stops the tool", async () => {
+  // The first writing packet fails as `sequence` says, each time it is asked, then answers in its schema.
+  const run = async (sequence, held = new Set()) => {
+    const ordinal = new Map();
+    let seen = 0, tries = 0;
+    const writer = questionWriter({ reply: async (count, request, usual) => {
+      if (taskOf(request) === "answerable" && !ordinal.has(request.user)) ordinal.set(request.user, (seen += 1));
+      if (taskOf(request) !== "answerable" || ordinal.get(request.user) !== 1 || tries >= sequence.length) return usual();
+      if (sequence[tries++] === "timeout") throw new ProviderError("A synthetic timeout.", { code: "TIMEOUT" });
+      return { items: [] };
+    } });
+    const outcome = await outcomeOf(write(LONG, writer, { holdBack: async (digests) => { for (const digest of digests) held.add(digest); } }));
+    return { ...outcome, asked: writer.sent.filter(({ request }) => taskOf(request) === "answerable" && ordinal.get(request.user) === 1).length, held: held.size };
+  };
+  // Twice outside its schema, then a timeout: asked again, and its third answer outside the schema drops it and holds it back.
+  const dropped = await run(["form", "form", "timeout", "form"]);
+  assert.deepEqual([dropped.asked, dropped.held, dropped.report.batches.dropped_for_form, dropped.report.calls.asked_again], [4, 15, 1, 3]);
+  // Two timeouts, then one answer outside its schema, then one in it: the batch is kept, and nothing is held back.
+  const kept = await run(["timeout", "timeout", "form"]);
+  assert.deepEqual([kept.code, kept.asked, kept.held, kept.report.batches.dropped_for_form, kept.report.calls.asked_again], [null, 4, 0, 0, 3]);
+  // Three timeouts stop the tool with the worker's code, holding nothing back.
+  const none = new Set();
+  await assert.rejects(run(["timeout", "timeout", "timeout"], none), { code: "TIMEOUT" });
+  assert.equal(none.size, 0);
+});
+
+// ---- The file ------------------------------------------------------------------------------------------------------------------
+
+test("the file's cut keeps planted answers first, spread over their kinds: a wording with more than its aim takes the kind with the fewest kept first", () => {
+  const [k0, k1, k2, k3, k4] = PLANTED_KINDS;
+  let made = 0;
+  const candidate = (kind, plant = null) => ({ kind, question: `q${made += 1}`, plant: plant ? { kind: plant, answer: `${PLANTED} ${made}.` } : null });
+  // In other words: six planted of each of two kinds first, then one of each other kind, then three without; in the passages' words, two
+  // of each of those three kinds and forty without.
+  const other = [...Array(6).fill(k0), ...Array(6).fill(k1), k2, k3, k4].map((kind) => candidate("other", kind)).concat([1, 2, 3].map(() => candidate("other")));
+  const same = [k2, k2, k3, k3, k4, k4].map((kind) => candidate("same", kind)).concat(Array.from({ length: 40 }, () => candidate("same")));
+  const chosen = answerableForFile([...other, ...same], COLD_QUESTIONS_TOOL.aims);
+  const byKind = (list) => Object.fromEntries(PLANTED_KINDS.map((kind) => [kind, list.filter(({ plant }) => plant?.kind === kind).length]));
+  assert.deepEqual([chosen.filter(({ kind }) => kind === "same").length, chosen.filter(({ kind }) => kind === "other").length], [46, 12]);
+  assert.ok(chosen.filter(({ kind }) => kind === "other").every(({ plant }) => plant), "planted answers first");
+  assert.deepEqual(byKind(chosen), { [k0]: 5, [k1]: 4, [k2]: 3, [k3]: 3, [k4]: 3 });
+  // Taken in the run's order alone, the twelve would be the first two kinds', leaving three kinds with two each.
+  assert.deepEqual(byKind([...same, ...other.slice(0, 12)]), { [k0]: 6, [k1]: 6, [k2]: 2, [k3]: 2, [k4]: 2 });
+  // A wording within its aim keeps all of it, planted ones first, in the run's order.
+  assert.deepEqual(answerableForFile(same, COLD_QUESTIONS_TOOL.aims).map(({ question }) => question), same.map(({ question }) => question));
+});
+
+test("the file, cut to its aims, still meets the rule, or there is no test: GPT may word planted questions in none of their passages' words", async () => {
+  // The first seventeen planted questions in the passages' words are written in none of them, so the program counts them in other
+  // words, and that wording holds more planted answers than its twelve.
+  for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+    let reworded = 0;
+    const writer = questionWriter({ reply: async (count, request, usual) => {
+      const value = await usual();
+      if (taskOf(request) !== "answerable") return value;
+      return { items: value.items.map((item) => (item.planted_kind !== "none" && item.wording === "same" && reworded < 17
+        ? { ...item, question: `Riddle ${riddleWord(1000 + (reworded += 1))}: who was it?` } : item)) };
+    } });
+    const outcome = await outcomeOf(write(LONG, writer, { seed }));
+    // Taken kind by kind, the twelve keep the file within the rule here (taken in the run's order alone, seed 4 left a kind with two).
+    assert.equal(outcome.code, null, `${seed}: ${JSON.stringify(outcome.report?.kept)}`);
+    const planted = outcome.questions.questions.filter((entry) => entry.planted);
+    const byKind = Object.fromEntries(PLANTED_KINDS.map((kind) => [kind, planted.filter((entry) => entry.planted.kind === kind).length]));
+    assert.ok(planted.length >= COLD_QUESTIONS_TOOL.needs.planted, `${seed}`);
+    for (const kind of PLANTED_KINDS) assert.ok(byKind[kind] >= COLD_QUESTIONS_TOOL.needs.plantedOfEachKind, `${seed}: ${JSON.stringify(byKind)}`);
+    assert.deepEqual(outcome.report.kept.planted_by_kind, byKind, `${seed}`);
+  }
+  // A file whose cut leaves it short of the rule (here, aims smaller than the rule's): no test, and the report counts the file.
+  const short = await outcomeOf(write(LONG, questionWriter(), { fileAims: { ...COLD_QUESTIONS_TOOL.aims, same: 30 } }));
+  assert.deepEqual([short.code, short.report.kept.same_words, short.report.kept.other_words], ["COLD_QUESTIONS_NOT_ENOUGH", 30, 12]);
 });
 
 // ---- From the copy itself --------------------------------------------------------------------------------------------------------

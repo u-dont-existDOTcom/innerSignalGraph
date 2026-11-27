@@ -31,6 +31,7 @@ import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessS
 import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordinator.mjs";
 import { COMMAND_LOCK_WAIT_MS, StartError, ask, checkTrialHome, defaultClaudeConfigDir, defaultTrialHome, privateFolder, repositoryRoot, trialSettings,
   withTrialFolderLock, writePrivateFile } from "./runner-trial-start.mjs";
+import { LAUNCHER_SETTINGS_FILE } from "./runner-launcher.mjs";
 
 // Each client's key for journal copies, in their journal folder: their Delete removes it, and with it the means to open any copy
 // sealed for them.
@@ -78,7 +79,8 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      most ${COLD_QUESTIONS_TOOL.budget.passages} passages, in at most ${COLD_QUESTIONS_TOOL.budget.calls} calls, before the test's own. The questions and their key
                      are kept nowhere. Not with --provider codex, whose judge is GPT too. Until a consent in new words names it, it
                      runs only on an invented journal: in a trial folder holding the file ${INVENTED_JOURNALS_ONLY_FILE} (mode 0600, which
-                     no command writes), never the default trial folder, and on a copy that holds the invented-journal sentinel.
+                     no command writes), never the default trial folder or one a runner starts from (holding ${LAUNCHER_SETTINGS_FILE}),
+                     and on a copy that holds the invented-journal sentinel.
   --provider mixed|claude|codex  the cold test's workers: mixed (the answers from GPT, judged by Claude), claude (both through
                      \`claude -p\`, signed in at ${RUNNER_CLAUDE_CONFIG_DIR}) or codex (both through \`codex exec\`, signed in)
   --dir PATH         the trial folder (default ${defaultTrialHome()})`;
@@ -362,14 +364,16 @@ function coldTestWorkers(settings, environment) {
 
 // GPT's questions, until a consent in its new words names them (design, section 3): only in a trial folder set apart for invented
 // journals, which holds this file (mode 0600, written by no command) and isn't the default trial folder, the one the owner's runner uses,
-// however it is named (a link to it is it). The shared job then also asks for the invented-journal sentinel in the very copy under test,
-// before any call.
+// however it is named (a link to it is it), nor a folder a runner starts from (one holding the icon's launcher.json, wherever it is). The
+// shared job then also asks for the invented-journal sentinel in the very copy under test, before any call.
 const realFolder = async (folder) => {
   try { return await fsp.realpath(folder); } catch { return path.resolve(folder); }
 };
 async function requireInventedFolder(resolved) {
-  const refusal = `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, mode 0600), never the default trial folder. Nothing was changed.`;
+  const refusal = `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, mode 0600), never the default trial folder or one a runner starts from (holding ${LAUNCHER_SETTINGS_FILE}). Nothing was changed.`;
   if (await realFolder(resolved) === await realFolder(defaultTrialHome())) throw new StartError(refusal);
+  const launcher = await fsp.lstat(path.join(resolved, LAUNCHER_SETTINGS_FILE)).then(() => true, (error) => error?.code !== "ENOENT");
+  if (launcher) throw new StartError(refusal);
   const marked = await readOpenedFileOrNull(path.join(resolved, INVENTED_JOURNALS_ONLY_FILE), (handle, info) => {
     if ((info.mode & 0o077) !== 0) throw new StartError(`${INVENTED_JOURNALS_ONLY_FILE} must be readable by you alone (mode 0600). Nothing was changed.`);
     return true;
