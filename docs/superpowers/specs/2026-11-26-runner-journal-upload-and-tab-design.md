@@ -1,9 +1,9 @@
 # Runner trial: a journal upload and a Journal tab on the page, with the tool that writes a copy's questions
 
 Written 26 Nov 2026 by a helper of the InnerSignal lane, for the owner's answer `i80 1a 2a 3a` (26 Nov 2026) and the tool that his
-`i77 3a` (24 Nov 2026) asks for; revised after read-only Codex reviews (appendix), and again for his answer `i81 1b 3a 4a 5b 6a`
-(26 Nov 2026). A design: pull request 1 (section 10) is built with it, and each of the build's merges comes to the owner (promise
-IS27, within IS24). It extends the runner trial
+`i77 3a` (24 Nov 2026) asks for; revised after read-only Codex reviews (appendix), and again for his answers `i81 1b 3a 4a 5b 6a`
+(26 Nov 2026) and `i83 1a` (by 27 Nov 2026, 00:58 UTC). A design: pull request 1 (section 10) is built with it, and each of the
+build's merges comes to the owner (promise IS27, within IS24). It extends the runner trial
 (`docs/superpowers/specs/2026-11-21-runner-trial-design.md`), its clients and journal copy
 (`docs/superpowers/specs/2026-11-23-runner-client-cases-design.md`, "the clients design" below) and the replies' journal search
 (`docs/superpowers/specs/2026-11-24-runner-journal-search-design.md`). No client name, journal text or conversation appears here, in
@@ -22,8 +22,12 @@ a test or in a log.
   - **6a:** the measured run (the real models on an invented journal, about 200 calls on his plans) comes after pull request 1 is
     merged, and the lane runs it; its numbers go back to him, with the choice to keep "not one wrong answer" (his `i77 2b`) or
     loosen it (section 10).
-  - Its part 2, keeping writing about dying out of the Journal tab, had no answer. It is asked again as **i83**, with three options
-    (section 11); only the Journal tab's build waits for it.
+  - Its part 2, keeping writing about dying out of the Journal tab, had no answer. It was asked again as **i83**, and answered
+    `1a` (next).
+- **i83 `1a`** (the lane's chat, between 26 Nov 2026, 23:22 and 27 Nov 2026, 00:58 UTC), **keeping writing about wanting to die
+  out of the Journal tab:** the reading (4.6) marks the entries about dying or wanting to die, and the word list backs it up: an
+  entry either one flags is left out whole, a theme with such a word shows the support line, there is a Hide button, and the tab
+  says what may be missed (5.4).
 - **The reading-first order (18 Oct 2026):** the index and graph built after the detailed reading, to make them more complete and
   useful (`docs/superpowers/specs/2026-10-18-reading-first-journal-import-order.md`, his words quoted there): a new journal import reads the
   whole source, by the import's model reader or by authorized page reviews, before any index is built; an incomplete reading yields a
@@ -47,8 +51,7 @@ a test or in a log.
 - Nothing about wanting to die is charted or quoted in the Journal tab.
 - Each person sees only their own; the owner sees a client's tab only with that client's consent.
 - The copy stays encrypted on the laptop; no log holds words (no label, theme, file name, journal text, question or answer).
-- The Journal tab makes no model call: it reads only the copy on the laptop (and, under i83's option a, the marks the reading left
-  with it).
+- The Journal tab makes no model call: it reads only the copy on the laptop and the marks the reading left with it (i83 1a).
 - Every flow of journal text to a model is stated (section 6). GPT reading the whole journal before its copy is built (i81 1b), GPT
   reading a copy's passages to write its questions, and the cold test's workers reading passages, are decided; any other flow, and
   any other choice that is the owner's, is a question (section 11).
@@ -116,7 +119,7 @@ a test or in a log.
      reviewer writes (section 6 of the order), which needs the owner's decision on who may see which page.
 8. **Nothing reads journal text for wanting to die without a model.** The runner's crisis readings are model readings of
    conversation messages; the repository has no local word list for it, and the reader's schema has no place for it (section 5.4,
-   question i83).
+   the owner's i83 1a).
 9. **A corpus can be tombstoned** (`tombstoneJournalCorpus`: no generation published, so nothing can read it), not deleted: its
    encrypted objects stay until the case's Delete.
 
@@ -157,8 +160,8 @@ a test or in a log.
     new entries, then makes a new copy holding both, tested again; until it passes, the earlier copy stays in use (i81 3a).
 12. **Journal tab.** He picks "You", or a client whose tab consent stands: "Days with writing" (a calendar by month or by week), and
     "Their own words, then and now": he types a theme ("sleep", "my mother") and sees one short passage a month, in their own words
-    with its date, without a verdict. It shows the newest copy, tested or not (i81 4a). What it leaves out about wanting to die is
-    i83's answer (section 5.4); the emergency line is at the tab's foot.
+    with its date, without a verdict. It shows the newest copy, tested or not (i81 4a). It leaves out what is written about wanting to die, by
+    the reading's marks and the word list together (i83 1a, section 5.4); the emergency line is at the tab's foot.
 13. **Withdraw.** Withdrawing a client's journal consent stops a reading or a test before its next call, hides their tab and, once
     their case has read the journal, stops their whole case (4a); withdrawing only the tab consent hides the tab.
 14. **Restart and Stop** are at the top of the trial's page (built: pull request 254); after Stop, the icon starts it again.
@@ -444,14 +447,13 @@ live and under a journal consent in version 2's words, read again under the tria
   before keeping anything, the reading reads, under the folder's lock, that its attempt is still the current one, that the list still
   names this reading, that the deletion count hasn't moved and that the consent stands; otherwise it keeps nothing. So a late answer
   of an ended attempt is dropped, also when the same reading has gone on meanwhile.
-- **The mark, for i83.** Each page's call asks for an envelope of the runner's own: the import's `source-reading-result`, unchanged,
+- **The mark, for i83 1a.** Each page's call asks for an envelope of the runner's own: the import's `source-reading-result`, unchanged,
   and beside it a list of which of its quotations are words about dying, death, suicide, self-harm or not wanting to live. The
   reading result alone goes through the import's checks, and whether the page is read depends on those alone. The mark is checked
   apart: each entry must name one of the result's quotations, which the program has found in the page; it is kept with the page's
   reading as spans of the page. A missing or malformed mark is kept as "no mark for this page" and never fails the page. The mark
   costs no other call and sends nothing more. It decides nothing about the page, the copy, the questions or the test; only the
-  Journal tab reads it, and only under i83's option a (5.4, where a page without a valid mark shows no passage). Every reading writes
-  it, so a copy read before the owner answers needn't be read again.
+  Journal tab reads it (i83 1a; 5.4, where a page without a valid mark shows no passage). Every reading writes it.
 - **The summary.** Once every page is read, the import's summary calls run over the kept readings (about one for every twelve pages, then the levels above), and the receipts are signed. A summary answer still outside its
   schema after two more asks stops the reading with its code, every page kept, and "Go on reading" asks again.
 - **What he sees.** The status route gives numbers only: the pages read, not read and to read, the page it is on, the minutes so
@@ -573,7 +575,7 @@ key, the held-back digests, the receipts, the marker and the hidden passages of 
 and each client with a copy whose journal consent and tab consent both stand. It reads the newest copy, tested or not (i81 4a): the
 pending copy of Add more when there is one, otherwise the copy in use; never a reading that isn't a copy yet. It reads through a
 grant made in the process for that request (read, `organize_search`), never a reply's.
-- **What it counts, and what it may show.** Two sets, each fixed by i83's answer. The set it counts, from which the days, the month
+- **What it counts, and what it may show.** Two sets, each fixed by i83's answer (1a). The set it counts, from which the days, the month
   lines and the count of entries without a date are drawn: the passages a reply may quote (a passage in a lifecycle a reply may use,
   not restricted, its words checked against the stored bytes: the reader's own `evidenceCandidate` rule), less the hidden ones (5.4),
   and, under 1a or 1b, less every passage of an entry that 5.4 leaves out, so that such an entry is in no count and marks no day. The
@@ -608,21 +610,21 @@ first, at most 24 months at a time: the date, and the sentences that hold the th
 cut inside a sentence (so a "not" stays with its words), with "Show the whole passage". The tab says: "Their own words, with their
 dates. Nothing here is a judgment of progress." No summary, label, count chart or arrow.
 
-**5.4 Keeping content about wanting to die out (i83).** The tab shows nothing written about wanting to die. How it finds such writing
-is the owner's open choice, i83 (section 11), and only the Journal tab's build (pull request 5) waits for it:
-- **i83 1a (recommended):** the reading's mark (4.6) and the word list below, together: a passage the reading marked, or that holds a
+**5.4 Keeping content about wanting to die out (i83 1a).** The tab shows nothing written about wanting to die. How it finds such
+writing was the owner's choice, i83: he chose **1a**. The two other options stay below for the record:
+- **i83 1a (chosen):** the reading's mark (4.6) and the word list below, together: a passage the reading marked, or that holds a
   word or phrase of the list, is left out with its whole entry, by the rules below. The mark is a model's reading made when the copy
   was built; the tab itself makes no call. Where there is no mark, nothing falls back to the list alone: the passages of a page
   whose mark is missing or malformed are left out as a marked passage's are, and a copy the reading never read (a copy from the
   server) shows what 1c shows, its days with writing and never a passage.
-- **i83 1b:** the word list alone, by the same rules.
-- **i83 1c:** for now, only the days with writing: then and now isn't built, so no passage is shown. A day's mark is the same
+- **i83 1b (not chosen):** the word list alone, by the same rules.
+- **i83 1c (not chosen):** for now, only the days with writing: then and now isn't built, so no passage is shown. A day's mark is the same
   whatever was written and shows only that something was, so no list applies to the days, and a day whose only writing is about
   dying is marked like any other: nothing of it is charted or quoted.
 These are how each option applies to the edge cases. None of them can promise what the line held says outright: under 1a and 1b a
 passage about wanting to die that neither the mark nor the list catches can be quoted, and under 1c days whose only writing is about
-it are marked (marked like any other day, showing nothing of it). Which of these limits to accept is what i83 asks; the owner's
-answer settles them with the rest, and until then the tab isn't built.
+it are marked (marked like any other day, showing nothing of it). Which of these limits to accept is what i83 asked; the owner's
+answer, 1a, takes 1a's limit as the question put it: "A reading and a list can both miss things, and the tab will say so."
 Under 1a and 1b the tab uses a fixed list (`src/runner-trial/dying-words.mjs`), in English and French, read in their forms: (a) direct
 words and phrases of suicide, killing oneself, self-harm and overdose; (b) indirect phrases of not wanting to exist ("not wake up",
 "better off without me", "ne plus être là", and the like); (c) any word of dying and death (die, dead, death, kill; mourir, mort,
@@ -640,11 +642,11 @@ tuer). Then:
 - The emergency line is always at the tab's foot, as on the conversation page.
 - "Hide this passage" keeps a passage out of that person's tab for good (a digest of its exact words, kept in their journal folder, so
   it holds across Add more; their Delete removes it).
-- The tab states its limit: "Passages that mention dying, death or self-harm are left out by a list of words; indirect wording can
-  still get through." Under 1a: "... are left out by the journal's reading and a list of words; some can still get through."
+- The tab states its limit, in 1a's words: "Passages that mention dying, death or self-harm are left out by the journal's reading and a
+  list of words; some can still get through."
 The list leaves out too much on purpose (entries about grief and illness go too). It can't catch every indirect way of writing about
 wanting to die; the reading's mark catches what a model reads as such, with misses of its own; neither checks a passage at the moment
-it is shown. Which of the three is i83.
+it is shown. Of the three, the owner chose 1a (i83).
 
 **5.5 Empty and limit states.** No copy: "No journal copied in yet." A client whose tab consent doesn't stand isn't in the picker. A
 copy without date lines: "This journal has no dates the calendar can read: its entries don't start with a date." Entries without a
@@ -658,7 +660,7 @@ just now", with a code, never its words.
 |---|---|---|---|
 | Add journal, the preview, building the copy, a server copy's import | nothing | | |
 | The reading ("Read it and copy it in", "Go on reading", "Read again"; Add more's new pages) | the whole journal, page by page: each reading page's exact text, number and digest, with the reader's fixed instruction and the adapter's routing fields; then, to the summary calls, either up to twelve pages' overviews and findings with their page numbers, digests and opaque references, or, a level up, the summaries below with their opaque references and meaningful changes (never a quotation array; a finding, a summary or a change is free text and may repeat the journal's words), compared within the journal alone | OpenAI (GPT through the trial's Codex, on the owner's ChatGPT plan; pinned) | i81 1b (the order of 18 Oct) |
-| The Journal tab | nothing | | the first slice: no model (under i83 1a it reads the reading's marks, kept with the copy) |
+| The Journal tab | nothing | | the first slice: no model (it reads the reading's marks, kept with the copy: i83 1a) |
 | The questions tool, writing | about 90 sampled passages a run, 150 at most with the extra batches and the replacements of skipped ones (exact words, entry dates), and the instructions | OpenAI (GPT through Codex, on the owner's ChatGPT plan; in pull request 1 only in a trial folder set apart for invented journals, on a copy holding the invented-journal sentinel, then under a consent in version 2's words, 3) | i77 3a |
 | The questions tool, key checks | each answerable candidate with its evidence passage, which was sampled already | OpenAI | i77 3a (part of the writing) |
 | The cold test, consumer | each question, with the at most six passages the replies' reader returns | the writer's worker (mixed: OpenAI) | i77, as built |
@@ -773,9 +775,9 @@ as pull request 245 did.
 | R20 | Of tests of one copy that overlap, the newest decides (the command's attempt marker, kept by the shared job; the page adds one test a person at a time with pull request 4); a receipt only for a pass; numbers only | the command's tests, run through the shared job; overlapping runs with GPT's questions; one wrong consumer answer in a run with GPT's questions: no receipt |
 | R21 | Two consent parts; the tab consent needs the journal consent; each withdrawal's effect | every order of confirming and withdrawing |
 | R22 | A client is in the tab's picker only with both consents; the owner's own journal needs no tab consent; the copy read is the newest, tested or not (i81 4a) | requests for a first copy and a pending copy without a receipt: both shown, the pending one when there is one; a reading that isn't a copy yet: nothing |
-| R23 | Days with writing come only from the passages the tab counts (5.1, by i83's answer), apart from what it may show, with a day's date; one mark a day; undated entries counted | an invented journal with ranges, months, years, inferred years and excluded passages, under each option of i83: under 1a and 1b an excluded-only day unmarked, under 1c and for an unmarked copy marked with no passage shown |
+| R23 | Days with writing come only from the passages the tab counts (5.1, by i83's answer, 1a), apart from what it may show, with a day's date; one mark a day; undated entries counted | an invented journal with ranges, months, years, inferred years and excluded passages, under each option of i83: under 1a and 1b an excluded-only day unmarked, under 1c and for an unmarked copy marked with no passage shown |
 | R24 | Then and now: whole sentences, one passage a month by the stated rule, at most 24 months, the entry's own date | crafted passages with a "not" beside the theme |
-| R25 | By i83's answer: a passage holding a listed word (and under 1a, one the reading marked) is never shown, nor its entry (across pages, past a page not fully read, two passages each side without entry lines); a theme holding one shows the support line; a month with only such passages shows nothing; under 1c no passage at all | planted entries in English and French, of each part of the list, one running onto the next page, and marked passages without a listed word |
+| R25 | By i83's answer, 1a: a passage holding a listed word, or one the reading marked, is never shown, nor its entry (across pages, past a page not fully read, two passages each side without entry lines); a theme holding one shows the support line; a month with only such passages shows nothing; under 1c no passage at all | planted entries in English and French, of each part of the list, one running onto the next page, and marked passages without a listed word |
 | R26 | Hidden passages stay hidden across Add more; Delete removes them | the digest file before and after |
 | R27 | No model call from Add journal, the preview, building the copy or the tab; before a copy, the reading is the only one, and only after "Read it and copy it in" | the failing worker factory everywhere but the reading's port |
 | R28 | No words in any log: the run log, the server's console, the launcher's log, errors | the planted words |
@@ -823,7 +825,7 @@ move down one:
 | 2 | IS24's rest: a launcher and the icon, Restart and Stop on the page, the owner's switches kept in the launcher's settings | built and merged as pull request 254 (26 Nov) | done |
 | 3 | The journal steps up to a first copy: the People tab, adding a client, both parts of the consent in version 2's words, Add journal (PDF, text, Markdown, Word, a server copy), the preview, the reading (4.6), the copy (4.7), withdraw; the owner's own journal | 1; the owner's word on whether 1b also asks for the order's graph and its checks (4.6, "What 1b covers") | 3 to 3.5 days, more if he asks for the graph |
 | 4 | Add more (4.8) and the cold test from the page, with its status (4.9) | 3 | 1.5 to 2 days |
-| 5 | The Journal tab: days with writing, then and now, what i83 chooses (5.4), Hide, the moment of showing | 3 (and 4 for a pending copy); i83 | 1.5 to 2 days |
+| 5 | The Journal tab: days with writing, then and now, what i83 1a chose (5.4), Hide, the moment of showing | 3 (and 4 for a pending copy) | 1.5 to 2 days |
 | 6 | IS23's switches: the journal for each conversation, and the check of each reply, with the seconds each adds | IS22's run on invented cases | 1 day |
 
 IS24's rest came first (merged as pull request 254): a consent and a new client take effect only at a start, and the page's Restart
@@ -836,16 +838,12 @@ calendar days of a helper session with its reviews, not measured: about 9 to 11 
 a deletion runs (`RUNNER_WORK_KINDS`). The copy and the test join those kinds with pull requests 3 and 4. A reading doesn't: it is
 long, so Restart and Stop pause it instead (4.6).
 
-## 11. The owner's open choice
+## 11. The owner's choices
 
-Of the six choices this design first put to him (question i81), five are answered, `1b 3a 4a 5b 6a` (see "What the owner decided").
-The second had no answer, and is asked again:
-
-1. **i83: keeping writing about wanting to die out of the Journal tab** (section 5.4). Only the Journal tab's build (pull request 5)
-   waits for it; nothing before it does.
-   - **1a:** the reading (4.6) marks entries about dying or wanting to die, and the word list backs it up. (recommended)
-   - **1b:** the word list only.
-   - **1c:** only the days with writing for now.
+Of the six choices this design first put to him (question i81), five were answered, `1b 3a 4a 5b 6a`; the second was asked again
+as i83 and answered `1a` (see "What the owner decided"). One choice is still his, and pull request 3 waits for it (section 10):
+whether his 1b also asks the runner for the later stages of his 18 Oct order, the graph and its checks (4.6, "What 1b covers"). The
+lane asks it as its own question.
 
 ## 12. Limits
 
