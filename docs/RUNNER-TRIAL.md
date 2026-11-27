@@ -86,8 +86,8 @@ One folder outside the checkout, only yours (mode 0700): `$HOME/.local/share/inn
 - `runner-log.jsonl` (mode 0600): the word-free run log described below, for your own case; each client's case has its own,
   `runner-log-<case id>.jsonl`.
 - `journal/<case id>/`: a client's journal folder, with their key for journal copies (`copy-key.json`, mode 0600, made by
-  `--copy-key`), the cold-test receipt for their journal copy and the marker of the cold test started last (below). Their Delete
-  removes it.
+  `--copy-key`), the cold-test receipt for their journal copy, the marker of the cold test started last and the passages GPT's questions
+  tool holds back (`questions-held-back.json`, digests only, mode 0600) (below). Their Delete removes it.
 - `settings-<provider>.json` (mode 0600, `INNER_SIGNAL_RUNNER_TRIAL_SETTINGS`), written at every start: the arrangement that
   measured best, the whole writer with one whole checker, readers and checkers at low effort and the writer at medium, each worker
   on the provider the choice gives it.
@@ -207,6 +207,37 @@ A client's journal can inform their replies only through the session-use journal
    the file needs 40 answerable questions that share a search word with the passages of all their evidence, 20 unanswerable ones for which
    the search returns something all the same, and 20 planted answers, three of each kind.
 
+   Or GPT writes the run's questions (your i77 3a and i81 5b; `docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md`,
+   section 3), in place of the file:
+
+   ```bash
+   node scripts/runner-trial-journal.mjs --cold-test --gpt-questions --provider mixed --dir /absolute/path/invented-trial
+   ```
+
+   The trial's sealed Codex worker (no tools, an empty folder, no session kept; on your ChatGPT plan, whatever `--provider` says) gets
+   passages of the copy sampled across it, an equal share of each quarter, fifteen to a call under opaque names, each with the date its
+   entry gives: 60 to write a question about, with its exact evidence and, for 28 of them, a planted wrong answer of the kind the program
+   names; and 30 as context for questions the journal doesn't answer, whose subject the program chooses from a fixed list among those no
+   passage names in any of their names, GPT giving a verb from the program's list and a short phrase, the program the shape ("When did I
+   visit the planetarium after the market?"). Passages about dying are sampled like any other. The program checks every candidate (the
+   quote exact and in one to three passages, its length, no passage the evidence of more than two questions, no question twice, the
+   planted answers' kinds and lengths, the verbs and phrases, and that the replies' reader returns a passage for each question the journal
+   doesn't answer), and GPT checks each answerable key on its evidence passage alone. The tool needs 40 questions in their passages'
+   words, 8 in other words, 20 the journal doesn't answer and 20 planted answers, three of each kind; short of that it makes one more batch
+   of each kind that is short, then stops with a code and its counts, and no test runs. At most 150 passages and 20 calls a run, every
+   call asked again included. A batch or a key check still without an answer in its schema after two more asks (which is how a refusal by
+   GPT would most likely come), or one a worker says it refused, is dropped whole, and its passages go to no later call of the tool for
+   that client: their digests are kept in `journal/<case id>/questions-held-back.json`. The questions and their key live in the command's
+   memory for that run alone, and the command prints the tool's numbers before the test's. The questions' author is `openai`, so the
+   tool doesn't run with `--provider codex`, whose judge is GPT too.
+
+   Until a consent in its new words names GPT's questions (pull request 3 of that design), they run only on an invented journal: in a
+   trial folder set apart for invented journals by a file named `invented-journals-only` in it (mode 0600; no command writes it), never
+   the default trial folder (refused even with the file), and on a copy that holds the invented-journal sentinel among the passages a
+   reply may quote, `This journal is invented for a test of InnerSignal, and nothing in it is anyone's.` on a line of its own. That
+   passage is never sent. Elsewhere they are refused before any call. None of it has been run against a model: the measured run on an
+   invented journal comes once this is merged (i81 6a).
+
    For each question, the test gives a fresh call of the trial's writer's worker (with `--provider mixed`, GPT) exactly what a reply to
    that question as the message would get from the copy: the replies' reader's own search, at most six passages, each with when it was
    written, its wording cues and its lifecycle, and what was searched. It never gets the key. It answers from those passages alone, says
@@ -262,7 +293,7 @@ A client's journal can inform their replies only through the session-use journal
    every client's journal until its copy has passed again, and a receipt of the test's first design, which names no reader, opens nothing.
    Nothing here has been run against a model or a real journal. The method is as you decided in i77 (24 Nov 2026): this pass
    rule (2b), and GPT writes the questions and the planted answers from the journal's own quotes, part of the questions worded without the
-   quotes' words (3a; that tool isn't built).
+   quotes' words (3a; built as `--gpt-questions` above, on invented journals only for now).
 
 Short of any of them, the turn's evidence records why (`journal_consent_missing`, `no_journal_copy`,
 `cold_test_receipt_missing` or `cold_test_receipt_mismatch`) and the reply is made from the conversation alone.

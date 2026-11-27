@@ -127,3 +127,23 @@ export async function persistInventedJournal({ corpusStore, caseId, corpusId, pa
   const persisted = await persistGraphGeneration({ corpusStore, graph, sourceRepresentations: sources, permittedUses, extraIndexes, indexRepresentations: GENERATIONS[index] !== undefined });
   return { persisted, graph, passageOf, generation };
 }
+
+// Things an invented journal tells of, each in one entry, for the tests of the cold test's questions tool: none of them is, or reads as,
+// a subject the tool asks about (src/runner-trial/cold-questions.mjs), so all of those stay subjects no passage names.
+export const LENT_THINGS = Object.freeze(("abacus anvil bassoon bellows birdcage bobbin brazier chisel cogwheel crowbar dulcimer easel gargoyle "
+  + "goblet hourglass jigsaw kiln lathe loom marionette monocle oboe parasol pendulum quill sextant sundial tapestry trellis weathervane "
+  + "zither barometer candelabra clarinet corkscrew crossbow decanter foghorn gramophone ladle mortar pestle thimble spindle anchor bugle "
+  + "cauldron flagon kettledrum lute mandolin metronome spyglass tambourine teapot thermos trowel tuba typewriter wrench armchair bookcase "
+  + "bracelet brooch cufflink dartboard doorknob earmuffs fishbowl footstool gauntlet hairbrush handbell hatbox inkwell jukebox "
+  + "kaleidoscope lampshade lunchbox magnet mousetrap nutcracker paperweight pinwheel quilt satchel scarecrow seesaw shoehorn snowglobe "
+  + "stopwatch suitcase tablecloth teacup toaster trinket umbrella vase wallet whistle windchime").split(" "));
+const LENT_PEOPLE = Object.freeze(["neighbour", "cousin", "teacher", "landlord", "aunt", "colleague"]);
+const LONG_TAIL = ", wrapped in brown paper and tied with string, and I put it on the shelf by the window where the light comes in during the long afternoons of the year.";
+/** The entry that tells of the `place`th thing, lent and given back: 17 words, or 46 with `long`. */
+export const lentEntry = (place, { long = false } = {}) => `That spring I lent the ${LENT_THINGS[place]} to my ${LENT_PEOPLE[place % LENT_PEOPLE.length]}, and it came back after a week${long ? LONG_TAIL : "."}`;
+/** An entry about dying, telling of the `thing`th thing too: three forms in turn, by `place`. */
+export const dyingEntry = (place, thing = place) => [
+  `My grandfather died in the night, and at his funeral I held the ${LENT_THINGS[thing]} the whole time.`,
+  `I keep thinking about my own death since the ${LENT_THINGS[thing]} broke in my hands.`,
+  `We buried my aunt on a grey morning, and someone left the ${LENT_THINGS[thing]} on her grave.`
+][place % 3];

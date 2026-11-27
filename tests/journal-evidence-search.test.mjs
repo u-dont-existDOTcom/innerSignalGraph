@@ -5,7 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
-import { createJournalResultCache, evidenceWordsShared, EVIDENCE_QUOTE_SEARCH, openPrivateJournalGraph, QUOTE_BM25 } from "../src/journal-import/retrieval.mjs";
+import { createJournalResultCache, evidenceWordsHeldBy, evidenceWordsShared, EVIDENCE_QUOTE_SEARCH, openPrivateJournalGraph, QUOTE_BM25 } from "../src/journal-import/retrieval.mjs";
 import { quoteCues } from "../src/journal-import/quote-index.mjs";
 import { formsReadingTokens, formsReadingTerm } from "../src/journal-import/word-forms.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
@@ -439,4 +439,24 @@ test("the words of a message that a quote holds, by the search's own rule: what 
   assert.deepEqual((await find("common1")).terms.dropped, [{ term: "common1", quotes: 30, reason: "common" }]);
   assert.deepEqual(evidenceWordsShared("common1", "own1a own1b own1c common1.", { wordList: true }), ["common1"]);
   for (const bad of [[null, "a", { wordList: true }], ["a", null, { wordList: true }], ["a", "a", { wordList: undefined }]]) assert.throws(() => evidenceWordsShared(...bad), { code: "QUOTE_QUERY_INVALID" });
+});
+
+test("the words of a message that any of many quotes holds, the quotes read once: what asking each quote in turn gives, by the same rule", () => {
+  const told = ["Les cerisiers fleurissaient derrière l'école, and I dreamed of climbing one.", "My left shoulder aches again.", "Son père tenait le but du terrain vague.",
+    "I couldn't sleep in the greenhouse, and the greenhouses were cold.", "The harbour1 was empty."];
+  const messages = ["Pourquoi est-ce que je rêve encore du cerisier de notre école ?", "It's my shoulder, I think you should know.", "I had a fight with my son", "Je cherche son frère",
+    "I couldn't and wouldn't, I don't", "My shoulders in the greenhouse, at harbour1", "le planétarium", "the lighthouses", "yes", "…"];
+  for (const wordList of [true, false]) {
+    const held = evidenceWordsHeldBy(told, { wordList });
+    for (const message of messages) {
+      const each = new Set(told.flatMap((quote) => evidenceWordsShared(message, quote, { wordList })));
+      assert.deepEqual([...held(message)].sort(), [...each].sort(), `${wordList}: ${message}`);
+    }
+  }
+  // With a word list another form of a word is the same word; without one it isn't. No quotes hold nothing.
+  assert.deepEqual([evidenceWordsHeldBy(told, { wordList: true })("greenhouse"), evidenceWordsHeldBy(told.slice(0, 3), { wordList: true })("greenhouse"), evidenceWordsHeldBy([], { wordList: false })("greenhouse")],
+    [["greenhou"], [], []]);
+  assert.deepEqual([evidenceWordsHeldBy(told, { wordList: true })("cerisier"), evidenceWordsHeldBy(told, { wordList: false })("cerisier")], [["cerisi"], []]);
+  for (const bad of [[null, { wordList: true }], [["a", 3], { wordList: true }], [["a"], { wordList: "yes" }]]) assert.throws(() => evidenceWordsHeldBy(...bad), { code: "QUOTE_QUERY_INVALID" });
+  assert.throws(() => evidenceWordsHeldBy(told, { wordList: true })(null), { code: "QUOTE_QUERY_INVALID" });
 });

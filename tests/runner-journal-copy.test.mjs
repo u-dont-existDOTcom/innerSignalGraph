@@ -21,15 +21,18 @@ import { createRunnerJournalGate } from "../src/runner-trial/journal-gate.mjs";
 import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, RUNNER_CLIENTS_FILE, clientJournalFolder, readColdTestAttempt, readColdTestReceipt, readRunnerClients, writeRunnerClients } from "../src/runner-trial/clients.mjs";
 import { acquireTrialFolderLock as acquireFolderLock, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
 import { COLD_TEST_RULE } from "../src/runner-trial/cold-test-rule.mjs";
+import { INVENTED_JOURNAL_SENTINEL } from "../src/runner-trial/cold-questions.mjs";
 import { createSealedColdTestPort, runJournalColdTest } from "../src/runner-trial/journal-cold-test.mjs";
 import { cutRuleParts } from "../src/runner-trial/rule-parts.mjs";
 import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
 import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordinator.mjs";
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
-import { StartError, acquireTrialFolderLock, addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
-import { CLIENT_COPY_KEY_FILE, IMPORT_PURPOSES, USAGE, ensureJournalCopyKey, importClientJournal, oneTimeGrant, parseJournalArguments, runClientColdTest, runMain } from "../scripts/runner-trial-journal.mjs";
-import { ANSWER, JUDGE_REASON, PLANTED, RECEIPTS, coldWorkers, plantOn, questionsFile } from "./helpers/cold-workers.mjs";
+import { StartError, acquireTrialFolderLock, addClient, defaultTrialHome, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
+import { CLIENT_COPY_KEY_FILE, IMPORT_PURPOSES, INVENTED_JOURNALS_ONLY_FILE, USAGE, ensureJournalCopyKey, importClientJournal, oneTimeGrant, parseJournalArguments, runClientColdTest,
+  runMain } from "../scripts/runner-trial-journal.mjs";
+import { ANSWER, JUDGE_REASON, PLANTED, RECEIPTS, coldWorkers, plantOn, questionWriter, questionsFile } from "./helpers/cold-workers.mjs";
+import { LENT_THINGS, lentEntry } from "./helpers/invented-journal.mjs";
 import { makeNamedPipe, printedApart } from "./helpers/named-pipe.mjs";
 
 // The copy step for a client's journal (design for clients, point 4) and the command of its cold test (point 5c): exported where the journal
@@ -2048,4 +2051,183 @@ test("the client list, the cold-test receipt and its test's marker are each open
   assert.deepEqual(await readRunnerClients(home), list);
   assert.deepEqual(await readColdTestReceipt(home, clientOne), receipt);
   assert.equal(await readColdTestAttempt(home, clientOne), attempt);
+});
+
+// ---- GPT's questions (--gpt-questions) -------------------------------------------------------------------------------------------
+
+// An invented journal: the invented-journal sentinel on a line of its own (unless left out), then entries of things lent. A client's copy
+// of it, in a trial folder set apart for invented journals (unless not), and a cold test of it with GPT's questions, from a stand-in
+// writer, answered and judged by `workers`.
+const taskOf = (request) => JSON.parse(request.user).task;
+const inventedJournal = (count, sentinel) => generatedJournal([{ sourceId: "source:invented", representationId: "invented",
+  lines: [...(sentinel ? [INVENTED_JOURNAL_SENTINEL] : []), ...Array.from({ length: count }, (_, place) => lentEntry(place))] }]);
+// The test's stand-ins for a run with GPT's questions: the consumer says it found nothing for a question in the shapes of those the
+// journal doesn't answer; `change(value, request)` may answer otherwise.
+const ASKED_ABOUT_NOTHING = /^(When did I|Did I ever) /u;
+const gptAnswers = ({ change = (value) => value, ...options } = {}) => coldWorkers({ ...options, reply: async (count, request, usual) => {
+  let value = await usual();
+  if (!isJudge(request) && ASKED_ABOUT_NOTHING.test(JSON.parse(request.user).question)) value = { ...value, answerability: "not_found", evidence_ids: [] };
+  return change(value, request);
+} });
+async function inventedClient(t, { count = 80, sentinel = true, setApart = true } = {}) {
+  const trial = await copiedClient(t, { server: await serverJournal(t, { journal: inventedJournal(count, sentinel) }) });
+  if (setApart) await fs.writeFile(path.join(trial.home, INVENTED_JOURNALS_ONLY_FILE), "", { mode: 0o600 });
+  const gptTest = (writer = questionWriter(), workers = gptAnswers(), options = {}) => runClientColdTest({ home: trial.home, number: 1, gptQuestions: true, provider: "mixed",
+    questionWorker: writer, ...using(workers), ...options });
+  return { ...trial, gptTest };
+}
+
+test("--gpt-questions: refused before any call with codex, outside a trial folder set apart for invented journals, in the default trial folder even with its file, and on a copy without the sentinel; a questions file runs as before", async (t) => {
+  const elsewhere = path.join(os.tmpdir(), "inner-signal-trial-elsewhere");
+  for (const provider of ["mixed", "claude"]) {
+    assert.deepEqual(parseJournalArguments(["--cold-test", "--gpt-questions", "--provider", provider, "--dir", elsewhere]), { command: "cold-test", file: null, provider, dir: elsewhere, gptQuestions: true });
+  }
+  for (const [argv, message] of [
+    [["--cold-test", "--gpt-questions", "--provider", "codex"], /--gpt-questions needs --provider mixed or claude: with codex, GPT would judge the questions it wrote\./u],
+    [["--cold-test", path.join(elsewhere, "q.json"), "--gpt-questions", "--provider", "mixed"], /--cold-test takes a questions file or --gpt-questions, not both\./u],
+    [["--import", path.join(elsewhere, "f"), "--gpt-questions"], /--gpt-questions goes with --cold-test only\./u],
+    [["--cold-test", "--gpt-questions", "--gpt-questions", "--provider", "mixed"], /--gpt-questions is given twice\./u],
+    [["--cold-test", "--gpt-questions"], /--cold-test needs --provider mixed, claude or codex\./u],
+    [["--cold-test", "--provider", "mixed"], /--cold-test needs its file\./u]
+  ]) assert.throws(() => parseJournalArguments(argv), message, argv.join(" "));
+  assert.match(USAGE, /--cold-test --gpt-questions --provider mixed\|claude/u);
+
+  // A trial folder like any other, whose copy doesn't hold the sentinel.
+  const plain = await copiedClient(t);
+  const idle = questionWriter(), unasked = standIns();
+  const gpt = (home, options = {}) => runClientColdTest({ home, number: 1, gptQuestions: true, provider: "mixed", questionWorker: idle, ...using(unasked), ...options });
+  const notSetApart = { message: `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, mode 0600), never the default trial folder. Nothing was changed.` };
+  await assert.rejects(gpt(plain.home, { provider: "codex" }), { message: "GPT writes the questions, and one of OpenAI's judges the answers with --provider codex: choose mixed or claude. Nothing was changed." });
+  await assert.rejects(gpt(plain.home), notSetApart);
+  await assert.rejects(gpt(plain.home, { questionsPath: plain.questionsPath }), { message: "Give a questions file or --gpt-questions, not both." });
+  const marker = path.join(plain.home, INVENTED_JOURNALS_ONLY_FILE);
+  await fs.writeFile(marker, "", { mode: 0o644 });
+  await assert.rejects(gpt(plain.home), { message: `${INVENTED_JOURNALS_ONLY_FILE} must be readable by you alone (mode 0600). Nothing was changed.` });
+  await fs.chmod(marker, 0o600);
+  // Set apart, but the copy doesn't hold the sentinel: refused before any call, from the publication the test reads.
+  await assert.rejects(gpt(plain.home), { message: /^This copy doesn't hold the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them\. Nothing was sent; /u });
+  assert.deepEqual([idle.sent.length, unasked.sent.length], [0, 0]);
+  await absent(plain.receiptPath);
+  // A questions file runs as before, in a folder set apart as in any other.
+  assert.equal((await plain.coldTest(using())).passed, true);
+  await fs.rm(marker);
+  assert.equal((await plain.coldTest(using())).passed, true);
+
+  // The default trial folder, the one the owner's runner uses, even with the file: refused before any call. HOME is the test's own here,
+  // so that folder is a temporary one.
+  const home = await temporaryFolder(t, "home");
+  const before = process.env.HOME;
+  process.env.HOME = home;
+  try {
+    const defaultHome = defaultTrialHome();
+    assert.ok(defaultHome.startsWith(`${home}${path.sep}`), "the default trial folder is the test's");
+    await prepareTrialFolder({ home: defaultHome, provider: "codex" });
+    await addClient({ home: defaultHome, label: "Synthetic client 1" });
+    await setJournalConsent({ home: defaultHome, number: 1, action: "confirm" });
+    await fs.writeFile(path.join(defaultHome, INVENTED_JOURNALS_ONLY_FILE), "", { mode: 0o600 });
+    await assert.rejects(gpt(defaultHome), notSetApart);
+    // Named through a link, it is the same folder.
+    const link = path.join(home, "another-name");
+    await fs.symlink(defaultHome, link);
+    await assert.rejects(gpt(link), notSetApart);
+  } finally {
+    if (before === undefined) delete process.env.HOME;
+    else process.env.HOME = before;
+  }
+  assert.deepEqual([idle.sent.length, unasked.sent.length], [0, 0]);
+});
+
+test("--gpt-questions on an invented journal: GPT writes the run's questions from the copy, the test runs on them, a pass gives the receipt with author openai, and the command prints numbers only", async (t) => {
+  const { home, cases: [clientOne], receiptPath, gptTest, imported } = await inventedClient(t);
+  const writer = questionWriter(), workers = gptAnswers();
+  const result = await gptTest(writer, workers);
+  assert.equal(result.passed, true, JSON.stringify({ ...result.report, by_question: undefined }));
+  const receipt = await readColdTestReceipt(home, clientOne);
+  assert.deepEqual([receipt.author, receipt.questions, receipt.corpus_id, receipt.consumer, receipt.judge, receipt.run], ["openai", { answerable: 48, unanswerable: 26, planted: 28 },
+    imported.corpus_id, RECEIPTS.W, RECEIPTS.CW, 1]);
+  assert.equal(await modeOf(receiptPath), 0o600);
+  assert.deepEqual([result.questionsReport.kept.same_words, result.questionsReport.kept.other_words, result.questionsReport.kept.unanswerable, result.questionsReport.kept.planted], [48, 12, 26, 28]);
+  // GPT's calls came first, all of them before the test's; the sentinel's passage went to none.
+  assert.ok(writer.sent.length >= 10 && workers.sent.length >= 86);
+  assert.equal(writer.sent.some(({ request }) => request.user.includes(INVENTED_JOURNAL_SENTINEL)), false);
+
+  // The command prints the questions tool's numbers, then the test's, then its verdict: no question, passage, answer or name.
+  const lines = [];
+  const add = (text) => { lines.push(String(text)); };
+  const code = await runMain(["--cold-test", "--gpt-questions", "--provider", "mixed", "--dir", home], { log: add, logError: add, askQuestion: async () => "1",
+    workerFor: gptAnswers().workerFor, questionWorker: questionWriter() });
+  const text = lines.join("\n");
+  assert.equal(code, 0, text);
+  const tool = JSON.parse(lines.find((line) => line.startsWith('{\n  "questions_tool"'))).questions_tool;
+  assert.deepEqual([tool.version, tool.calls.made, tool.passages.excluded, tool.kept.same_words], ["cold-questions-v1", 10, 1, 48]);
+  assert.match(text, /Passed: client 1's copy has its cold-test receipt/u);
+  assert.match(text, /\nTests started on this copy so far: 2\.$/u);
+  for (const words of [...LENT_THINGS.slice(0, 80).filter((thing) => thing.length > 6), "Riddle", "zq", "What happened", "When did I", "Did I ever", PLANTED, ANSWER, JUDGE_REASON,
+    INVENTED_JOURNAL_SENTINEL, "That spring", clientOne, imported.corpus_id]) assert.equal(text.includes(words), false, `${words} in ${text}`);
+});
+
+test("with GPT's questions too: a withdrawal before any kind of packet stops the run, the newest of overlapping runs decides, and one wrong answer, or too few questions, leaves no receipt", async (t) => {
+  const { home, receiptPath, gptTest } = await inventedClient(t);
+  const changed = { message: "The client's consent or copy changed during the cold test: it stopped, and gave no receipt." };
+  const newer = { message: "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again." };
+  const withdraw = () => setJournalConsent({ home, number: 1, action: "withdraw" });
+  const confirm = () => setJournalConsent({ home, number: 1, action: "confirm" });
+  // A pass first, so each stop below is seen to leave none.
+  assert.equal((await gptTest()).passed, true);
+  // The consent withdrawn right before the first packet of each kind: of the questions tool, then of the test.
+  for (const task of ["answerable", "unanswerable", "check_keys"]) {
+    let withdrawn = false;
+    const writer = questionWriter({ prepare: async (count, request) => { if (!withdrawn && taskOf(request) === task) { withdrawn = true; await withdraw(); } } });
+    const workers = gptAnswers();
+    await assert.rejects(gptTest(writer, workers), changed, task);
+    assert.deepEqual([writer.packets(task).length, workers.sent.length], [0, 0], `${task}: that packet didn't leave, nor any of the test's`);
+    await absent(receiptPath, task);
+    await confirm();
+  }
+  for (const role of ["W", "CW"]) {
+    let withdrawn = false;
+    const workers = gptAnswers({ prepare: async (count, request) => { if (!withdrawn && (role === "CW") === isJudge(request)) { withdrawn = true; await withdraw(); } } });
+    await assert.rejects(gptTest(questionWriter(), workers), changed, role);
+    assert.equal(workers.packets(role).length, 0, role);
+    await absent(receiptPath, role);
+    await confirm();
+  }
+
+  // Overlapping runs, each with GPT's questions: B starts and passes while A's questions are being written; A passes too, and gives none.
+  let given = null;
+  const a = gptTest(questionWriter({ prepare: async (count) => {
+    if (count !== 2) return;
+    assert.equal((await gptTest()).passed, true);
+    given = await fs.readFile(receiptPath, "utf8");
+  } }));
+  await assert.rejects(a, newer);
+  assert.match(given, /"author": "openai"/u);
+  assert.equal(await fs.readFile(receiptPath, "utf8"), given, "B's receipt stays");
+
+  // One wrong answer in a run with GPT's questions: no receipt.
+  let wrongOnce = false;
+  const wrong = gptAnswers({ change: (value, request) => {
+    if (isJudge(request) || wrongOnce || !value.evidence_ids.length) return value;
+    wrongOnce = true;
+    return { ...value, evidence_ids: [...value.evidence_ids, "src:journal:9"] };
+  } });
+  const failed = await gptTest(questionWriter(), wrong);
+  assert.deepEqual([failed.passed, failed.report.wrong, failed.report.not_met], [false, 1, ["wrong_answers"]]);
+  await absent(receiptPath);
+
+  // Too few questions pass the checks: the tool stops with its code and counts, and the test's workers are never called.
+  const doubting = questionWriter({ reply: async (count, request, usual) => {
+    const value = await usual();
+    if (taskOf(request) === "check_keys") for (const item of value.items) item.answers = false;
+    return value;
+  } });
+  const unused = gptAnswers();
+  await assert.rejects(gptTest(doubting, unused), { message: /^The questions tool stopped: too few of GPT's questions passed the checks for the rule \(COLD_QUESTIONS_NOT_ENOUGH\)\. No test ran, and no receipt was given\. Its counts: \{"version":"cold-questions-v1",/u });
+  assert.equal(unused.sent.length, 0);
+  // Too few passages: no call at all.
+  const small = await inventedClient(t, { count: 20 });
+  const idle = questionWriter(), unasked = gptAnswers();
+  await assert.rejects(small.gptTest(idle, unasked), { message: /^The questions tool stopped: the copy has fewer passages a reply may quote than the tool needs \(24\) \(COLD_QUESTIONS_TOO_FEW_PASSAGES\)\. No test ran, and no receipt was given\. Its counts: \{/u });
+  assert.deepEqual([idle.sent.length, unasked.sent.length], [0, 0]);
+  await absent(small.receiptPath);
 });

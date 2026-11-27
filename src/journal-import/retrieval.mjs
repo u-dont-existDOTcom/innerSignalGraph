@@ -184,6 +184,22 @@ export function evidenceWordsShared(message, quote, { wordList }) {
 }
 
 /**
+ * The same reading as `evidenceWordsShared`, over many quotes at once: the words of a message that any of `quotes` holds, read as
+ * `findEvidenceQuotes` reads both. The quotes are read once, for every message asked after. The journal's cold-test questions tool
+ * (src/runner-trial/cold-questions.mjs) asks it whether a subject is named anywhere in a copy. It changes nothing in the search.
+ */
+export function evidenceWordsHeldBy(quotes, { wordList }) {
+  invariant(Array.isArray(quotes) && quotes.every((quote) => typeof quote === "string") && typeof wordList === "boolean", "QUOTE_QUERY_INVALID");
+  const read = wordList ? new Set(quotes.flatMap((quote) => formsReadingTokens(quote))) : null;
+  const written = new Set(quotes.flatMap((quote) => lexicalTerms(quote)));
+  const holds = ({ term, exact }) => (exact ? exact.some((word) => written.has(word)) : read.has(term));
+  return (message) => {
+    invariant(typeof message === "string", "QUOTE_QUERY_INVALID");
+    return Object.freeze(evidenceTerms(message, wordList).filter(holds).map(({ term }) => term));
+  };
+}
+
+/**
  * The ordered results of a search or timeline query, kept so the pages after the first slice them
  * instead of rebuilding the whole result on every cursor request. Keys name the exact snapshot,
  * purpose, query and filters, and entries hold record identifiers only, never content (an evidence
