@@ -1,8 +1,9 @@
 # Runner trial: a journal upload and a Journal tab on the page, with the tool that writes a copy's questions
 
 Written 26 Nov 2026 by a helper of the InnerSignal lane, for the owner's answer `i80 1a 2a 3a` (26 Nov 2026) and the tool that his
-`i77 3a` (24 Nov 2026) asks for; revised after read-only Codex reviews (appendix). A design only: nothing here is built, and each of
-the build's merges comes to the owner (promise IS27, within IS24). It extends the runner trial
+`i77 3a` (24 Nov 2026) asks for; revised after read-only Codex reviews (appendix), and again for his answer `i81 1b 3a 4a 5b 6a`
+(26 Nov 2026). A design: pull request 1 (section 10) is built with it, and each of the build's merges comes to the owner (promise
+IS27, within IS24). It extends the runner trial
 (`docs/superpowers/specs/2026-11-21-runner-trial-design.md`), its clients and journal copy
 (`docs/superpowers/specs/2026-11-23-runner-client-cases-design.md`, "the clients design" below) and the replies' journal search
 (`docs/superpowers/specs/2026-11-24-runner-journal-search-design.md`). No client name, journal text or conversation appears here, in
@@ -10,6 +11,23 @@ a test or in a log.
 
 ## What the owner decided
 
+- **i81 `1b 3a 4a 5b 6a` (26 Nov), the choices this design put to him:**
+  - **1b, reading first,** as his order of 18 Oct 2026 says (below): a model reads each uploaded journal whole before its copy is
+    built (section 4.6). The import's reader is GPT, so the whole journal goes to OpenAI, and the consent step says so (4.3).
+  - **3a:** while a copy is in use, Add more's new copy waits for its own cold test; the earlier copy stays in use until the new one
+    passes (4.8).
+  - **4a:** the Journal tab shows the newest copy, tested or not (5.1).
+  - **5b:** the questions tool samples passages about dying like any other passage, and GPT writes questions and planted wrong
+    answers about them too (3.1).
+  - **6a:** the measured run (the real models on an invented journal, about 200 calls on his plans) comes after pull request 1 is
+    merged, and the lane runs it; its numbers go back to him, with the choice to keep "not one wrong answer" (his `i77 2b`) or
+    loosen it (section 10).
+  - Its part 2, keeping writing about dying out of the Journal tab, had no answer. It is asked again as **i83**, with three options
+    (section 11); only the Journal tab's build waits for it.
+- **The reading-first order (18 Oct 2026):** the index and graph built after the detailed reading, to make them more complete and
+  useful (`docs/superpowers/specs/2026-10-18-reading-first-journal-import-order.md`, his words quoted there): a new journal import reads the
+  whole source, by the import's model reader or by authorized page reviews, before any index is built; an incomplete reading yields a
+  clearly named partial generation only by an explicit authorized decision; a refused passage is never sent again by another route.
 - **i80 `1a 2a 3a` (26 Nov):** a first slice on the runner's page, without the terminal (IS24): an upload button for PDF with text,
   `.txt`, Markdown and Word `.docx` (2a), with his consent step, the cold test and "Add more"; a Journal tab with a calendar of
   writing days and "their own words, then and now" (dated quotes for a theme that is picked); a client's tab shown to him only with
@@ -29,17 +47,20 @@ a test or in a log.
 - Nothing about wanting to die is charted or quoted in the Journal tab.
 - Each person sees only their own; the owner sees a client's tab only with that client's consent.
 - The copy stays encrypted on the laptop; no log holds words (no label, theme, file name, journal text, question or answer).
-- The Journal tab makes no model call: everything in it is computed on the laptop.
-- Every flow of journal text to a model is stated (section 6). GPT reading a copy to write its questions, and the cold test's
-  workers reading passages, are decided; any other flow, and any other choice that is the owner's, is a question (section 11).
+- The Journal tab makes no model call: it reads only the copy on the laptop (and, under i83's option a, the marks the reading left
+  with it).
+- Every flow of journal text to a model is stated (section 6). GPT reading the whole journal before its copy is built (i81 1b), GPT
+  reading a copy's passages to write its questions, and the cold test's workers reading passages, are decided; any other flow, and
+  any other choice that is the owner's, is a question (section 11).
 
 ## 1. What exists, and what shapes this design
 
 1. **Clients and consent are terminal commands.** `scripts/runner-trial-start.mjs --add-client` (a hidden prompt for the label) and
    `--journal-consent confirm|withdraw` write `clients.json` under the trial folder's lock. Grants are minted at each start from that
    list (`prepareCredentials`), and the server's key and authorization providers read `credentials.json` once, at start: a new
-   client, or a consent's `session_use` purpose, takes effect only at the next start. A withdrawal holds at once, since the gate reads
-   the list at every retrieval and before every output.
+   client, or a consent's `session_use` purpose, takes effect only at the next start (since pull request 254, the page's Restart makes
+   that start for a runner the icon started). A withdrawal holds at once, since the gate reads the list at every retrieval and before
+   every output.
 2. **The copy step needs the trial stopped.** The server export is sealed for the client's key; `scripts/runner-trial-journal.mjs
    --import` opens it on the laptop under the trial folder's lock and the vault's writer lock, which the running server holds. The
    page can't call it: whatever the page does to the vault has to run inside the server.
@@ -65,65 +86,113 @@ a test or in a log.
    and unrestricted.
 7. **The owner's reading-first order (18 Oct 2026)** makes a *new* journal import read the whole source (by the import's model reader,
    or by authorized page reviews) before any index is built (`src/journal-import/reading-first-runtime-gate.mjs`;
-   `docs/superpowers/specs/2026-10-18-reading-first-journal-import-order.md`). The replies' search (`findEvidenceQuotes` in
-   `src/journal-import/retrieval.mjs`) reads only `quote_terms`, `quote_meta`, the word index and the list of passages: never a
-   reading's facets or the pointer tags. Building an upload's copy mechanically is what the runner needs, and it departs from that
-   order: question 1 in section 11.
+   `docs/superpowers/specs/2026-10-18-reading-first-journal-import-order.md`), and he chose it for uploads (i81 1b). What the code
+   has for it:
+   - **Who reads.** The import's `read-source` step (`src/journal-import/private-runtime.mjs`) runs `produceReadingFirstJournal`
+     (`reading-first-source-producer.mjs`) through `createReadingFirstPortAdapter` (`reading-first-port-adapter.mjs`), whose two roles,
+     `source_reader` and `source_synthesizer`, run on the import's standard tier only (`JOURNAL_ROLE_DEFINITIONS` in
+     `provider-port.mjs`), never on its hardest tier (Claude Opus). On the owner's plans that tier is GPT: through ChatGPT
+     (`chatgpt_subscription_browser`, `chatgpt_connector_exchange`) or Codex (`codex_exec_exchange`), as `provider-runtime.mjs` routes
+     it; the API routes there (OpenAI's or Anthropic's, paid apart from his plans) aren't what the runner uses. So the reader's company
+     is OpenAI.
+   - **What it produces.** One call a page, with the page's exact text and the role's fixed instruction
+     (`provider-port-roles/source_reader.md`), answers with a `source-reading-result`: a short grounded overview of the page (at most
+     2,500 characters), at most 25 short exact quotations of it, and at most 30 findings (statements with their qualifiers), each tied
+     to its quotations. The program finds every quotation in the page's own text (a quotation it can't find, or an answer outside its
+     schema, leaves the page unread) and keeps the page's reading encrypted, written once. Once every page is read or reviewed, the
+     `source_synthesizer` sums the readings up, twelve pages at a time and then level by level, into a provisional summary (at most
+     13,000 characters) with its changes over time, each tied to pages (a reported event, a dream, an unwanted thought, a
+     hypothetical, another person's report, or unknown). Three receipts signed with a key derived from the store's (inventory,
+     reading, summary) let `verifiedReadingFirstSynthesis` check, before any index is built, that every page was read or reviewed;
+     while a page is pending nothing is summed up or signed. The findings also become reading facets (`reading_terms`,
+     `reading_meta`) on the passages that hold their quotations (`reading-first-facets.mjs`).
+   - **What the replies read of it: nothing.** The replies' search (`findEvidenceQuotes` in `src/journal-import/retrieval.mjs`) reads
+     only `quote_terms`, `quote_meta`, the word index and the list of passages: never a reading's facets or the pointer tags. The quote
+     index itself stays mechanical (6, above); the reading decides when it may be built, not what it holds.
+   - **What it can't take as it is.** The reader reads text pages only: a page with a picture, or with no text, is pending for a
+     reviewer (`visual_pending`, `source_unavailable`). A text file has no pages (the parser's `pages` is empty), and `read-source`
+     refuses a source without them (`JOURNAL_READING_FIRST_INVENTORY_INCOMPLETE`); a page over 60,000 characters isn't sent
+     (`JOURNAL_READING_FIRST_PAGE_TOO_LARGE`) and stays pending. The import's review route for pending pages is a file an authorized
+     reviewer writes (section 6 of the order), which needs the owner's decision on who may see which page.
 8. **Nothing reads journal text for wanting to die without a model.** The runner's crisis readings are model readings of
-   conversation messages; the repository has no local word list for it (section 5.4, question 2).
+   conversation messages; the repository has no local word list for it, and the reader's schema has no place for it (section 5.4,
+   question i83).
 9. **A corpus can be tombstoned** (`tombstoneJournalCorpus`: no generation published, so nothing can read it), not deleted: its
    encrypted objects stay until the case's Delete.
 
 ## 2. What the owner will see, step by step
 
-1. **Start.** He clicks the InnerSignal runner icon (section 10, pull request 2). The runner starts in the background and the page
-   opens at `http://127.0.0.1:8797`. Clicking it while the runner runs only opens the page.
+1. **Start.** He clicks the InnerSignal runner icon (built: pull request 254). The runner starts in the background and the page opens
+   at `http://127.0.0.1:8797`. Clicking it while the runner runs only opens the page.
 2. **People.** A new People tab lists "You" and each client by number and label. "Add a client" takes a label (initials or a code
    word) and says when the client can be used: after a restart, which the page offers once no reply, copy or test is running.
 3. **Consent.** For a client, "Record consent" shows the two questions to ask them, and records what they agreed to, with the time:
-   that InnerSignal may use their journal in these sessions, with their words and journal excerpts going to Anthropic and OpenAI;
-   and, separately and optionally, that he may see their Journal tab. For himself, "Use my journal" records the first part. Each can
-   be withdrawn from the same place.
+   that InnerSignal may use their journal in these sessions (when it is added, the whole journal goes to OpenAI, whose model reads
+   all of it before it is copied in; in the sessions and their tests, their words and journal excerpts go to Anthropic and OpenAI);
+   and, separately and optionally, that he may see their Journal tab. For himself, "Use my journal" records the first part, in the
+   same words. Each can be withdrawn from the same place. A consent recorded in the earlier words, which didn't name the reading, is
+   shown as such, and Add journal asks for it again (4.3).
 4. **Add journal.** He chooses a file, or drops it on the person's row. The kinds accepted are listed beside the button: PDF with
    text, `.txt`, Markdown, Word `.docx`. Nothing is kept yet.
 5. **What it read.** The page shows numbers and dates only, never words: entries, the first and last date, days with writing,
-   entries without a date, pages that had no text, dates that read two ways (with the choice of day first or month first), and whether
-   the questions tool can write a cold test from it. Then "Copy it in" or "Cancel".
-6. **Copied in.** The copy is in the person's encrypted case. The row says: "Not tested yet: no reply uses it."
-7. **The cold test.** "Run the cold test" first says what goes where (GPT writes the questions from passages of the copy and answers
+   entries without a date, pages that have no text or hold a picture (which the reading can't read), dates that read two ways (with
+   the choice of day first or month first), whether the questions tool can write a cold test from it, and the reading it takes: how
+   many pages, about how many calls and roughly how long (4.5). Then "Read it and copy it in" or "Cancel". The first says once more
+   what goes where before anything leaves: the whole journal, page by page, to OpenAI (GPT, through the runner's signed-in Codex, on
+   his ChatGPT plan).
+6. **Reading.** The row shows numbers only: "Reading: page 37 of 120; 36 read, 1 not read; 41 minutes so far, about 1 hour 20
+   minutes left at this pace", with Stop. The page may be closed meanwhile: the reading runs in the runner. Restart and Stop at the
+   top ask first, and pause it; "Go on reading" goes on from where it stopped, and no page already read is sent again (4.6).
+7. **Pages not read.** A page that GPT refused or didn't answer in form, that holds a picture or no text, or whose answer didn't hold
+   up is named by its number and reason. "Read again" sends again the pages whose reason allows it, never one GPT may have refused;
+   otherwise "Cancel": no copy is made without every page (4.6).
+8. **Copied in.** Once every page is read, the copy is built in the person's encrypted case. The row says: "Not tested yet: no reply
+   uses it."
+9. **The cold test.** "Run the cold test" first says what goes where (GPT writes the questions from passages of the copy and answers
    them; Claude judges the answers), about how many calls, and on whose plans. The row then shows its progress in numbers, and the
    result: passed, or not passed with the points of the rule not met, and how many tests have run on this copy.
-8. **In use.** After a pass, replies use the journal once the consent's restart has happened, the check of each reply is on (IS22's
-   question) and, later, the conversation's journal switch is on (IS23). The row names whichever of these is still missing.
-9. **Add more.** A newer file of the same person shows what is new and what is already in; "Copy it in" makes a new copy holding
-   both, tested again; until it passes, the earlier copy stays in use (question 3).
-10. **Journal tab.** He picks "You", or a client whose tab consent stands: "Days with writing" (a calendar by month or by week), and
+10. **In use.** After a pass, replies use the journal once the consent's restart has happened, the check of each reply is on (IS22's
+    question) and, later, the conversation's journal switch is on (IS23). The row names whichever of these is still missing.
+11. **Add more.** A newer file of the same person shows what is new and what is already in; "Read it and copy it in" reads only the
+    new entries, then makes a new copy holding both, tested again; until it passes, the earlier copy stays in use (i81 3a).
+12. **Journal tab.** He picks "You", or a client whose tab consent stands: "Days with writing" (a calendar by month or by week), and
     "Their own words, then and now": he types a theme ("sleep", "my mother") and sees one short passage a month, in their own words
-    with its date, without a verdict (which copy it reads is question 4). Nothing about wanting to die is shown (section 5.4); the
-    emergency line is at the tab's foot.
-11. **Withdraw.** Withdrawing a client's journal consent hides their tab and, once their case has read the journal, stops their whole
-    case (4a); withdrawing only the tab consent hides the tab.
-12. **Restart and Stop** are at the top of the trial's page; after Stop, the icon starts it again.
+    with its date, without a verdict. It shows the newest copy, tested or not (i81 4a). What it leaves out about wanting to die is
+    i83's answer (section 5.4); the emergency line is at the tab's foot.
+13. **Withdraw.** Withdrawing a client's journal consent stops a reading or a test before its next call, hides their tab and, once
+    their case has read the journal, stops their whole case (4a); withdrawing only the tab consent hides the tab.
+14. **Restart and Stop** are at the top of the trial's page (built: pull request 254); after Stop, the icon starts it again.
 
 ## 3. The tool that writes a copy's questions (i77 3a)
 
 It turns a copy into a `journal_cold_questions` value with `author: "openai"`, for one cold-test run, written by GPT through the
 trial's own signed-in Codex worker (sealed: no tools, an empty folder, no session kept), whatever the arrangement, since GPT writes
 them as decided. With `--provider codex` the judge is GPT too, and the rule refuses a file written by the judge's company: the page
-then says that the test needs the mixed or the Claude arrangement. The owner's runner is mixed.
+then says that the test needs the mixed or the Claude arrangement. The owner's runner is mixed. Pull request 1 builds it with the
+test's job (4.9) and lets the command run it: `--cold-test --gpt-questions` in place of a questions file; the page's button comes with
+pull request 4. Today's consent (version 1's words, 4.3) names "the companies running the workers", and its record doesn't say which
+arrangement it was given under, so it can't show that OpenAI writing questions from sampled passages was named. So in pull request
+1 the command runs GPT's questions only on an invented journal, checked twice before any call: the trial folder is set apart for
+invented journals (it holds the file `invented-journals-only`, mode 0600, which no command writes and the lane puts in the measured
+run's own folder, and it isn't the default trial folder, the one the owner's runner uses, which is refused even with the file); and
+the very copy under test, at the publication the test reads, holds the invented-journal sentinel among the passages a reply may quote:
+a fixed sentence of the code's (`INVENTED_JOURNAL_SENTINEL`), on a line of its own, that no person's journal holds unless it was put
+there for this. The sentinel's passage is left out of the questions. Elsewhere, a normal client's copy included, and in a set-apart
+folder a copy without the sentinel, it refuses them before any call. From pull request 3 they also run for a person whose consent stands in version 2's words, which names
+OpenAI and the questions whatever the arrangement. A questions file keeps working under either version, as today.
 
 **3.1 Sampling (the program).** The passages it may use are all those a reply may quote (the reader's own rule, `evidenceCandidate`:
-a passage in a lifecycle a reply may use, not restricted, its words verified against the stored bytes), short ones included. Under
-question 5's option a, the passages the word list of section 5.4 flags, with the other passages of their entries (5.4's rule), aren't
-used for questions; they are still searched as in replies, and the run counts them. Of the rest the program picks passages spread
+a passage in a lifecycle a reply may use, not restricted, its words verified against the stored bytes), short ones included.
+Passages about dying are sampled like any other (i81 5b): no list leaves them out, and GPT writes questions and planted wrong
+answers about them as about any passage. The program picks passages spread
 over the copy's source order (an equal share of each quarter), at random from a seed of the run's own: 60 for answerable questions, in
 four batches of 15, and 30 as context for unanswerable ones, in two batches of 15 (a context passage may be another question's
 evidence too). A passage that holds nothing to ask about (a date line alone, say) may be skipped by GPT (3.2); a skipped one is
 counted and replaced by another drawn from the same quarter. Each passage is the evidence of one question while there are enough,
 and of two (the rule's limit) when there aren't. With fewer than 24 passages to draw from the tool doesn't start, and the page says
 that the questions tool can't write enough questions from this journal. That floor is the tool's, not the rule's: the 48 answerable
-questions of 3.5, at two a passage, need 24. The report says how many passages were left out (question 5) and how many were skipped,
-so a pass names the population it was drawn from. **One budget for a run:** at most 150 distinct passages go to GPT, the first 90, the
+questions of 3.5, at two a passage, need 24. The report says how many passages were skipped and how many were in batches dropped
+for their form (3.2), so a pass names the population it was drawn from. **One budget for a run:** at most 150 distinct passages go to GPT, the first 90, the
 replacements of skipped ones (at most 15, sent in one more call) and the extra batches of 3.5 included, in at most 20 calls (3.8);
 when it is spent before the file is complete, the tool stops with counts and a code, and the run has no test.
 
@@ -147,13 +216,21 @@ with its exact words and the date its entry gives, or none. Nothing else: no cas
   answer ("Did I ever visit the planetarium after riding my bicycle?", where a passage tells of a bicycle and none of a planetarium).
   The parts are GPT's and the shape the program's: a choice within the method of 3a, said here so it can be seen.
 - Strict JSON schemas, as the trial's other workers have; an answer outside its schema is asked again at most twice, as the cold
-  test's are (`RETRYABLE_WORKER_FAILURES`).
+  test's are (`RETRYABLE_WORKER_FAILURES`). A batch still without an answer in its schema then is dropped whole, which is how a
+  refusal by GPT would most likely come (Codex gives no sign of one): its passages are counted, and none of them goes to the questions
+  tool's GPT calls again, in a later call of the run or of a later run on that person's copies, in another batch or another form (the
+  order's rule for a refused passage): their digests are kept in the person's journal folder (`questions-held-back.json`, digests
+  only, mode 0600, under the trial folder's lock; their Delete removes it), and the sampling leaves them out and counts them. The
+  tool's worker is pinned to Codex, which gives no sign of a refusal, so such a failure is always ambiguous; should a worker say that
+  it refused (`REFUSED`, as Claude's can), the batch is dropped and held back at once and never asked again. The
+  extra batches of 3.5 make up what is short. Any other failure of the worker (a plan limit, a lapsed sign-in, an action taken) stops
+  the tool with its code.
 
 **3.3 The program's checks.** A candidate that fails one is dropped; nothing is mended by guessing.
 - An evidence quote is found exactly in its passage (after Unicode normalization, with runs of white space as one) and in at most
   three usable passages of the whole copy, and no passage becomes the evidence of more than two questions (`resolveColdKey`'s rule).
 - A `same` question shares a search word with all of its evidence, by the search's own rule (`evidenceWordsShared`); an `other` one
-  that does is counted as `same`.
+  that does is counted as `same`, and a `same` one that doesn't as `other` (the program's count, not GPT's label, is what 3.5 counts).
 - An unanswerable question is put together in one of the fixed shapes from parts that pass the shape's checks (its verb on the list,
   its phrase's words: 3.2); its subject is in no usable passage; and the replies' reader, asked with the question as the message,
   returns at least one passage.
@@ -167,7 +244,8 @@ trusts the key), and with not one wrong answer allowed, one is enough.
 - *Answerable questions:* fresh GPT calls, on the same decided flow, 15 questions to a call, each with its evidence passage alone (never
   what the search returns, so the check is of the key and not of how GPT answers what a reply would find): whether the passage answers
   the question with the quoted words, and whether a planted answer is contradicted by the passage in the way its kind names. One it
-  doubts is dropped. It is never asked to answer the question.
+  doubts is dropped. It is never asked to answer the question. A check still without an answer in its schema after two more asks
+  drops its questions, whose passages are held back as a dropped batch's are (3.2).
 - *Unanswerable questions:* no model check. Their absence is the program's (3.2): a concrete subject that no usable passage of the
   whole copy names, in any of the names the list gives it. What remains is a journal that tells of the subject without naming it
   (a planetarium as "the star show"); the subjects are chosen to make that rare, and the measured run (section 10), on an invented
@@ -181,9 +259,11 @@ questions in other words than their passages' (3a: the rule counts them and requ
 Short of that, one more batch of each kind that's short (at most three more calls); then it stops with counts and a code ("couldn't
 write enough questions"), and the run has no test.
 
-**3.6 Kept nowhere.** The questions, their keys and what GPT returned live in the server's memory for that run and go when it ends.
-Each run writes new ones, so a wrong key fails one run, not every run of that copy. The report and the receipt keep numbers only (how
-many of each, how many each check dropped); the seed isn't kept. Nothing is logged.
+**3.6 Kept nowhere.** The questions, their keys and what GPT returned live in the memory of the process that runs the test (the
+server's, or the command's) for that run and go when it ends.
+Each run writes new ones, so a wrong key fails one run, not every run of that copy. The report keeps numbers only (how many of each,
+how many each check dropped, how many passages were sent and how many calls made), and the receipt is today's, with `author:
+"openai"`; the seed isn't kept. Nothing is logged.
 
 **3.7 Consent before each packet.** As in the cold test, the person's consent and copy are read again under the trial folder's lock
 right before each packet is handed to the worker; a withdrawal, a Delete or another publication stops the run, with no receipt.
@@ -192,8 +272,8 @@ right before each packet is handed to the worker; a withdrawal, a Delete or anot
 a passing failure included: six batches, at most three extra batches, one of replacements and at most five checks of answerable keys
 (which send only passages already sent), the rest for asking again. When the next call would be the 21st, the tool stops with counts
 and a code, and the run has no test. Then the test's 160 to 200 or so (two a question, two more a planted answer, more when the judge
-finds something wrong), one at a time, on the owner's ChatGPT and Claude plans. None of this is measured: a run on an invented journal
-with the real models comes before any person's journal (section 10).
+finds something wrong), one at a time, on the owner's ChatGPT and Claude plans. None of this is measured: the measured run on an
+invented journal with the real models comes once pull request 1 is merged, before any person's journal (i81 6a, section 10).
 
 ## 4. The page's journal steps
 
@@ -205,17 +285,18 @@ up to ten seconds for it (otherwise the page says the runner is busy). The steps
 publishing it, tombstoning one, naming or promoting a copy) run inside that case's queue in the turn controller (`queued`), as Delete
 does, so they never interleave with a turn of that case; a step that also needs the folder's lock takes it inside the queue, never the
 other way round, which is the order turns and Delete already keep. A corpus's own objects are written outside the queue, so a long
-copy never holds up a reply. **Delete wins.** Delete first marks the case as being deleted, and while the mark stands no preview, copy,
-test or tab request of that case is admitted. It then raises the case's deletion count (which each piece of journal work read when it
-was admitted), drops the case's previews, stops its test and waits for its copy to stop, all before it takes the case's queue (a
-copy's own last step needs that queue); only then does it remove anything, and the mark goes once the deletion is over (after it,
-the client starts afresh, as today). Every step of journal work inside the queue, and every batch of object writes, first checks the
+copy never holds up a reply. **Delete wins.** Delete first marks the case as being deleted, and while the mark stands no preview,
+reading, copy, test or tab request of that case is admitted. It then raises the case's deletion count (which each piece of journal
+work read when it was admitted), drops the case's previews, stops its reading and its test and waits for its copy to stop, all
+before it takes the case's queue (a copy's own last step needs that queue); only then does it remove anything, and the mark goes once
+the deletion is over (after it, the client starts afresh, as today). Every step of journal work inside the queue, every batch of
+object writes and every call of the reading first checks the
 count, and on a change stops at once and writes nothing more: the Delete removes whatever was written with the case. So nothing of a
 deleted case is written again (the store's ordinary writes would recreate a missing case: `mutate` in `private-case-store.mjs`). What
 a step writes to the vault it writes under a grant made in the process for that step and that case alone (the import's
 `oneTimeGrant`), with the scopes and purposes the store asks: read and write, with `archive`, `organize_search` and `session_use`, for
-a copy and its checks, as the command's import has; write with `delete` for a tombstone. The server's own grants stay as they were
-minted at start. With the trial off, none of these routes or tabs exists.
+a reading, a copy and its checks, as the command's import has; write with `delete` for a tombstone. The server's own grants stay as
+they were minted at start. With the trial off, none of these routes or tabs exists.
 The routes (`POST` with JSON unless said, and the preview with `application/octet-stream` alone, which a page of another site can't
 send here without a preflight the server never answers; no label, theme or file name ever goes in a URL):
 
@@ -224,11 +305,12 @@ send here without a preflight the server never answers; no label, theme or file 
 | `/v1/runner/people/add` | adds a client (4.2) |
 | `/v1/runner/consent` | records or withdraws a part of a consent (4.3) |
 | `/v1/runner/journal/preview` | takes the file's bytes, reads them and answers with numbers (4.4, 4.5) |
-| `/v1/runner/journal/copy`, `/v1/runner/journal/cancel` | copies a preview in, or drops it (4.6, 4.7) |
-| `/v1/runner/journal/cold-test`, `/v1/runner/journal/cold-test/stop` | starts or stops a person's test (4.8) |
-| `GET /v1/runner/journal/status?caseId=` | each person's journal state, in fixed words and numbers (4.8) |
+| `/v1/runner/journal/read`, `/v1/runner/journal/read/stop` | starts a preview's reading, goes on with a stopped one, reads pending pages again, or stops it (4.6) |
+| `/v1/runner/journal/copy`, `/v1/runner/journal/cancel` | builds the copy again after one that failed before its publication (a reading with every page read builds its copy by itself); drops a preview or a reading (4.6, 4.7) |
+| `/v1/runner/journal/cold-test`, `/v1/runner/journal/cold-test/stop` | starts or stops a person's test (4.9) |
+| `GET /v1/runner/journal/status?caseId=` | each person's journal state, in fixed words and numbers (4.6, 4.9) |
 | `GET /v1/runner/journal/days?caseId=`, `/v1/runner/journal/then-and-now` | the Journal tab (section 5) |
-| `/v1/runner/restart`, `/v1/runner/stop` | IS24's rest (section 10, pull request 2) |
+| `/v1/runner/restart`, `/v1/runner/stop` | IS24's rest (built: pull request 254) |
 
 **4.2 Add a client.** A text field and "Add", with `validateClientLabel`'s rule (one line of 1 to 80 characters; no two labels alike
 but for capitals). The server does what `addClientLocked` does (the keys first, then the list), and the command and the page share
@@ -237,25 +319,39 @@ labels today. A new client has no grant, and no keys in the running server's pro
 before a restart: their row says "Ready after a restart", beside the Restart button.
 
 **4.3 Consent, with the Journal-tab consent.** The list (`clients.json`, schema version 2) keeps two parts for each client:
-`journal.consent` as today (the i73 consent: InnerSignal may use their journal in these sessions, with their words and journal
-excerpts going to Anthropic and OpenAI, whose models run the workers and write the questions) and `journal.tab_consent` (new, i80 3a:
-the owner may see their Journal tab on this page), each `{confirmed_at, withdrawn_at}`. The page shows both questions in the words the
-owner reads to the client; he ticks what they agreed to, and a confirmation repeats it before it is recorded. The tab consent can be
-recorded only while the journal consent stands, and counts only while both do. A withdrawal of the journal consent holds at once, as
-today: it hides the tab, stops a running test before its next packet and, once the case has read its journal, stops the whole case.
+`journal.consent` (the i73 consent, in words that now name the reading, i81 1b) and `journal.tab_consent` (new, i80 3a: the owner
+may see their Journal tab on this page), each `{confirmed_at, withdrawn_at}`, and the journal consent also `words`, the version of the
+words it was confirmed in. The journal consent's words, version 2: "InnerSignal may use my journal in these sessions. When it is
+added, the whole journal goes to OpenAI, whose model (GPT) reads all of it before it is copied in; in the sessions and their tests,
+my words and excerpts of my journal go to Anthropic and OpenAI, whose models answer, check and write the test's questions." Version
+1 is today's ("their words and excerpts going to the companies running the workers"), which names neither the reading nor OpenAI
+apart from the arrangement, and whose record doesn't say which arrangement it was given under: a consent confirmed in it (by the
+command, before this build) still holds for what it named (the sessions, the cold test with a questions file, a copy from the
+server), and not for GPT's questions or the reading; the page shows it as given in the earlier words. One Add journal button takes both kinds: a file only under a consent in
+version 2's words, a sealed copy from the server under either. Under version 1 the page offers "Ask again in the new words", which
+records a new confirmation in version 2's words over the standing one, after the owner has read them out and ticked them; from pull
+request 3 the command's `--journal-consent confirm` does the same for a standing version 1 consent (today it changes nothing when a
+consent stands), and changes nothing for a standing version 2 one. The page shows both questions
+in the words the owner reads to the client; he ticks what they agreed to, and a confirmation repeats it before it is recorded. The tab
+consent can be recorded only while the journal consent stands, and counts only while both do. A withdrawal of the journal consent
+holds at once, as today: it stops a running reading or test before its next call, hides the tab and, once the case has read its
+journal, stops the whole case.
 That is the gate as built when the owner chose 4a ("This is how it's built"): earlier replies may hold the journal's words, and new
 conversations get up to 20 turns of the earlier ones; a case that has never read its journal holds none of its words, and goes on,
 as the page's note says today. A withdrawal of the tab consent hides the tab alone. A confirmation gives the client's grant
-`session_use` at the next start, and the page says so; the upload and the test need no restart, since they use grants of their own.
-The owner's own case gets an `own_journal` entry with the same fields but no tab consent; the gate and the start script treat it as a
-client's (his grant holds `session_use` while his own consent stands, and his case, once it has read his journal, stops while its gate
-is closed). The command `--journal-consent` keeps working on the first part.
+`session_use` at the next start, and the page says so; the upload, the reading and the test need no restart, since they use grants
+of their own. The owner's own case gets an `own_journal` entry with the same fields but no tab consent; the gate and the start script
+treat it as a client's (his grant holds `session_use` while his own consent stands, and his case, once it has read his journal, stops
+while its gate is closed). The command `--journal-consent` keeps working on the first part; from pull request 3 it shows version 2's
+words and records them.
 
 **4.4 Add journal: the kinds and the limits.** Shown under a person whose journal consent stands (for a client, once restarted after
-being added). One file at a time, up to 64 MB (the journal import's own limits are 128 MB and 20,000 pages). The page sends the file's
-bytes as the body, with the person's case and the kind it read from the extension in headers; the file name never leaves the browser.
-The server checks the kind by the bytes before parsing:
-- `.pdf`: begins with `%PDF-`; read by the existing PDF reader. Pages without text (scans, photos) aren't read, and are counted.
+being added); a file needs it in version 2's words, a sealed copy from the server in either (4.3). One file at a time, up to 64 MB (the journal import's own limits are 128 MB and 20,000 pages). The
+page sends the file's bytes as the body, with the person's case and the kind it read from the extension in headers; the file name
+never leaves the browser. The server checks the kind by the bytes before parsing:
+- `.pdf`: begins with `%PDF-`; read by the existing PDF reader. Its pages are the reading's pages (4.6). A page without text (a scan,
+  a photo) or with a picture can't be read by the reading, which reads text: the preview counts it, and while any page stays unread
+  the upload can't produce a copy (4.6).
 - `.txt`, `.md`, `.markdown`: must be UTF-8 (a byte-order mark is kept, as today); read as text, Markdown marks and all, so a date in a
   heading (`## 3 March 2019`) or a `Date:` line opens an entry as the date reader allows.
 - `.docx` (new: `src/journal-import/parsers/docx-adapter.mjs`, in the same child process, which is also allowed to read the one file
@@ -272,85 +368,218 @@ The server checks the kind by the bytes before parsing:
   pictures, photos or scans of handwriting.
 A sealed copy from the server (`*.sealed.json`) goes through the same button and the existing import's checks (`openJournalCopy`,
 `importJournalCopy`, the tie to one server case), run inside the server; the person's row shows their key's public half for the server
-export ("Key for a copy from the server"). So neither `--copy-key` nor `--import` needs a terminal.
+export ("Key for a copy from the server"). So neither `--copy-key` nor `--import` needs a terminal. A copy from the server isn't read
+again: 1b is about an uploaded file, and a server copy is the server's published generation as it was built there, which the order
+leaves as it is; so it needs no reading, and a consent in version 1's words is enough for it, as today.
 
 **4.5 What is shown before anything is kept.** The file is parsed in the child process (no network, no file read beyond its code, and
-no write at all), and the quote generation is built in the server's memory, once each way for all-numeric dates. Nothing is written to
-disk and nothing goes to a model. The preview is held in memory under a random id bound to its person's case (a copy of it for another
-case is refused), for at most 15 minutes, one per person (a new one replaces it) and at most three at once; it is dropped on Cancel,
-on Delete and on a restart. Its answer holds numbers and dates only:
-- the kind and the size; for a PDF, its pages, the pages without text, and the pages whose reading order may be off (read, but no date
-  is carried across them);
+no write at all). In the server's memory its text is then cut by the quote index's own segmentation (`splitQuoteUnits`), its date
+lines are read by the index's date reader (`entryDateLine`, `dateLineValue`, `timeOrderRun`), once each way for all-numeric dates,
+and its reading pages are cut (4.6): the order allows segmentation and an inventory before the reading, and nothing more is made. No
+generation, graph, word list or other index is built before the reading's receipts verify (4.7), and the counts below come from the
+segments and date lines alone. Nothing is written to disk and nothing goes to a model. The preview is held in memory under a random id bound to its
+person's case (a copy of it for another case is refused), for at most 15 minutes, one per person (a new one replaces it) and at most
+three at once; it is dropped on Cancel, on Delete and on a restart, and becomes the person's reading on "Read it and copy it in" (4.6).
+Its answer holds numbers and dates only:
+- the kind and the size; for a PDF, its pages, the pages without text, the pages with a picture, and the pages whose reading order may
+  be off (read, but no date is carried across them);
 - entries (date lines, and the text before the first one), passages, and entries without a date of their own;
 - the first and last date read, and the number of days with writing;
 - the dates that read two ways (3/4/2020), counted, with the choice "day first" or "month first", preset to the order that leaves
-  fewer dates out of the journal's order (the generation's `stats.date_order`);
+  fewer dates out of the journal's order (as the date reader counts them, and as a generation's `stats.date_order` will);
 - for Add more: the entries already in (left as they are), the new ones, and the new ones dated before the copy's last date (which the
   date reader may leave undated, as out of the journal's order);
 - whether the questions tool can write a cold test from it (section 3.1's 24 passages);
-- "Nothing is kept until you press Copy it in. This step sends nothing anywhere."
+- the reading it takes (4.6): its pages, those it can't read (no text, a picture) and those it won't send (4.6, "Held back"), the
+  calls (one a page, and about one more for every twelve pages to sum them up) and roughly how long, at half a minute to a minute and
+  a half a page (a guess, not a measure; the reading's progress shows its own pace);
+- "Nothing is kept until you press Read it and copy it in. This step sends nothing anywhere."
 
-**4.6 Copy it in.** The copy is made as `importJournalCopy` makes one, from the generation built for the preview instead of an
-export: a new corpus (`journal-upload-` and 32 random hexadecimal characters, so a copy that stops part-way never blocks the next), a
-generation named for the quote index's version and date order as the journal import names one (`…:quotes:quote-index-v4-day-first`),
-the graph, the source texts as extracted (the file's own bytes are never stored: no archive), the indexes `quote_meta`, `quote_months`
-and `quote_terms`, published for `organize_search` and `session_use`; then every usable passage is resolved by the session-use reader
-against the stored bytes, and what is stored is compared with what was built. A person has one copy in the making at a time: a
-second "Copy it in" is refused while one runs. Last, inside the case's queue and then under the trial folder's lock, the deletion
-count, the consent and, for Add more, the copy it was built on (still the newest, at the same publication) are read again: if all
-stand, the list names the copy (`journal.corpus_id` for a first copy, `journal.pending_corpus_id` for Add more under question 3's
-option a) and a digest of the file's bytes (`journal.uploads`, so the same file is refused for another person). Whatever fails or
+**4.6 The reading (i81 1b).** "Read it and copy it in" starts it, once the page has said again what goes where, while the preview is
+live and under a journal consent in version 2's words, read again under the trial folder's lock.
+- **Its pages.** A PDF's pages, as the import reads them. A text, Markdown or Word file has none, so the program cuts its text into
+  reading pages before anything leaves: whole passages as the quote index's segmentation cuts them, in order, at most 4 KB of text and 40 passages a page (the
+  stretch the pointer pass counts as a page of a journal without pages), each ending before an entry line when one falls in the
+  page's last quarter; a passage over 4 KB is a page of its own, and one over the reader's 60,000 characters is a page it can't take
+  (`reader_unavailable`). Each reading page is one source text of the copy, so the copy's dates are read across them in order, as
+  across a PDF's pages.
+- **Stored before anything is sent.** The press makes the copy's corpus in the person's case (`journal-upload-` and 32 random
+  hexadecimal characters, unpublished) and stores the reading pages' texts in it, encrypted, under the step's grant; inside the
+  case's queue and then under the folder's lock, the list names it as the person's reading (`journal.reading`: the corpus, the file's
+  digest, the date order chosen, the number of pages, when it started), so nothing is stored that the list doesn't name, and the
+  preview leaves memory. Nothing of it is published until the copy is built (4.7), and nothing reads it but the reading.
+- **Who reads, and how.** GPT, through the trial's own signed-in Codex worker, sealed as for the questions (no tools, an empty
+  folder, no session kept), on the owner's ChatGPT plan, at the trial writer's effort (medium); one fresh call a page, one page at a
+  time. GPT whatever the arrangement, since the import's reader is GPT (its two roles run on the standard tier alone); under
+  `--provider claude`, which otherwise keeps every call with Anthropic, the page says so once more before the reading starts. The
+  route is pinned: no setting sends the reading to another model or company. It is the import's own reading,
+  `produceReadingFirstJournal` with `createReadingFirstPortAdapter`, over a port of the runner's (`src/runner-trial/journal-reading.mjs`)
+  that hands each packet to the worker with the role's own instruction and checks each answer against the role's schema; the
+  import's files are unchanged. A page's packet holds what the adapter puts in the import's: the page's number, its digest, its exact
+  text and that it is text, with the adapter's own routing fields (a protocol version, the schema's name, an opaque work id, the
+  page's locator in the reading, the reading's token as its `expected_generation`, and the grant's purpose); never a case, corpus id,
+  label or file name. A summary packet has one of the adapter's two shapes: a batch's, with up to twelve pages' overviews and
+  findings, each with its page number, digest and opaque reference; or a level's, with the summaries below it, each with an opaque
+  reference and its meaningful changes (statements tied to pages, with their kind and uncertainty). Neither holds a page's quotation
+  array (`exact_source_anchors`), though a finding or a change is free text and may repeat the journal's words. Both carry the
+  import's `known_state`: the journal alone, with the comparison with the rest of the case left to a separate step that this design
+  doesn't make, so nothing of the person's conversations goes with it. An answer outside its schema is
+  asked again at most twice (`RETRYABLE_WORKER_FAILURES`), as the cold test's are; a refusal the worker can tell (Codex can't) isn't
+  asked again. The pages' readings, the summary and the signed receipts are kept in the copy's corpus, encrypted and written once, as
+  the import keeps them; the receipts are signed with a key of the person's own (32 random bytes made once,
+  `journal/<case id>/reading-key.json`, mode 0600, removed by their Delete). The reading's token and source digest are the
+  runner's: a random `reading-` and 32 hexadecimal characters, made when the reading starts and kept on the list (not the corpus id),
+  and a digest of its pages' digests in order.
+- **What is kept, and when.** Within a run the adapter checks every completion twice, by `invoke` and by `getCompletion`, against the
+  same work id, token, receipt and answer digest; the port holds each answer in memory for that, with a receipt of its own (a random
+  id, the token, the worker's company and model, the call's thread). What lasts across runs is only what the producer keeps: a page's
+  reading, written once to the corpus after it passed the import's checks (`persistEvidence`). An answer that failed them is kept
+  nowhere, so "Read again" gets a fresh one. When the reading goes on, the port answers a page whose reading is kept from that
+  reading (the import's schema rebuilt from it, with a new receipt), and sends the others; a page whose answer came but wasn't kept
+  yet when the run stopped is sent again, as one that had no answer.
+- **Each run is an attempt.** Every start, every "Go on reading" and every "Copy it in" tried again (4.7) makes an attempt id, under
+  the case's queue and the folder's lock, kept in the server's memory with the reading; a copy tried again after a restart sends no
+  page, since every page's reading is kept. Stop, Cancel, a withdrawal, a Delete and a pause end the attempt first, then the call under way: the sealed worker gets an
+  abort signal that ends its process (pull request 3 adds it to `SealedCodexWorker.call` and the subprocess helper under it). Right
+  before keeping anything, the reading reads, under the folder's lock, that its attempt is still the current one, that the list still
+  names this reading, that the deletion count hasn't moved and that the consent stands; otherwise it keeps nothing. So a late answer
+  of an ended attempt is dropped, also when the same reading has gone on meanwhile.
+- **The mark, for i83.** Each page's call asks for an envelope of the runner's own: the import's `source-reading-result`, unchanged,
+  and beside it a list of which of its quotations are words about dying, death, suicide, self-harm or not wanting to live. The
+  reading result alone goes through the import's checks, and whether the page is read depends on those alone. The mark is checked
+  apart: each entry must name one of the result's quotations, which the program has found in the page; it is kept with the page's
+  reading as spans of the page. A missing or malformed mark is kept as "no mark for this page" and never fails the page. The mark
+  costs no other call and sends nothing more. It decides nothing about the page, the copy, the questions or the test; only the
+  Journal tab reads it, and only under i83's option a (5.4, where a page without a valid mark shows no passage). Every reading writes
+  it, so a copy read before the owner answers needn't be read again.
+- **The summary.** Once every page is read, the import's summary calls run over the kept readings (about one for every twelve pages, then the levels above), and the receipts are signed. A summary answer still outside its
+  schema after two more asks stops the reading with its code, every page kept, and "Go on reading" asks again.
+- **What he sees.** The status route gives numbers only: the pages read, not read and to read, the page it is on, the minutes so
+  far, the time left at the mean of its own calls (shown from the third), the calls made, and each page not read by its number and
+  reason. The row shows it; nothing in it is a word of the journal.
+- **Pages not read.** The import's reasons, as it gives them: `visual_pending` (a picture), `source_unavailable` (no text),
+  `tool_refused`, `reader_output_invalid` (an answer still outside its schema; Codex gives no sign of a refusal, so a refusal by GPT
+  most likely comes as this), `reader_evidence_invalid` (a quotation not in the page, a finding without one) and `reader_unavailable`
+  (the call didn't finish, or the page is too large). A page is sent once. "Read again" sends again only the pages left for
+  `reader_evidence_invalid` or `reader_unavailable`: never one refused or answered outside its schema, and never a page by another
+  route, encoding, cut or model (the order's rule). The runner has no review route in this slice: the import's needs a person who
+  reads the page, and for a client's journal who may see which page is the owner's decision, not this design's.
+- **No copy without every page.** The order makes a complete generation need every page read or reviewed, and a partial one an
+  explicit authorized decision. This design makes no partial copy and decides none for the owner: a reading with a page not read
+  builds nothing. The page names those pages by number and reason, offers "Read again" where the reason allows it, and otherwise
+  only "Cancel". So in this slice a journal with a page GPT won't answer in form, or with a page that holds a picture or no text,
+  can't be copied in from a file (section 12). A copy without such pages would be his decision, made when he asks for it.
+- **What 1b covers.** He chose 1b as it was asked: "a model reads the whole journal before the copy is built ... and nothing the
+  replies use today". The copy is what the replies need, the quote index, built only after a complete reading, with the reading's
+  facets beside it as the import adds them. It holds no person, topic or event graph (the runner runs no pointer pass), so the order's
+  graph, which may only come after the index, and the order's checks of that graph (against an index-only baseline, on held-out
+  chronology and contradiction questions) aren't built at all. Whether 1b also asks the runner for those later stages of the order
+  is the owner's to say, not this design's: pull request 3 waits for his word on it (section 10), which the lane asks apart from i83.
+- **Held back.** For every page left out for `tool_refused` or `reader_output_invalid`, the digests of its passages and of each of
+  its sentences of four words or more (after Unicode normalization, with runs of white space as one) are kept in the person's journal
+  folder (`reading-held-back.json`, digests only, mode 0600; their Delete removes it). A later reading page that holds one of them
+  (Add more, the same journal uploaded again, cut into pages or paragraphs another way) isn't sent: it is left out at once, for its
+  earlier reason, so that reading builds no copy either. Since no copy is built without every page, a page the reading couldn't read
+  is in no copy made from a file, and so in no reply, test or tab. The runner's reader and its questions tool are both the sealed
+  Codex worker, which gives no sign of a refusal, so every such failure is ambiguous (an answer outside its schema), and both treat
+  it as a possible refusal: never sent again by that route. The questions tool's held-back passages (3.2) are kept apart: they come
+  from a batch that failed for its form, of passages GPT had already read whole in the reading without failing; they are held back
+  from the questions tool's own calls as a precaution, and a reply's search, and the cold test's consumer and judge, which get what a
+  reply's search gets, go on as built (the replies' reader is unchanged). A copy from the server isn't read, so nothing of this list
+  applies to it.
+- **Stop, the runner's Restart and Stop, going on.** Stop ends the attempt and the call under way (its page goes again), keeps every
+  page read, and offers "Go on reading" and "Cancel". Restart and Stop at the top of the page don't wait for a reading: they ask
+  first ("A journal is being read: it pauses, and goes on from where it stopped"), then, in this order: stop admitting readings and
+  other journal work (a request after that is refused, `RUNNER_CLOSING`); end every reading's attempt and wait until none runs, which
+  takes seconds; then close the gate for replies and deletions as pull request 254 does, which refuses while a reply or a deletion
+  runs. When that refuses, or the launcher can't be told, everything is admitted again and the readings stay paused. After a start
+  the reading doesn't go on by itself: the row shows it stopped. "Go on reading" sends no page whose reading is kept.
+- **Withdrawal, Delete, Cancel.** Before each call, under the folder's lock, the deletion count, the consent (in version 2's words)
+  and the reading the list names are read again: a withdrawal or a Delete stops it before the next call. Cancel takes the reading off
+  the list; what was stored (the pages and their readings, encrypted, never published) stays unused until the case's Delete, since the
+  store deletes no single corpus (section 12).
+- **Time.** Not measured. A call carries a page's text and answers with up to 25 quotations and 30 findings, much more than the
+  trial's writer calls, which took up to 20 s. At a guess of half a minute to a minute and a half a page, a journal of 100 reading
+  pages (400 KB of text at most) takes roughly one to three hours with its ten or so summary calls, and one of 1,000 pages a day or
+  more. A plan's limit stops it (`PLAN_LIMIT`), and "Go on reading" goes on later.
+
+**4.7 The copy.** Built by the server, with no other press, once every page is read and the receipts are signed. First the reading's
+receipts are checked (`verifiedReadingFirstSynthesis`) for exactly the copy's source, reading and
+number of pages, and each stored page's text against its digest in the signed inventory (the gate checks the digests it is given,
+not the bytes); only then is any generation built, and the copy is made as `importJournalCopy` makes one, from a generation built
+from the stored reading pages (in the date order the preview chose) in the corpus the reading made: a generation named for the quote
+index's version and date order as the journal import names one (`…:quotes:quote-index-v4-day-first`), the quote index's own graph
+(passages and their containment, as `buildQuoteGeneration` makes it), the source texts as extracted (the reading pages; the file's own bytes
+are never stored: no archive), the indexes `quote_meta`, `quote_months` and `quote_terms`, and the reading's facets (`reading_terms`,
+`reading_meta`), as the import adds them (no reply reads them), published for `organize_search` and `session_use`; then every usable
+passage is resolved by the session-use reader against the stored bytes, and what is stored is compared with what was built. A person
+has one copy in the making at a time: a second reading or copy is refused while one runs. Cancel, like this last step, runs inside
+the case's queue and then under the trial folder's lock, so the two are ordered. Last, there, the deletion count, the consent, the
+reading the list names (the same token) and its attempt (still the current one), and, for Add more, the copy it was built on (still
+the newest, at the same publication) are read again: if all stand, the list names the copy (`journal.corpus_id` for a first copy,
+`journal.pending_corpus_id` for Add more, i81 3a), takes off `journal.reading`, and keeps a digest of the file's bytes
+(`journal.uploads`, so the same file is refused for another person). Whatever fails or
 stops after the publication (the check, the consent, the copy it was built on, the list's write) tombstones the new corpus, with the
 generation and epoch its publication returned, so no published copy is left that the list doesn't name; on a changed deletion count
 it writes nothing more, since the Delete removes the case with it. And since the server may stop in between, the service's start
-tombstones any published upload corpus of a trial case that the list doesn't name. A copy that fails before its publication leaves an
-unpublished corpus, named nowhere and unused, until Delete.
+tombstones any published upload corpus of a trial case that the list doesn't name. A copy that fails before its publication leaves the
+reading as it was, still named on the list: the copy can be tried again ("Copy it in"), or the reading cancelled.
 
-**4.7 Add more.** Offered for a copy made from files. A copy from the server is brought up to date by a newer server copy, which
+**4.8 Add more.** Offered for a copy made from files. A copy from the server is brought up to date by a newer server copy, which
 carries its own deleted, revoked and restricted passages; and Add more refuses any copy that holds a passage that isn't active and
 unrestricted, since building again from its source texts would make such a passage usable again. The new file is read as in 4.5 and
 cut into entries by the date reader's own rule (`entryDateLine`, across pages as in 5.4); an entry is already in when the copy holds
-an entry with the same text (Unicode NFC, runs of white space as one). The new entries' exact text, in the file's order and separated
-by blank lines, becomes one more source text; the new copy holds the newest copy's source texts exactly as stored (the pending copy's
-when there is one, so nothing added before is lost), then that one, and its dates are read across all of them. With nothing new,
-"Copy it in" is off. One built on a copy that is no longer the newest when it finishes is refused (4.6), and the page says that the
-journal changed meanwhile and the file is to be read again. A newer Add more replaces the pending copy, which is tombstoned without
+an entry with the same text (Unicode NFC, runs of white space as one). A PDF is checked on its whole page inventory first, before any
+entry is compared: one with any page that holds a picture or no text is refused, with the count ("2 pages the reading can't read"),
+whether or not the page holds a new entry, so no picture is ever flattened into text and nothing is dropped unseen. The new entries' exact text, in the file's order and
+separated by blank lines, is cut into reading pages as in 4.6; the new copy holds the newest copy's source texts exactly as stored
+(the pending copy's when there is one, so nothing added before is lost), then those pages, and its dates are read across all of them.
+Its reading (4.6) sends only the new pages: each page of the copy it builds on keeps its reading, written into the new reading's
+ledger under the new reading's work ids only after the page's digest is checked against the earlier kept reading's, with a note of
+where it came from; the summary is made again over all of them, with new receipts. With nothing new, "Read it and copy it in" is off. One built on a copy that is no longer the newest when it finishes is refused (4.7), and the page says that the journal changed
+meanwhile and the file is to be read again. A newer Add more replaces the pending copy, which is tombstoned without
 ever having been used; a test running on it stops, as for another publication, and gives no receipt. Receipts are kept by corpus
 (`cold-test-receipt-<corpus id>.json`; a receipt of today's single file is read as the receipt of the corpus it names, and no copy
 has one yet; the command `--import` removes every receipt of the client, as it removes the one today), so the copy in use keeps its
 receipt while the new one is tested. A pass promotes, inside the case's queue and then under the lock, only the pending copy it tested
 (checked against the list), in one atomic write of the list, with no moment when the gate reads a list and a receipt that don't
-match. The earlier copy is then tombstoned; its encrypted objects stay until Delete. Under question 3's option b instead, "Copy it
-in" closes the journal at once, as `--import` does.
+match. The earlier copy is then tombstoned; its encrypted objects stay until Delete (i81 3a: the earlier copy stays in use until
+then).
 
-**4.8 The cold test and its status.** "Run the cold test" (one test per person at a time) first shows what goes where and how many
+**4.9 The cold test and its status.** "Run the cold test" (one test per person at a time) first shows what goes where and how many
 calls (section 3.8), then runs the questions tool and `runJournalColdTest` as a job in the server, with the attempt marker, the receipt
-rule and the consent reads that `runClientColdTest` has; that function moves into the shared service, so the command and the page run
-one implementation (`--cold-test FILE` keeps reading a file). It tests the pending copy when there is one. The status route gives, for
-each person: the consent (none, confirmed, withdrawn) and the tab consent; whether a restart is due; the copy (none, copied, pending)
-with its counts; the test (not run; running, with its stage, question n of m and the calls made; passed, with its run; not passed,
+rule and the consent reads that `runClientColdTest` has. That function moves into a shared job (`src/runner-trial/cold-test-job.mjs`,
+pull request 1), so the command and the page run one implementation: `--cold-test FILE` keeps reading a file, and `--cold-test
+--gpt-questions` has the questions tool write them. It tests the pending copy when there is one. The status route gives, for each
+person: the consent (none, confirmed in version 1's or 2's words, withdrawn) and the tab consent; whether a restart is due; the
+reading (none; reading, with its numbers; stopped; done with pages not read, by number and reason); the copy (none, copied,
+pending) with its counts; the test (not run; running, with its stage, question n of m and the calls made; passed, with its run; not passed,
 with the points of the rule not met in fixed words; interrupted); how many tests have run on this copy, with the command's sentence
 that a copy passing only after several tests may have passed by chance; and what still keeps the journal from replies (the restart,
 the check of each reply, later the conversation's switch). A test stops on its Stop button, on a withdrawal or a Delete before its
-next packet, and with the server; a stopped test gives no receipt. Restart and Stop are refused while a test, a copy or a reply runs
-(section 10, pull request 2).
+next packet, and with the server; a stopped test gives no receipt. Restart and Stop are refused while a test, a copy or a reply runs:
+pull request 254 refuses them during a reply or a deletion (`RUNNER_WORK_KINDS`), and the copy and the test join those kinds with the
+pull requests that bring them into the server; a reading doesn't hold them up, and pauses instead (4.6).
 
-**4.9 Withdraw and Delete.** A withdrawal holds at once (4.3). Delete this case first stops the case's journal work (4.1: no new work
-admitted, the deletion count raised, the previews dropped, the test stopped, the copy waited for), then removes, as today, the case
-with all its copies (a tombstoned one included), its journal fields on the list (the copies, the pending copy and the upload digests
-go; both consents stay as recorded) and its journal folder (the key, the receipts, the marker and the hidden passages of 5.4).
+**4.10 Withdraw and Delete.** A withdrawal holds at once (4.3). Delete this case first stops the case's journal work (4.1: no new work
+admitted, the deletion count raised, the previews dropped, the reading and the test stopped, the copy waited for), then removes, as
+today, the case with all its copies (a tombstoned one and a reading's included), its journal fields on the list (the copies, the
+pending copy, the reading and the upload digests go; both consents stay as recorded) and its journal folder (the copy key, the reading
+key, the held-back digests, the receipts, the marker and the hidden passages of 5.4).
 
 ## 5. The Journal tab
 
 **5.1 Who can be shown, and when.** A Journal tab, only with the trial on, with a picker: "You" when the owner's own case has a copy,
-and each client with a copy whose journal consent and tab consent both stand. Which copy it reads is question 4: the newest copy,
-tested or not (it sends nothing anywhere, and i77's part 2 asked what a copy must pass "before replies use it"), or only a copy that
-passed; until the owner answers, the build takes the second. It reads through a grant made in the process for that request (read,
-`organize_search`), never a reply's.
-- **What it may show** is one set of passages, from which every part of the tab is drawn (the days, the month lines, the count of
-  entries without a date, then and now): the passages a reply may quote (a passage in a lifecycle a reply may use, not restricted, its
-  words checked against the stored bytes: the reader's own `evidenceCandidate` rule), less every passage of an entry the word list of
-  5.4 flags, less the hidden ones (5.4). So an entry left out is in no count and marks no day.
+and each client with a copy whose journal consent and tab consent both stand. It reads the newest copy, tested or not (i81 4a): the
+pending copy of Add more when there is one, otherwise the copy in use; never a reading that isn't a copy yet. It reads through a
+grant made in the process for that request (read, `organize_search`), never a reply's.
+- **What it counts, and what it may show.** Two sets, each fixed by i83's answer. The set it counts, from which the days, the month
+  lines and the count of entries without a date are drawn: the passages a reply may quote (a passage in a lifecycle a reply may use,
+  not restricted, its words checked against the stored bytes: the reader's own `evidenceCandidate` rule), less the hidden ones (5.4),
+  and, under 1a or 1b, less every passage of an entry that 5.4 leaves out, so that such an entry is in no count and marks no day. The
+  set it may show, for then and now: under 1a or 1b the very same set, so nothing is shown that isn't counted; under 1c, and for a
+  copy without marks under 1a, none at all, while the counted set is the passages a reply may quote less the hidden ones (5.4 says
+  why a day's mark may count them there).
 - **The moment of showing.** An answer is made when, under the trial folder's lock, both consents are read again and found standing
   and the copy's publication is the one that was read; only then is it sent. A withdrawal is ordered wholly before that moment
   (nothing is sent) or after it (that answer was shown, as a delivered reply is). The page then clears the tab, and drops every request
@@ -364,7 +593,7 @@ passed; until the owner answers, the build takes the second. It reads through a 
   person, nor after a withdrawal has cleared the tab.
 - Nothing the tab shows is stored by the server or kept by the page (no local storage), and every answer is no-store.
 
-**5.2 Days with writing.** The days named by the date lines over the passages the tab may show (5.1): a date with a day's precision
+**5.2 Days with writing.** The days named by the date lines over the passages the tab counts (5.1): a date with a day's precision
 that isn't a range between dates (in version 4, its anchors with a day; the same rule reads earlier index versions), not a month or a
 year alone; entries without a date are counted, not placed. A month grid with navigation, or weeks as rows; a day is marked or not,
 with the same mark whatever was written and however much; one line a month in words ("Wrote on 14 days in October 2026"); no count
@@ -379,13 +608,28 @@ first, at most 24 months at a time: the date, and the sentences that hold the th
 cut inside a sentence (so a "not" stays with its words), with "Show the whole passage". The tab says: "Their own words, with their
 dates. Nothing here is a judgment of progress." No summary, label, count chart or arrow.
 
-**5.4 Keeping content about wanting to die out, on the laptop.** With no model, the tab uses a fixed list
-(`src/runner-trial/dying-words.mjs`), in English and French, read in their forms: (a) direct words and phrases of suicide, killing
-oneself, self-harm and overdose; (b) indirect phrases of not wanting to exist ("not wake up", "better off without me", "ne plus être
-là", and the like); (c) any word of dying and death (die, dead, death, kill; mourir, mort, tuer). Then:
-- **A passage that holds one is never shown, nor is any other passage of its entry.** An entry runs, in the journal's order and across
-  pages, from one entry line (`entryDateLine`, by the quote index's own split of the copy's source texts, taken in order across all of
-  them, so this holds for a copy from the server too) to the next. A page not fully read (a parse status other than readable) may hide
+**5.4 Keeping content about wanting to die out (i83).** The tab shows nothing written about wanting to die. How it finds such writing
+is the owner's open choice, i83 (section 11), and only the Journal tab's build (pull request 5) waits for it:
+- **i83 1a (recommended):** the reading's mark (4.6) and the word list below, together: a passage the reading marked, or that holds a
+  word or phrase of the list, is left out with its whole entry, by the rules below. The mark is a model's reading made when the copy
+  was built; the tab itself makes no call. Where there is no mark, nothing falls back to the list alone: the passages of a page
+  whose mark is missing or malformed are left out as a marked passage's are, and a copy the reading never read (a copy from the
+  server) shows what 1c shows, its days with writing and never a passage.
+- **i83 1b:** the word list alone, by the same rules.
+- **i83 1c:** for now, only the days with writing: then and now isn't built, so no passage is shown. A day's mark is the same
+  whatever was written and shows only that something was, so no list applies to the days, and a day whose only writing is about
+  dying is marked like any other: nothing of it is charted or quoted.
+These are how each option applies to the edge cases. None of them can promise what the line held says outright: under 1a and 1b a
+passage about wanting to die that neither the mark nor the list catches can be quoted, and under 1c days whose only writing is about
+it are marked (marked like any other day, showing nothing of it). Which of these limits to accept is what i83 asks; the owner's
+answer settles them with the rest, and until then the tab isn't built.
+Under 1a and 1b the tab uses a fixed list (`src/runner-trial/dying-words.mjs`), in English and French, read in their forms: (a) direct
+words and phrases of suicide, killing oneself, self-harm and overdose; (b) indirect phrases of not wanting to exist ("not wake up",
+"better off without me", "ne plus être là", and the like); (c) any word of dying and death (die, dead, death, kill; mourir, mort,
+tuer). Then:
+- **A passage that holds one (or, under 1a, that the reading marked) is never shown, nor is any other passage of its entry.** An
+  entry runs, in the journal's order and across pages, from one entry line (`entryDateLine`, by the quote index's own split of the
+  copy's source texts, taken in order across all of them, so this holds for a copy from the server too) to the next. A page not fully read (a parse status other than readable) may hide
   an entry line, so an entry that reaches one runs on to the next entry line that could be read. In a stretch without entry lines, a
   flagged passage takes the two passages before it and the two after it with it.
 - **A theme that holds one shows no passage,** only the line about getting support: "This tab leaves out what is written about dying.
@@ -397,53 +641,61 @@ là", and the like); (c) any word of dying and death (die, dead, death, kill; mo
 - "Hide this passage" keeps a passage out of that person's tab for good (a digest of its exact words, kept in their journal folder, so
   it holds across Add more; their Delete removes it).
 - The tab states its limit: "Passages that mention dying, death or self-harm are left out by a list of words; indirect wording can
-  still get through."
+  still get through." Under 1a: "... are left out by the journal's reading and a list of words; some can still get through."
 The list leaves out too much on purpose (entries about grief and illness go too). It can't catch every indirect way of writing about
-wanting to die: whether that is good enough without a model is question 2.
+wanting to die; the reading's mark catches what a model reads as such, with misses of its own; neither checks a passage at the moment
+it is shown. Which of the three is i83.
 
 **5.5 Empty and limit states.** No copy: "No journal copied in yet." A client whose tab consent doesn't stand isn't in the picker. A
 copy without date lines: "This journal has no dates the calendar can read: its entries don't start with a date." Entries without a
 date: counted ("N entries have no date of their own"). A theme of stop words only, or too long: said so. A theme found nowhere, or only
 in passages left out: "No passage holds it." More than 24 months: navigation. A copy that can't be read: "This journal can't be read
-just now", with a code, never its words. Under question 4's option b, a copy not yet passed: "Shown once this journal's cold test has
-passed."
+just now", with a code, never its words.
 
 ## 6. Data flows to models
 
 | Step | What leaves the laptop | To | Decided |
 |---|---|---|---|
-| Add journal, the preview, Copy it in, Add more, a server copy's import | nothing | | |
-| The Journal tab | nothing | | the first slice: no model |
-| The questions tool, writing | about 90 sampled passages a run, 150 at most with the extra batches and the replacements of skipped ones (exact words, entry dates), and the instructions | OpenAI (GPT through Codex, on the owner's ChatGPT plan) | i77 3a |
+| Add journal, the preview, building the copy, a server copy's import | nothing | | |
+| The reading ("Read it and copy it in", "Go on reading", "Read again"; Add more's new pages) | the whole journal, page by page: each reading page's exact text, number and digest, with the reader's fixed instruction and the adapter's routing fields; then, to the summary calls, either up to twelve pages' overviews and findings with their page numbers, digests and opaque references, or, a level up, the summaries below with their opaque references and meaningful changes (never a quotation array; a finding, a summary or a change is free text and may repeat the journal's words), compared within the journal alone | OpenAI (GPT through the trial's Codex, on the owner's ChatGPT plan; pinned) | i81 1b (the order of 18 Oct) |
+| The Journal tab | nothing | | the first slice: no model (under i83 1a it reads the reading's marks, kept with the copy) |
+| The questions tool, writing | about 90 sampled passages a run, 150 at most with the extra batches and the replacements of skipped ones (exact words, entry dates), and the instructions | OpenAI (GPT through Codex, on the owner's ChatGPT plan; in pull request 1 only in a trial folder set apart for invented journals, on a copy holding the invented-journal sentinel, then under a consent in version 2's words, 3) | i77 3a |
 | The questions tool, key checks | each answerable candidate with its evidence passage, which was sampled already | OpenAI | i77 3a (part of the writing) |
 | The cold test, consumer | each question, with the at most six passages the replies' reader returns | the writer's worker (mixed: OpenAI) | i77, as built |
 | The cold test, judge | the question, its key quotes, those passages, the answer and the planted answers | the checker's worker (mixed: Anthropic) | i77, as built |
 | Replies | at most six quotations a turn (twelve after a repair's search), to the writer and the checker | mixed: OpenAI and Anthropic | i73, i75, i77; only with IS22's check on |
-| Anything else | none in this design | | the owner's: say, a model reading the whole journal first (question 1) or checking the tab's passages (question 2) |
+| Anything else | none in this design | | the owner's: say, a model checking the tab's passages as they are shown, or a person reviewing pages the reading couldn't read (4.6) |
 
-In one run the questions tool sends GPT only the passages it sampled: about 90, and 150 at most. For a journal of a few hundred
-passages, that is a good part of it. The test then sends what a reply's search returns for each question, as built. Since GPT writes
-the questions whatever the arrangement, the person's consent names both companies.
+The reading sends OpenAI the whole journal once, every page the reader can take, and Add more's new pages once more; nothing it sends
+goes to Anthropic. Then, in each run, the questions tool sends GPT again only the passages it sampled (about 90, and 150 at most), and
+the test what a reply's search returns for each question, as built. The person's consent, in version 2's words (4.3), names the
+reading and both companies.
 
 ## 7. Where each part lives
 
 - **New:** `src/journal-import/parsers/docx-adapter.mjs`; `src/journal-import/journal-upload.mjs` (the generation from a parsed file,
-  the entries across pages and their comparison for Add more, the preview's counts, the copy's persistence and checks, and, on a
-  copy, the days and the theme search over the passages the tab may show); `src/runner-trial/cold-questions.mjs` (section 3:
-  sampling, the list of subjects for unanswerable questions with their names, instructions, schemas, checks, the file);
-  `src/runner-trial/journal-steps.mjs` (the server's service: people, consent, previews, copies, the test's job shared with the
-  command, the status, the tab's reads and their moment of showing, each case's deletion count, and the start's sweep of published
-  copies the list doesn't name); `src/runner-trial/dying-words.mjs`.
+  the reading pages of a file without pages, the entries across pages and their comparison for Add more, the preview's counts, the
+  copy's persistence and checks, and, on a copy, the days and the theme search over the passages the tab may show);
+  `src/runner-trial/cold-questions.mjs` (section 3: sampling, the list of subjects for unanswerable questions with their names, the
+  verbs, instructions, schemas, checks, the held-back passages, the file); `src/runner-trial/cold-test-job.mjs` (the test's job,
+  shared by the command and the server: the attempt marker, the receipt rule, the consent reads, the questions tool when asked);
+  `src/runner-trial/journal-reading.mjs` (4.6: the reading pages' storage, the port over the sealed Codex worker for the import's two
+  roles, the mark, going on without sending a page again, the held-back passages, the reading key); `src/runner-trial/journal-steps.mjs`
+  (the server's service: people, consent, previews, the reading, copies, the test's job, the status, the tab's reads and their moment
+  of showing, each case's deletion count, and the start's sweep of published copies the list doesn't name);
+  `src/runner-trial/dying-words.mjs`.
 - **Changed:** `src/journal-import/parsers/index.mjs` and `parser-child.mjs` (the `docx` format by extension, and the child's leave to
-  read `src/core/zip.mjs`); `src/core/zip.mjs` (a maximum output length for each entry); `src/runner-trial/clients.mjs` (schema
-  version 2: the tab consent, the pending copy, the upload digests, the owner's own entry, receipts by corpus, the page's view);
+  read `src/core/zip.mjs`); `src/core/zip.mjs` (a maximum output length for each entry); `src/journal-import/retrieval.mjs` (one new
+  export, beside the search and changing nothing in it: which of a text's search words, read as `findEvidenceQuotes` reads them, any
+  of many passages holds, for 3.2's subjects); `src/runner-trial/clients.mjs` (schema
+  version 2: the tab consent, the journal consent's words, the reading, the pending copy, the upload digests, the owner's own entry, receipts by corpus, the page's view);
   `src/runner-trial/journal-gate.mjs` (the owner's own case, receipts by corpus; a pending copy is never read);
   `src/runner-trial/trial-controller.mjs` (the service, the gate also for the owner's own case, and Delete stopping the case's
   journal work before it removes anything);
   `src/supervisor/private-therapy-turn-controller.mjs` (the case's queue offered to the service); `src/server/create-server.mjs` (the
   routes, with a body limit of its own for the preview); `scripts/runner-trial-start.mjs` (`addClient` shared, grants for the owner's
-  own journal); `scripts/runner-trial-journal.mjs` (the cold test from the shared service, every receipt of the client removed by an
-  import); `apps/web/index.html`, `app.js` and `styles.css` (the People and Journal tabs); `docs/RUNNER-TRIAL.md`.
+  own journal); `scripts/runner-trial-journal.mjs` (the cold test from the shared job, with `--gpt-questions`; every receipt of the
+  client removed by an import); `apps/web/index.html`, `app.js` and `styles.css` (the People and Journal tabs); `docs/RUNNER-TRIAL.md`.
 - **Unchanged:** the replies' search and reader (`SESSION_USE_READER_VERSION` stays, and the test that holds it, `READS`, stays
   green), the pass rule (`COLD_TEST_RULE` stays version 4), the runtime's journal hold, the run log (it gains no field).
 
@@ -454,22 +706,36 @@ Each has fixed words on the page and a code, never words, wherever it is recorde
 - **Add journal:** a kind not accepted; bytes that don't match the kind; text that isn't UTF-8 ("save it as UTF-8 text and try
   again"); a PDF with no text; a Word file that is damaged, encrypted, too large or holds a `DOCTYPE`; over the size or page limit; the
   parser's time (30 s) or memory limit; a file with no passage.
-- **The preview and the copy:** the preview expired, replaced, or of another person; the consent withdrawn, or the person deleted,
-  meanwhile (the new corpus is tombstoned, the list unchanged); the folder's lock busy; the same file already copied for another
-  person; a vault write that fails before the publication (an unpublished corpus is left, named nowhere); anything that fails after it,
-  the check included (the new corpus is tombstoned, and the list doesn't name it); the server stopping in between (the next start's
-  sweep tombstones it); Delete during a copy (the copy stops before its next write, and nothing of the case is written again); a full
-  disk; Add more on a copy from the server, or on a copy holding a passage that isn't active and unrestricted.
-- **The cold test:** too few passages for the questions tool (section 3.1); not enough questions written (3.5); the judge's company as
-  the author (the codex arrangement); a plan limit or a lapsed sign-in (it stops); a refusal (Claude's is counted as left out; GPT's
-  comes as a malformed answer, is asked twice more, and then stops the test); a withdrawal, a Delete, another publication or a newer
-  Add more that replaces the copy under test (it stops before the next packet); a newer test started (the newer one decides); the
-  server stopped (interrupted, no receipt: run it again).
+- **The preview:** expired, replaced, or of another person; a consent only in version 1's words (Add journal asks for version 2's);
+  the folder's lock busy; the same file already copied for another person.
+- **The reading (4.6):** the consent withdrawn or the person deleted meanwhile (it stops before its next call; what was stored stays
+  unused until Delete, or goes with it); a plan limit or a lapsed sign-in (it stops, every page read kept: "Go on reading" later); a
+  worker that takes an action or can't be made sealed (it stops); a page with a picture or no text (`visual_pending`,
+  `source_unavailable`); a page answered outside its schema after two more asks, which is how GPT's refusal most likely comes
+  (`reader_output_invalid`), or refused (`tool_refused`), neither sent again, here or by a later reading (held back); an answer
+  whose quotations aren't in the page (`reader_evidence_invalid`) or a call that didn't finish or a page too large
+  (`reader_unavailable`), which "Read again" may send again; each of these leaves the reading without a copy until every page is
+  read, so the owner reads again or cancels; a summary answer still outside its schema (it stops, the pages kept); a receipt, or a
+  stored page, that doesn't verify (`JOURNAL_READING_FIRST_*`: no copy is built); Stop, Restart or Stop of the runner (it pauses); a
+  late answer of an ended attempt (dropped); the server stopped (it shows as stopped at the next start, its pages kept); a full disk.
+- **The copy:** the consent withdrawn, or the person deleted, meanwhile (the new corpus is tombstoned, the list unchanged); a vault
+  write that fails before the publication (the reading stays as it was, named on the list); anything that fails after it, the check
+  included (the new corpus is tombstoned, and the list doesn't name it); the server stopping in between (the next start's sweep
+  tombstones it); Delete during a copy (the copy stops before its next write, and nothing of the case is written again); a full disk;
+  Add more on a copy from the server, or on a copy holding a passage that isn't active and unrestricted, or of a PDF with any page
+  that holds a picture or no text.
+- **The cold test:** too few passages for the questions tool (section 3.1); not enough questions written (3.5), a batch or a key
+  check dropped for its form included (3.2, 3.4); a refusal a worker says it made (not asked again: its batch dropped and held back);
+  GPT's questions asked for outside a trial folder set apart for invented journals in pull request 1 (refused before any call); the
+  questions tool's budget spent (3.1, 3.8); the judge's company as the author (the codex arrangement); a plan limit or a lapsed
+  sign-in (it stops); a refusal in the test (Claude's is counted as left out; GPT's comes as a malformed
+  answer, is asked twice more, and then stops the test); a withdrawal, a Delete, another publication or a newer Add more that replaces
+  the copy under test (it stops before the next packet); a newer test started (the newer one decides); the server stopped
+  (interrupted, no receipt: run it again).
 - **The Journal tab:** a consent withdrawn before the moment of showing (nothing is sent) or after it (the page clears the tab); the
-  status unreadable (the page clears the tab); a theme refused (section 5.4); a copy that can't be read; under question 4's option b, a
-  copy not yet passed.
-- **Restart and Stop:** refused while a reply, a copy or a test runs; a start that fails after a restart (the launcher's log holds the
-  start script's own lines and codes, and the icon starts it again).
+  status unreadable (the page clears the tab); a theme refused (section 5.4); a copy that can't be read.
+- **Restart and Stop:** refused while a reply, a copy or a test runs; a reading pauses (4.6); a start that fails after a restart (the
+  launcher's log holds the start script's own lines and codes, and the icon starts it again).
 
 ## 9. Tests
 
@@ -485,9 +751,9 @@ as pull request 245 did.
 
 | # | Rule | The test that fails without it |
 |---|---|---|
-| R1 | No preview or copy without the person's journal consent; read again under the lock before the copy is named | a withdrawal during the copy: the corpus tombstoned, the list unchanged |
+| R1 | No preview, reading or copy without the person's journal consent, and no reading without it in version 2's words; read again under the lock before each call of the reading and before the copy is named | a version 1 consent: no reading; a withdrawal during the reading (no next call) and during the copy (the corpus tombstoned, the list unchanged) |
 | R2 | Only the accepted kinds, checked by their bytes | a PDF named `.txt`, a ZIP named `.docx` without `word/document.xml`, Latin-1 text: each refused |
-| R3 | No plaintext is written anywhere before Copy it in | the parser child can't write (Node's permission model); the server's preview path runs with every writing function of `node:fs`, in its callback and its promise forms, replaced by one that fails the test; a mutation that writes and removes a temporary file elsewhere must make it fail |
+| R3 | No plaintext is written anywhere before "Read it and copy it in" | the parser child can't write (Node's permission model); the server's preview path runs with every writing function of `node:fs`, in its callback and its promise forms, replaced by one that fails the test; a mutation that writes and removes a temporary file elsewhere must make it fail |
 | R4 | The preview holds numbers and dates only | no planted word in its answer or any log |
 | R5 | A preview expires, is bound to its case, one a person and three at most, dropped on Cancel, on Delete and on a restart | a copy of an expired, replaced, deleted or other person's preview is refused |
 | R6 | A copy is published for `organize_search` and `session_use`, without archive or the file's bytes | the manifest's uses and objects |
@@ -497,104 +763,89 @@ as pull request 245 did.
 | R10 | The copy in use keeps its receipt while the pending copy is tested; a pass moves the list in one write and tombstones the earlier copy; a failing test leaves the copy in use | stand-in turns during and after the test: the gate stays open on the earlier copy, then opens on the new one, and the earlier one can't be read |
 | R11 | Word, through the real permission-restricted child: `word/document.xml` only; `DOCTYPE` and entities refused; deletions and moves away out, insertions and moves in kept; text boxes and fallbacks not read; the ZIP limits and the maximum output length | a valid file read as said; crafted hostile files refused |
 | R12 | The date-order choice applies, preset to fewer dates out of order | 3/4 read each way |
-| R13 | The questions tool samples all the passages a reply may quote, short ones included, spread over the quarters, each once while there are enough, a skipped one replaced from its quarter; under question 5's option a, flagged passages and their entries left out and counted | a sample from an invented journal with short passages and planted entries about dying |
+| R13 | The questions tool samples all the passages a reply may quote, short ones included, spread over the quarters, each once while there are enough, a skipped one replaced from its quarter; passages about dying like any other (i81 5b), planted wrong answers assigned to them as to any | a sample from an invented journal with short passages and planted entries about dying: those entries are sampled, sent and given planted answers as any other, so a list that left them out, or withheld their plants, fails it |
 | R14 | GPT's packet holds only its batch's passages, under opaque names, with their dates | the packet inspected: no case or corpus id, label or other passage |
 | R15 | Each check of 3.3 | a candidate made to fail each check is dropped |
 | R16 | The key checks of 3.4: answerable ones by GPT on the evidence passage alone; an unanswerable subject chosen by the program from its list and named by no usable passage in any of its names; unanswerable questions put together in the fixed shapes from parts that pass their checks | the stand-in doubts a key or says a planted answer is true: dropped; a subject one passage names in another of its names: never chosen; parts with a question word, "or", "rather", "instead", "besides", a comma or more than eight words, or with a verb not on the list ("mention", "write about", "name"): dropped; the check's packet holds no passage the search returned |
 | R17 | Too few passages, or too few questions of any kind (the eight in other words included): no test | codes only, no call to the test's workers |
-| R18 | The author is `openai`, refused when the judge is OpenAI | the codex arrangement refused before any call |
+| R18 | The author is `openai`, refused when the judge is OpenAI; in pull request 1, GPT's questions only in a trial folder set apart for invented journals, never the default one, and only on a copy whose tested publication holds the invented-journal sentinel (from pull request 3, also under a version 2 consent) | the codex arrangement, a normal trial folder's client copy, the default trial folder even with the file, and a copy without the sentinel inside a set-apart folder: each refused before any call; a questions file still runs |
 | R19 | The consent and the copy are read under the lock before each packet of the tool and of the test | a withdrawal before each kind of packet stops the run, with no receipt |
-| R20 | One test a person; the newest decides; a receipt only for a pass; numbers only | the command's tests, run through the page's job |
+| R20 | Of tests of one copy that overlap, the newest decides (the command's attempt marker, kept by the shared job; the page adds one test a person at a time with pull request 4); a receipt only for a pass; numbers only | the command's tests, run through the shared job; overlapping runs with GPT's questions; one wrong consumer answer in a run with GPT's questions: no receipt |
 | R21 | Two consent parts; the tab consent needs the journal consent; each withdrawal's effect | every order of confirming and withdrawing |
-| R22 | A client is in the tab's picker only with both consents; the owner's own journal needs no tab consent; the copy read is question 4's (until answered, only a passed copy) | requests for a first copy and a pending copy without a receipt |
-| R23 | Days with writing come only from the passages the tab may show, with a day's date; one mark a day; undated entries counted | an invented journal with ranges, months, years, inferred years and excluded passages |
+| R22 | A client is in the tab's picker only with both consents; the owner's own journal needs no tab consent; the copy read is the newest, tested or not (i81 4a) | requests for a first copy and a pending copy without a receipt: both shown, the pending one when there is one; a reading that isn't a copy yet: nothing |
+| R23 | Days with writing come only from the passages the tab counts (5.1, by i83's answer), apart from what it may show, with a day's date; one mark a day; undated entries counted | an invented journal with ranges, months, years, inferred years and excluded passages, under each option of i83: under 1a and 1b an excluded-only day unmarked, under 1c and for an unmarked copy marked with no passage shown |
 | R24 | Then and now: whole sentences, one passage a month by the stated rule, at most 24 months, the entry's own date | crafted passages with a "not" beside the theme |
-| R25 | A passage holding a listed word is never shown, nor its entry (across pages, past a page not fully read, two passages each side without entry lines); a theme holding one shows the support line; a month with only such passages shows nothing | planted entries in English and French, of each part of the list, one running onto the next page |
+| R25 | By i83's answer: a passage holding a listed word (and under 1a, one the reading marked) is never shown, nor its entry (across pages, past a page not fully read, two passages each side without entry lines); a theme holding one shows the support line; a month with only such passages shows nothing; under 1c no passage at all | planted entries in English and French, of each part of the list, one running onto the next page, and marked passages without a listed word |
 | R26 | Hidden passages stay hidden across Add more; Delete removes them | the digest file before and after |
-| R27 | No model call from Add journal, the preview, the copy, Add more or the tab | the failing worker factory |
+| R27 | No model call from Add journal, the preview, building the copy or the tab; before a copy, the reading is the only one, and only after "Read it and copy it in" | the failing worker factory everywhere but the reading's port |
 | R28 | No words in any log: the run log, the server's console, the launcher's log, errors | the planted words |
 | R29 | The owner-page checks, the case on the trial's list and the body limits on every new route | a bearer token, a foreign Origin or Host, no Origin, another content type, another case, a body over the limit |
 | R30 | The page keeps no tab data and no label in local storage or a URL | JSDOM's storage and location read after each step |
-| R31 | Restart and Stop are refused while a reply, a copy or a test runs; a restart keeps the rules it runs and takes the list's consents into the grants (pull request 2) | a stand-in launcher |
+| R31 | Restart and Stop are refused while a reply, a copy or a test runs, and pause a reading instead of waiting for it; a restart keeps the rules it runs and takes the list's consents into the grants (built for replies in pull request 254) | a stand-in launcher, during each kind of work |
 | R32 | Add more is refused for a server copy, and for a copy holding a passage that isn't active and unrestricted | the sealed copy with excluded passages: refused, and none of its excluded passages shown by the tab or used in questions |
 | R33 | The tab's moment of showing: the consents and the publication read again under the lock before an answer is sent; the page's clearing and its dropping of requests still out | a withdrawal ordered before (nothing sent) and after (the page clears the tab); an answer that arrives after the tab was cleared is dropped; a status that can't be read clears the tab; a tab left idle is cleared |
 | R34 | No stale answer: requests and answers bound to the case and the choice number | two people's answers coming back in reverse order; a switch during a request |
 | R35 | The tab reads only passages a reply may quote | deleted, revoked and restricted passages never shown, nor counted as days |
-| R36 | Delete wins: no journal work admitted while a case is being deleted; each case's deletion count checked inside the queue and before each batch of object writes; Delete drains the case's journal work before it takes the queue | Delete between a preview and its copy, during the copy's writes, and during a test; a request that arrives after the count rises and before the deletion ends: refused; nothing of the case is written again, and the case stays gone |
+| R36 | Delete wins: no journal work admitted while a case is being deleted; each case's deletion count checked inside the queue, before each batch of object writes and before each call of the reading; Delete drains the case's journal work before it takes the queue | Delete between a preview and its reading, during the reading, during the copy's writes, and during a test; a request that arrives after the count rises and before the deletion ends: refused; nothing of the case is written again, and the case stays gone |
 | R37 | The case's queue before the folder's lock, everywhere | a turn waiting to deliver while a copy's last step and a promotion run: neither waits out the other |
-| R38 | Whatever fails after a publication tombstones that corpus; the start's sweep tombstones a published copy the list doesn't name | a failure of the check, of the consent and of the list's write after publication; a stop between publication and naming |
-| R39 | One set of passages for the whole tab | a month with only excluded entries: no mark, no line, no count, no passage |
+| R38 | Whatever fails after a publication tombstones that corpus; the start's sweep tombstones a published copy the list doesn't name; Cancel and the copy's last step are ordered by the case's queue and the lock | a failure of the check, of the consent and of the list's write after publication; a stop between publication and naming; a Cancel after the summary and before the publication, and one after the publication and before the naming: no copy named, the published one tombstoned |
+| R39 | One counted set for the days, the lines and the counts, and the shown set never wider than it (5.1) | under 1a and 1b, a month with only excluded entries: no mark, no line, no count, no passage |
 | R40 | Add more builds on the newest copy; one copy in the making a person; one whose base is no longer the newest is refused; a newer one replaces the pending copy; a pass promotes only the pending copy it tested | A, then pending A+B, then a file C: the new copy holds A, B and C; the test of A+B stops with no receipt; an old pass can't promote; two additions at once: the second refused, or refused at its end when the first changed the base |
 | R41 | One budget a run: at most 150 distinct passages to GPT and 20 calls of its worker for the questions, every call asked again included; spent, the run stops with no test | a journal whose sampled passages are mostly skipped, and a worker that fails for its form near the end: the count of passages sent and of the worker's actual calls, and no test |
 | R42 | A copy's grant holds read and write with the purposes the import asks; a tombstone's write with `delete` | the copy and its checks under the restricted one-time grant; a grant with write alone fails the check |
 | R43 | A passage of fewer than four words may be its question's evidence whole; one that holds nothing to ask about is skipped | short passages with something to ask, and a date line alone |
+| R44 | The questions tool's batch, or key check, without an answer in its schema after two more asks is dropped whole: its passages go to the tool's GPT calls in no later call of the run, nor of a later run on that person's copies (held back), and are counted | a stand-in that answers one writing batch, and then one key check, outside its schema three times, and one that says it refused a key check: none of their passages in a later packet of this run or the next, the refusal not asked again, and the report's counts |
+| R45 | The reading's pages: a PDF's pages; a text, Markdown or Word file cut into whole passages, at most 4 KB and 40 a page, ending before an entry line in a page's last quarter; each page one source text of the copy | invented files of each kind: the cut, the source texts and the dates read across them |
+| R46 | A page's packet holds only the adapter's fields; a summary packet has the batch shape (overviews, findings, page numbers, digests, references) or the level shape (child summaries, their references and meaningful changes), with the journal-only scope, and never an `exact_source_anchors` array; all go to the sealed Codex worker whatever the arrangement, one call at a time | the packets of both summary shapes and of the pages inspected, under the claude arrangement too, and Add more's summaries over carried readings: no case or corpus id, label, file name, other page, quotation array or conversation |
+| R47 | No copy without a reading of every page whose receipts verify for exactly its source and pages, and whose pages' stored texts match the signed inventory's digests; no partial copy | a missing, forged or stale receipt, a page still pending, and a stored page whose bytes changed with the page count the same: no copy, and no route builds one without the missing page |
+| R48 | A page is sent once: "Read again" only for `reader_evidence_invalid` and `reader_unavailable`; a page left for `tool_refused` or `reader_output_invalid` never again, nor a passage or sentence of it in a later reading, however that reading cuts its pages | a stand-in that answers one page outside its schema three times: never sent again by "Read again", Add more, the same file uploaded again, or the same text cut into other pages and paragraphs; a page that timed out: sent again |
+| R49 | Only a page's reading that passed the import's checks lasts, and it is replayed, never sent again, after a Stop, a pause, a start or a cut between the answer and its keeping; an answer that failed them is kept nowhere; each run is an attempt, and an answer of an ended attempt is dropped by the check made before keeping it, also when the reading has gone on; Restart and Stop stop admitting journal work, then pause the readings, then close the gate | a stand-in counting the calls of each page across a Stop and a stand-in restart; answers that arrive after Stop, Cancel, a withdrawal, a Delete and a "Go on reading" that followed a Stop: none kept; a stop between receiving and keeping: that page sent again once; "Read again" after an answer that failed the checks: a fresh call; a reading asked for while Restart pauses the others: refused |
+| R50 | Add more's reading sends only the new pages; each earlier page's reading is written into the new ledger only when its page's digest matches; the summary and the receipts are made again; a PDF with any page holding a picture or no text is refused, on its page inventory, before entries are compared | the stand-in's calls: the new pages alone; a carried reading whose digest doesn't match: refused; a PDF with a new entry on a picture page, and one with a standalone page that holds only a picture: each refused, with the count, and nothing added |
+| R51 | The mark is checked apart from the reading result: a missing, malformed or valid mark leaves the page's acceptance, the copy and the questions the same; a valid one is kept as spans found as the quotations are | the same journal answered with valid marks, with none and with malformed ones (one naming a quotation that isn't there): the same pages read, the same copy, the same sample; only the valid marks kept |
+| R52 | The reading's evidence, ledger and receipts stay in the person's case, encrypted; the receipts are signed with the person's reading key, which their Delete removes; the progress and the log hold numbers only | the vault's objects, the journal folder before and after Delete, the planted words |
+| R53 | No index before the reading: the preview and the reading build no generation, graph, word list or other index; the copy's are built only after the receipts and the pages' digests verify | the generation, graph and word-list builders replaced by ones that fail the test during the preview and the reading |
+| R54 | Consent versions: a file needs version 2's words, a server copy either; "Ask again in the new words" records version 2 over a standing version 1 | a version 1 record, a withdrawn record and a version 2 record, with each kind of file; the re-confirmation recorded |
 
-Beyond these: the shared cold-test service passes the command's existing tests unchanged, and the replies' reader's recorded results
-(`READS`) are unchanged.
+Beyond these: the shared cold-test job passes the command's existing tests unchanged, and the replies' reader's recorded results
+(`READS`) are unchanged. Pull request 1 brings R13 to R20, R41, R43 and R44 (R19 and R20 through the command, the page's job coming
+with pull request 4), with a test that fails when each is taken out.
 
 ## 10. How it ships
 
-Five pull requests, each with GPT's review, the full test gate and its table of rules taken out, and each merge brought to the owner:
+Six pull requests, each with GPT's review, the full test gate and its table of rules taken out, and each merge brought to the owner.
+The reading (i81 1b) makes the journal steps too large for one, so they are split in two (3 and 4), and the tab and the switches
+move down one:
 
 | # | What | Waits for | Rough effort |
 |---|---|---|---|
-| 1 | The questions tool and the cold test's job in one shared service; the command can run a test with GPT's questions | the owner's yes to this design, and his answer to question 5 | 1.5 to 2 days |
-| | **The measured run:** the tool and the test with the real models on an invented journal, about 200 calls on the owner's plans: how often a good copy passes, what the key check drops and how often an unanswerable question's subject is told of without being named (both against the journal's known contents), the calls and the minutes. The numbers come back to him, with the choice to keep 2b or loosen it (his i77 note) | his go, after 1 (question 6) | half a day, plus the calls |
-| 2 | IS24's rest: a launcher and the icon (a desktop entry, installed once by the lane), Restart and Stop on the page, the owner's switches kept in the launcher's settings | | 1 to 1.5 days |
-| 3 | The journal steps on the page: the People tab, adding a client, both parts of the consent, Add journal (PDF, text, Markdown, Word, a server copy), the preview, Copy it in, Add more, the cold test with its status, withdraw; the owner's own journal | 1 and 2; questions 1 and 3 | 2.5 to 3 days |
-| 4 | The Journal tab: days with writing, then and now, the word list, Hide, the moment of showing | 3; questions 2 and 4 | 1.5 to 2 days |
-| 5 | IS23's switches: the journal for each conversation, and the check of each reply, with the seconds each adds | IS22's run on invented cases | 1 day |
+| 1 | The questions tool (section 3) and the cold test's job shared by the command and, later, the server (`cold-test-job.mjs`); the command runs a test with GPT's questions (`--cold-test --gpt-questions`), only in a trial folder set apart for invented journals until the consent in version 2's words comes with 3. Built in one pull request with this design, which it carries | the owner's yes to this design (i81, given) | 1.5 to 2 days |
+| | **The measured run (i81 6a):** the tool and the test with the real models on an invented journal, about 200 calls on the owner's plans: how often a good copy passes, what the key check drops and how often an unanswerable question's subject is told of without being named (both against the journal's known contents), the calls and the minutes. The numbers come back to him, with the choice to keep 2b or loosen it (his i77 note) | 1 merged; the lane runs it | half a day, plus the calls |
+| 2 | IS24's rest: a launcher and the icon, Restart and Stop on the page, the owner's switches kept in the launcher's settings | built and merged as pull request 254 (26 Nov) | done |
+| 3 | The journal steps up to a first copy: the People tab, adding a client, both parts of the consent in version 2's words, Add journal (PDF, text, Markdown, Word, a server copy), the preview, the reading (4.6), the copy (4.7), withdraw; the owner's own journal | 1; the owner's word on whether 1b also asks for the order's graph and its checks (4.6, "What 1b covers") | 3 to 3.5 days, more if he asks for the graph |
+| 4 | Add more (4.8) and the cold test from the page, with its status (4.9) | 3 | 1.5 to 2 days |
+| 5 | The Journal tab: days with writing, then and now, what i83 chooses (5.4), Hide, the moment of showing | 3 (and 4 for a pending copy); i83 | 1.5 to 2 days |
+| 6 | IS23's switches: the journal for each conversation, and the check of each reply, with the seconds each adds | IS22's run on invented cases | 1 day |
 
-IS24's rest comes before the journal steps (2 before 3): a consent and a new client take effect only at a start, and without Restart
-on the page they would need a terminal. IS23 comes after: a journal is used only with the check of each reply on, which is IS22's
-question, and the seconds each switch adds come from IS22's run. The efforts are rough calendar days of a helper session with its
-reviews, not measured.
+IS24's rest came first (merged as pull request 254): a consent and a new client take effect only at a start, and the page's Restart
+makes it without a terminal. The reading is part of a first copy, so it comes with 3; the measured run of 6a measures the questions
+tool and the test, not the reading, whose pace the reading's own progress shows (4.6). IS23 comes last: a journal is used only with
+the check of each reply on, which is IS22's question, and the seconds each switch adds come from IS22's run. The efforts are rough
+calendar days of a helper session with its reviews, not measured: about 9 to 11 days from here, the measured run included.
 
-**The launcher (pull request 2), in short.** The icon runs `scripts/runner-launcher.mjs` from the checkout it was installed from. It
-does what a start does (the folder, the grants from the list, the released rules, the server), keeps no terminal, opens the browser at
-the address, and keeps a log of the start script's own lines and codes in the trial folder (mode 0600; no words). The server tells it,
-over its IPC channel, to restart or to stop. A restart is the same start again, with new grants (so recorded consents and new clients
-take effect) and the released rules it already runs: a new release reaches the runner only by a start that fetches it, as today. The
-owner's provider and switches (`--provider mixed` and the others he chose) are in `launcher.json` in the trial folder, written once
-at the install from his answers. A runner started the old way, from a terminal, shows "Restart from the terminal" instead of the
-buttons.
+**The launcher**, as built (pull request 254; `docs/RUNNER-TRIAL.md`, "Without a terminal"), refuses Restart and Stop while a reply or
+a deletion runs (`RUNNER_WORK_KINDS`). The copy and the test join those kinds with pull requests 3 and 4. A reading doesn't: it is
+long, so Restart and Stop pause it instead (4.6).
 
-## 11. Choices for the owner
+## 11. The owner's open choice
 
-1. **An uploaded journal's copy: built from its exact text alone, or read first?** His order of 18 Oct 2026 has a new journal import
-   read the whole source before its index is built.
-   - **a:** Build the copy from the file's exact text, mechanically (the quote index, which is all the replies' search reads); nothing
-     reads the whole journal. (recommended)
-   - **b:** Reading first: a model reads the whole journal before the copy is built. A new flow (the whole journal to Anthropic or
-     OpenAI), a long run on his plans, and nothing the replies use today.
-2. **Keeping writing about wanting to die out of the Journal tab without a model** (section 5.4).
-   - **a:** The word list as designed: any word of dying or death, and direct and indirect phrases, in English and French; the whole
-     entry left out; a theme with such a word shows the support line; Hide; the limit said on the tab. (recommended: it leaves out
-     every mention of dying or death with the entry around it, so what can get through names neither; the tab shows passages only to
-     him or to the person themselves; anything stricter needs a model, with its own misses)
-   - **b:** As a, but a client's tab shows only the days with writing until a better check exists; then and now for his own journal.
-   - **c:** As a, and a model reads each passage before the tab shows it: a new flow (those passages to Anthropic or OpenAI), which the
-     client's consent would have to name.
-   - **d:** Only the days with writing for now.
-3. **Add more while a copy is in use** (section 4.7).
-   - **a:** The earlier copy stays in use until the new one passes its cold test; the new entries wait for theirs. (recommended)
-   - **b:** Copy it in closes the journal until the new copy passes, as the terminal's import does; for a client whose case has read
-     the journal, that stops their whole case meanwhile (4a), possibly over several test runs.
-4. **Which copy the Journal tab reads** (section 5.1).
-   - **a:** The newest copy, tested or not: the tab sends nothing anywhere and shows exact words with their dates, and his 2b was asked
-     as what a copy must pass "before replies use it". (recommended)
-   - **b:** Only a copy that has passed its cold test, so nothing of a journal is shown before then.
-5. **The cold test's questions and passages about dying** (section 3.1).
-   - **a:** No question or planted wrong answer is written about a passage the word list flags, nor about the rest of its entry;
-     those passages are still searched, as in replies, and the run says how many were left out. The test then shows nothing of how
-     such passages are answered; a conversation about wanting to die gets no journal anyway, and in any other the checker holds every
-     claim to its source. (recommended)
-   - **b:** They are sampled like any passage, so the test covers them too, and GPT writes questions and planted wrong answers about
-     them.
-6. **The measured run after pull request 1:** the questions tool and the cold test with the real models on an invented journal, about
-   200 calls on his plans, before any person's journal.
-   - **a:** Yes, once pull request 1 is merged; the numbers come back to him with the choice to keep 2b or loosen it. (recommended)
-   - **b:** Not yet.
+Of the six choices this design first put to him (question i81), five are answered, `1b 3a 4a 5b 6a` (see "What the owner decided").
+The second had no answer, and is asked again:
+
+1. **i83: keeping writing about wanting to die out of the Journal tab** (section 5.4). Only the Journal tab's build (pull request 5)
+   waits for it; nothing before it does.
+   - **1a:** the reading (4.6) marks entries about dying or wanting to die, and the word list backs it up. (recommended)
+   - **1b:** the word list only.
+   - **1c:** only the days with writing for now.
 
 ## 12. Limits
 
@@ -602,23 +853,37 @@ buttons.
   vault (and the digests of hidden passages, beside it).
 - A preview's text stays in the server's memory until it is dropped (minutes); text in memory can't be wiped.
 - A replaced or withdrawn copy is tombstoned, not deleted (the store deletes no single corpus): its encrypted objects stay until
-  Delete, so each Add more adds a copy's size.
+  Delete, so each Add more adds a copy's size; so does a cancelled reading's stored text and readings.
+- The reading sends the whole journal to OpenAI and is a long run on the owner's ChatGPT plan (4.6: roughly one to three hours for 100
+  reading pages, not measured). Its findings and summary are GPT's provisional reading, kept encrypted with the copy and shown nowhere
+  in this slice; no reply reads them.
+- The reading reads text: a page with a picture, or without text, is never read, and with no review route and no partial copy in
+  this slice, a journal with such a page, or with a page GPT won't answer in form, can't be copied in from a file (a copy from the
+  server still can). Such a page is held back from later readings; after the person's Delete nothing of theirs is kept, the
+  held-back digests included. A copy without those pages, or a person's review of them, would be the owner's decision. The held-back
+  digests (of passages and sentences) can miss a refused sentence split across two pages of a later reading: they keep a refused page
+  from being sent again, and are no guarantee across every cut.
 - Dates are read from date lines at the start of a line, in English and French; a journal dated otherwise, or only by its file names
   (daily-note folders), has no days with writing and no months for then and now.
 - Word's headers, footers, footnotes, comments and text boxes aren't read, nor PDF pages without text.
-- The word list (5.4) can miss indirect wording. The key check (3.4) lowers the odds of a wrong key without removing them, and a
-  journal may tell of an unanswerable question's subject without naming it. Each run writes new questions, and a pass after several
-  runs may be by chance (the count is shown).
+- The word list (5.4) can miss indirect wording, and the reading's mark has misses of its own. The key check (3.4) lowers the odds of a
+  wrong key without removing them, and a journal may tell of an unanswerable question's subject without naming it. Each run writes new
+  questions, and a pass after several runs may be by chance (the count is shown). A refusal by GPT in the questions tool drops a batch
+  (3.2), so the passages GPT won't write about are the ones the test covers least, and the report counts them.
 - The questions tool needs 24 passages a reply may quote (its floor, not the rule's); a shorter journal gets no cold test, so no reply
-  ever uses it, while its Journal tab still works under question 4's option a.
+  ever uses it, while its Journal tab still works (i81 4a).
 - Once the owner's own case has read his journal, it stops like a client's while its gate is closed (a withdrawal, a lost receipt, a
   changed reader or rule): a new pass, or deleting that case, are the ways on.
 - With `--provider codex` the cold test can't run with GPT's questions.
 - The page's words (the consent questions, the support line, the tab's sentences) are shown to the owner with the build that adds
   them.
-- Nothing here is built, measured or run on a real journal.
+- Nothing here is measured or run on a real journal; of the build, pull request 1 is made with this design, and the rest is not
+  built.
 
 ## Appendix: Codex's reviews
+
+The tables name sections and questions as numbered in the revision each review read. The revision for i81 added 4.6 (the reading),
+so the former 4.6 to 4.9 are now 4.7 to 4.10, and section 11's questions 1 and 3 to 6 are answered.
 
 **Review 1** (26 Nov 2026, read-only, `codex exec` at medium effort, on the first draft): 12 findings, 3 blocking; "changes needed".
 
@@ -679,3 +944,60 @@ needed".
 | 18 | The calls asked again were outside the budget of 15 | Every call of the worker counts, those asked again included, against one budget of 20; the 21st isn't made, and the run has no test (3.1, 3.8; R41) |
 
 **Review 5** (26 Nov 2026, the same way, narrowed to those two changes): 8 and 18 fixed, nothing new found; "ready".
+
+**Review 6** (27 Nov 2026, the same way, on the revision for i81 `1b 3a 4a 5b 6a`): eleven findings, eight blocking; "changes needed".
+
+| # | Finding | What changed |
+|---|---|---|
+| 1 | Blocking: the preview built the quote generation before the reading | The preview uses the index's segmentation and date reader only; no generation, graph or index before the receipts and the pages' digests verify (4.5, 4.7; R53) |
+| 2 | Blocking: the producer can't sign a partial set as written, and the gate doesn't see page bytes | The owner's decision is recorded first; the producer runs again over the pages read, numbered from one, replayed from the ledger, with receipts for that set; each stored page is checked against the signed inventory; an empty set is refused; the record goes on with Add more (4.6, "A copy without some pages"; 4.7; R47) |
+| 3 | Blocking: a partial copy's use and the order's graph were unclear | A partial copy is a copy like any other, labelled, tested before use and counted on the tab; the click is the owner's explicit decision for that copy, which the order asks; the copy has no person, topic or event graph, so the order's graph isn't built (4.6; section 2, step 7) |
+| 4 | Blocking: a bad mark could fail a page's reading | An envelope: the import's result checked alone, the mark apart; a missing or malformed mark never fails the page, and under i83 1a its page shows no passage (4.6, 5.4; R51) |
+| 5 | Blocking: no completion contract for stops, going on and carried readings | The port's ledger: answers kept before a call counts as done, replayed, never resent; an abort signal for the sealed worker; late answers dropped by a check before keeping; carried readings rebound by digest under the new work ids; Restart and Stop pause in two steps (4.6, 4.8; R49, R50) |
+| 6 | Blocking: held-back passages could leave by another route; Add more flattened PDF pictures | The held-back lists bind the calls that send passages to be read or written about; a reply's search and the test's consumer and judge go on as built; key checks hold back too; a refusal a worker can tell isn't retried; from a PDF, Add more takes no entry on a page with a picture or without text (3.2, 3.4, 4.6, 4.8; R44, R50) |
+| 7 | Blocking: the tab's options didn't settle unmarked copies or 1c's days | Under 1a nothing falls back to the list: an unmarked page shows no passage, and a server copy shows what 1c shows; under 1c a day's mark is the same whatever was written; the tab waits for i83 (5.4) |
+| 8 | Blocking: pull request 1 would send GPT's questions beyond what today's consent names | Under a consent in version 1's words GPT's questions run only with the mixed arrangement, whose writer is GPT; claude waits for version 2; refused before any call (3, 6; R18) |
+| 9 | The provider and the packets needed pinning and a full description | The route is pinned; a page's packet and a summary packet are described field by field, journal only, without quotations in the summary (4.6, 6; R46) |
+| 10 | The consent's versions gave contradictory instructions | A file needs version 2, a server copy either; "Ask again in the new words" records version 2 over version 1, and the command does from pull request 3 (4.3, 4.4; R54) |
+| 11 | Pull request 1's tests left guarantees unchecked | Plants on passages about dying, key checks that fail for their form, overlapping runs and one wrong answer through `--gpt-questions` are tested (R13, R18, R20, R44) |
+
+Also: a `same` question that shares no search word is counted as `other` (3.3).
+
+**Review 7** (27 Nov 2026, the same way, narrowed to those eleven): 1, 4 and 10 fixed; the others partly; two new findings;
+"changes needed".
+
+| # | Finding | What changed |
+|---|---|---|
+| 2, 12, 13 | Blocking: the partial copy couldn't be signed as written (renumbered pages, lost date boundaries), and Add more could lose entries unseen | No partial copy in this slice: a reading with a page not read builds nothing, and the owner reads again or cancels; a copy without such pages is his decision, not made here; Add more refuses a PDF whose new entries touch an unreadable page (4.6, 4.8; R47, R50; section 12) |
+| 3 | Blocking: the order's read-derived graph and its checks | 1b as it was asked: read the whole journal before the copy is built, "nothing the replies use today"; the copy builds no graph at all, so nothing graph-like precedes the reading, and the order's later stages are the import's (4.6, "What 1b covers") |
+| 5 | Blocking: late answers after a stop, admission during the pause, replayed failures | Only a reading that passed the import's checks lasts; each run is an attempt, checked before keeping anything; Restart and Stop stop admitting journal work before they pause the readings; "Read again" gets a fresh answer (4.6; R49) |
+| 6 | Blocking: refused text could cross routes | With no partial copy, a page the reading couldn't read is in no copy, reply, test or tab; the questions tool's held-back passages are an ambiguous precaution, kept apart, of passages GPT read whole in the reading (4.6, 3.2) |
+| 7 | Blocking for pull request 5: the tab's days and residual misses | The one set of passages under each option of i83 (5.1; R23); 5.4 says plainly that no option can promise the line outright, and that i83 is the owner's choice of which limit to accept |
+| 8 | Blocking: today's consent can't show that OpenAI's questions were named | In pull request 1, GPT's questions run only with `--invented-journal`; for a person they wait for the consent in version 2's words (3, 4.3, 6; R18) |
+| 9 | The reading's `expected_generation` was the corpus id; the summary packet's description | A random reading token instead; the summary packet sends no quotation arrays, and its findings may repeat the journal's words (4.6, 6) |
+| 11 | A refusal the worker can tell, in a key check | Not asked again; dropped and held back at once (3.2; R44) |
+
+**Review 8** (27 Nov 2026, the same way, narrowed to those ten): 2, 11 and 13 fixed; the others partly; one new finding; "changes
+needed".
+
+| # | Finding | What changed |
+|---|---|---|
+| 3 | Blocking: 1b's words don't waive the order's graph and its checks | Said plainly as the owner's to decide: pull request 3 waits for his word on whether 1b also asks for them (4.6, "What 1b covers"; section 10) |
+| 5 | Blocking: Cancel could fall between the summary and the copy's naming | Cancel runs in the case's queue and under the lock, like the copy's last step, which also checks the reading's token and attempt (4.7; R38) |
+| 6 | Blocking: digests could miss refused text cut another way; refusals and ambiguous failures on one list | The reading holds back each sentence of four words or more too; both of the runner's workers are Codex, so every failure is ambiguous, and the reading's list and the questions tool's are kept apart (4.6, 3.2; R48) |
+| 7 | Days were drawn from the passages shown | Two sets: the one counted for days, lines and counts, and the one shown, never wider (5.1, 5.2; R23, R39) |
+| 8 | Blocking: a flag doesn't bind the run to an invented journal | Pull request 1 runs GPT's questions only in a trial folder set apart for invented journals (a file no command writes), never the default one (3, 6, 10; R18) |
+| 9 | The summary packet's two shapes | Both shapes described and tested, without `exact_source_anchors` (4.6; R46) |
+| 12 | Blocking: an image-only page could escape Add more's check | A PDF is checked on its whole page inventory before entries are compared (4.8; R50) |
+| 14 | The PDF line still spoke of a copy without the unreadable page | While any page stays unread the upload can't produce a copy (4.4) |
+
+**Review 9** (27 Nov 2026, the same way, the fourth and last of this revision): 3, 5, 7, 12 and 14 fixed; 6, 8 and 9 partly; one new
+finding; "changes needed". With four rounds spent, the lane's limit, no further round was run; what changed after it is below, and
+is reviewed with pull request 1's code.
+
+| # | Finding | What changed after it |
+|---|---|---|
+| 8 | Blocking: a set-apart folder can still hold a normal copy | GPT's questions also need the invented-journal sentinel in the very publication under test, checked before any call; its passage is left out of the questions (3; R18) |
+| 9 | The data-flow table named only the batch shape | Both summary shapes in the table (6) |
+| 15 | "Copy it in" tried again after a restart had no attempt | It makes one, under the case's queue and the lock, and sends no page (4.6) |
+| 6 | Blocking: a refused sentence split across a later reading's pages can escape the digests; confirmed refusals aren't enforced on every route | Not changed beyond a stated limit (section 12): with no partial copy, a page the reading couldn't read is in no copy, reply, test or tab; both of the runner's workers are Codex, so no failure is a confirmed refusal. Enforcing refusals on the replies' and the test's routes would change the replies' reader, which this design keeps unchanged; that is for the owner or pull request 3's review |
