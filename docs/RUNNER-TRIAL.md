@@ -235,8 +235,8 @@ A client's journal can inform their replies only through the session-use journal
    trial folder set apart for invented journals by a file named `invented-journals-only` in it (mode 0600; no command writes it), never
    the default trial folder or a folder a runner starts from, one holding the icon's `launcher.json` (refused even with the file), and on
    a copy that holds the invented-journal sentinel among the passages a
-   reply may quote, `This journal is invented for a test of InnerSignal, and nothing in it is anyone's.` on a line of its own. That
-   passage is never sent. Elsewhere they are refused before any call. None of it has been run against a model: the measured run on an
+   reply may quote, `This journal is invented for a test of InnerSignal, and nothing in it is anyone's.` on a line of its own (not
+   inside other words). That passage goes to none of GPT's question calls. Elsewhere they are refused before any call. None of it has been run against a model: the measured run on an
    invented journal comes once this is merged (i81 6a).
 
    For each question, the test gives a fresh call of the trial's writer's worker (with `--provider mixed`, GPT) exactly what a reply to
