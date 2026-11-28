@@ -39,7 +39,7 @@ export const COLD_TEST_JOB_WORDS = Object.freeze({
   COLD_TEST_CHANGED: "The client's consent or copy changed during the cold test: it stopped, and gave no receipt.",
   COLD_TEST_MARKER_GONE: "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again.",
   COLD_TEST_NEWER_STARTED: "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again.",
-  COLD_QUESTIONS_NOT_INVENTED: "This copy doesn't open with the invented-journal sentinel, its first passage the sentence alone, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them. Nothing was sent; as with any test that starts, the copy has no cold-test receipt now."
+  COLD_QUESTIONS_NOT_INVENTED: "This copy's first passage isn't exactly the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them. Nothing was sent; as with any test that starts, the copy has no cold-test receipt now."
 });
 
 // A file of the client's journal folder removed (their cold-test receipt, or the marker of the test started last), and that made durable.
@@ -140,8 +140,8 @@ export async function runColdTestJob({ trialDir, findClient, readClients, underL
 /**
  * GPT's questions for one run (section 3), as `runColdTestJob`'s `writeQuestions`: the copy's passages read from exactly the snapshot
  * under test; with `inventedOnly` (pull request 1, until a consent in its new words names the questions), the copy's first passage in
- * source order, of all its passages, required to be the invented-journal sentinel whole, before any call, and that passage left out of
- * the sample; the client's held-back passages read (`readHeld`), and added to, under the folder's lock; right before each packet leaves,
+ * source order, of all its passages, required to be exactly the invented-journal sentinel, byte for byte, before any call, and that
+ * passage left out of the sample; the client's held-back passages read (`readHeld`), and added to, under the folder's lock; right before each packet leaves,
  * one hold of that lock in which the job's consent check (`check`) runs and the held-back list is read again (a caller with no `check`
  * gives `beforeSend`, which takes the lock on its own); the replies' reader asked with each unanswerable question, on that same snapshot;
  * and `worker`, the sealed Codex worker, for every call.

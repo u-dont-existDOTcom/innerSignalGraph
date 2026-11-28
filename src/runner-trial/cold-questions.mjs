@@ -51,12 +51,9 @@ export const COLD_QUESTIONS_TOOL = Object.freeze({
   timeoutMs: 10 * 60_000
 });
 
-// The sentence an invented journal opens with, as a paragraph of its own (section 3): until a consent in its new words names GPT's
-// questions, the command runs them only on a copy whose first passage in source order, of all its passages, is exactly this sentence,
-// and that passage is never sampled. A rule of place, not of finding the sentence in the text. At 169 bytes it is at least the 160 below
-// which the import joins a passage to the next, and well under a third of the 1,600 bytes at which it cuts a paragraph, no earlier than
-// a third of the way in: so the import makes it a passage of its own when it is a paragraph of its own, and never when a paragraph only
-// begins with it.
+// The invented-journal sentinel (section 3): until a consent in its new words names GPT's questions, the command runs them only on a copy
+// whose first passage, in the copy's source order, is exactly this sentence, byte for byte; a journal opens with that sentence only if
+// someone put it there. The check is of the copy's first passage, not of the file it came from. That passage is never sampled.
 export const INVENTED_JOURNAL_SENTINEL = "This journal is invented for a test of InnerSignal, and nothing in it is anyone's: no person wrote it, no person is in it, and no reply to any person will ever quote it.";
 // A place in source order: [the page's place, the byte offset], or the single number an older index stored (graph.mjs).
 const isPlace = (order) => Number.isSafeInteger(order) || (Array.isArray(order) && order.length === 2 && order.every(Number.isSafeInteger));
@@ -69,10 +66,13 @@ export function openingPassageId(places) {
   const [first, second] = [...places].sort(byOrder);
   return second && byOrder({ order: first.order, id: "" }, { order: second.order, id: "" }) === 0 ? null : first.id;
 }
-/** The copy's first passage (`openingId`, readQuestionPassages) when it is a passage a reply may quote and exactly the sentinel, else null. */
+/**
+ * The copy's first passage (`openingId`, readQuestionPassages) when it is a passage a reply may quote and its stored words are exactly the
+ * sentinel, byte for byte (no normalization at all), else null.
+ */
 export function inventedJournalOpening({ passages, openingId }) {
   const opening = openingId === null ? null : passages.find(({ id }) => id === openingId);
-  return opening && normal(opening.quote) === INVENTED_JOURNAL_SENTINEL ? opening : null;
+  return opening && opening.quote === INVENTED_JOURNAL_SENTINEL ? opening : null;
 }
 // How many words in a row of another passage make a question or a planted answer carry it (3.4).
 const CARRIED_WORDS = 6;
@@ -231,7 +231,7 @@ const byOrder = (left, right) => {
  * its words the bytes stored for it), in source order, with when its entry says it was written; the passages the cold test resolves a
  * key against (`keyPassages`: neither deleted nor revoked, with words, as `runJournalColdTest` reads them); whether the generation
  * has a word list, which decides how the search reads words; and the id of the copy's first passage in source order, of all its
- * passages whatever their lifecycle (`openingId`: openingPassageId), which the invented-journal sentinel must be (section 3).
+ * passages whatever their lifecycle (`openingId`: openingPassageId), whose words must be exactly the invented-journal sentinel (section 3).
  */
 export async function readQuestionPassages({ service, auth, caseId, corpusId, before }) {
   return service.withJournalCorpus(caseId, corpusId, ACCESS, async ({ corpusStore, cursorSecret, reference }) => {
@@ -371,16 +371,18 @@ const TASKS = Object.freeze({
 const FORM = "COLD_QUESTIONS_ANSWER_INVALID";
 const coded = (code) => Object.assign(new Error("The questions tool's worker gave no answer in its schema."), { code });
 
-// A phrase of an unanswerable question (3.2) is words alone, and its words ask nothing else. Its characters, on an allowlist: letters,
-// combining marks and digits, in any script; an apostrophe or a hyphen only inside a word ("l'été", "rouge-gorge"); one space between
-// words; nothing else, so no punctuation of any kind can start a second question or join one ("after the abacus. Did I lend it",
-// "after the abacus — did I lend it", "(after the abacus)"). Its words: no question word, no word that joins two things, at most eight.
-// Both languages' words are refused whatever the journal's language. It checks characters and words, not meaning: words alone can
-// still read as a second question ("after the abacus did I lend it"), a limit the design states (section 12).
+// A phrase of an unanswerable question (3.2) is words alone, and its words ask nothing else. It is read with its white space trimmed
+// and each run of it as one space (unanswerableBatch), and the question is put together from it so read. Its characters, on an
+// allowlist: letters, combining marks and decimal digits, in any script; an apostrophe or a hyphen only inside a word ("l'été",
+// "rouge-gorge"); one space between words; nothing else, so no punctuation of any kind can start a second question or join one
+// ("after the abacus. Did I lend it", "after the abacus — did I lend it", "(after the abacus)"). Its words: no question word, no word
+// that joins two things, at most eight. Both languages' words are refused whatever the journal's language. It checks characters and
+// words, not meaning: words alone can still read as a second question ("after the abacus did I lend it"), a limit the design states
+// (section 12).
 const QUESTION_WORDS = new Set(("what when where who whom whose why how which whether "
   + "quand où qui que quoi pourquoi comment quel quelle quels quelles lequel laquelle lesquels lesquelles combien").split(" "));
 const JOINING_WORDS = new Set("or and rather instead besides nor ou et plutôt sinon ni".split(" "));
-const PHRASE_WORD = "[\\p{L}\\p{M}\\p{N}]+(?:['\\u2019-][\\p{L}\\p{M}\\p{N}]+)*";
+const PHRASE_WORD = "[\\p{L}\\p{M}\\p{Nd}]+(?:['\\u2019-][\\p{L}\\p{M}\\p{Nd}]+)*";
 const PHRASE = new RegExp(`^${PHRASE_WORD}(?: ${PHRASE_WORD})*$`, "u");
 function phraseHolds(phrase) {
   if (!PHRASE.test(phrase) || phrase.split(" ").length > COLD_QUESTIONS_TOOL.phraseWords) return false;

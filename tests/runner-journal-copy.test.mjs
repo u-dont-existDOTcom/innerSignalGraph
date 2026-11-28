@@ -71,7 +71,8 @@ async function tree(dir) {
 }
 
 // A synthetic journal of plain-text pages, one passage per line (a line may be `{ text, lifecycle }`), then any `filler` with no passage,
-// the pages' sources listed in the order given.
+// the pages' sources listed in the order given. A passage holds its line and the line break after it, or, for a line given with
+// `exact: true`, the line's words alone, the break in no passage (as the import makes a paragraph's passage).
 function generatedJournal(pages, corpusId = SERVER_CORPUS, caseId = SERVER_CASE) {
   const base = { case_id: caseId, corpus_id: corpusId, version: 1, lifecycle: "active" };
   const nodes = [], representations = {};
@@ -84,11 +85,11 @@ function generatedJournal(pages, corpusId = SERVER_CORPUS, caseId = SERVER_CASE)
   for (const page of pages) {
     let offset = 0;
     lines(page).forEach((line, index) => {
-      const quote = `${line.text}\n`;
+      const quote = line.exact ? line.text : `${line.text}\n`;
       nodes.push({ ...base, lifecycle: line.lifecycle, id: `${page.representationId}-p${String(index).padStart(3, "0")}`, kind: "passage", data: { representation_id: page.representationId, unit_id: `u-${page.representationId}`,
         start_byte: offset, end_byte: offset + Buffer.byteLength(quote), quote, quote_sha256: sha256(quote),
         locator: { kind: "native_text", page: null, bbox: null, original_object_id: "original", interpretation_status: "native" } } });
-      offset += Buffer.byteLength(quote);
+      offset += Buffer.byteLength(`${line.text}\n`);
     });
   }
   return { graph: { schema_version: "1.0", case_id: caseId, corpus_id: corpusId, generation: "generation-synthetic", nodes, edges: [] }, sources: representations };
@@ -2056,12 +2057,12 @@ test("the client list, the cold-test receipt and its test's marker are each open
 
 // ---- GPT's questions (--gpt-questions) -------------------------------------------------------------------------------------------
 
-// An invented journal: the invented-journal sentinel as its first passage (unless left out; `generatedJournal` makes each line a passage),
-// then entries of things lent. A client's copy of it, in a trial folder set apart for invented journals (unless not), and a cold test of
-// it with GPT's questions, from a stand-in writer, answered and judged by `workers`.
+// An invented journal: a first passage that is exactly the invented-journal sentinel (unless left out), then entries of things lent. A
+// client's copy of it, in a trial folder set apart for invented journals (unless not), and a cold test of it with GPT's questions, from a
+// stand-in writer, answered and judged by `workers`.
 const taskOf = (request) => JSON.parse(request.user).task;
 const inventedJournal = (count, sentinel) => generatedJournal([{ sourceId: "source:invented", representationId: "invented",
-  lines: [...(sentinel ? [INVENTED_JOURNAL_SENTINEL] : []), ...Array.from({ length: count }, (_, place) => lentEntry(place))] }]);
+  lines: [...(sentinel ? [{ text: INVENTED_JOURNAL_SENTINEL, lifecycle: "active", exact: true }] : []), ...Array.from({ length: count }, (_, place) => lentEntry(place))] }]);
 // The test's stand-ins for a run with GPT's questions: the consumer says it found nothing for a question in the shapes of those the
 // journal doesn't answer; `change(value, request)` may answer otherwise.
 const ASKED_ABOUT_NOTHING = /^(When did I|Did I ever) /u;
@@ -2111,7 +2112,7 @@ test("--gpt-questions: refused before any call with codex, outside a trial folde
   await assert.rejects(gpt(plain.home), notSetApart);
   await fs.rm(launcherFile);
   // Set apart, but the copy doesn't hold the sentinel: refused before any call, from the publication the test reads.
-  await assert.rejects(gpt(plain.home), { message: /^This copy doesn't open with the invented-journal sentinel, its first passage the sentence alone, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them\. Nothing was sent; /u });
+  await assert.rejects(gpt(plain.home), { message: /^This copy's first passage isn't exactly the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them\. Nothing was sent; /u });
   assert.deepEqual([idle.sent.length, unasked.sent.length], [0, 0]);
   await absent(plain.receiptPath);
   // A questions file runs as before, in a folder set apart as in any other.

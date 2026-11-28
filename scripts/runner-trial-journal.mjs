@@ -389,7 +389,7 @@ const QUESTIONS_TOOL_STOPS = Object.freeze({
   COLD_QUESTIONS_CALL_BUDGET: `the tool's ${COLD_QUESTIONS_TOOL.budget.calls} calls were spent before the questions were complete`,
   COLD_QUESTIONS_PASSAGE_BUDGET: `the tool's ${COLD_QUESTIONS_TOOL.budget.passages} passages were spent before the questions were complete`,
   COLD_QUESTIONS_SNAPSHOT_CHANGED: "the copy changed while the questions were written",
-  COLD_QUESTIONS_HELD_BACK_MEANWHILE: "another run on this copy held back a passage whose words this one was about to send; nothing of that packet was sent, and this run has no test"
+  COLD_QUESTIONS_HELD_BACK_MEANWHILE: "another run on this copy held back a passage of the packet this one was about to send, or a passage holding the evidence quote of one of that packet's questions; nothing of that packet was sent, and this run has no test"
 });
 const numbersOnly = (report) => JSON.stringify(report ?? null);
 
@@ -407,9 +407,10 @@ const numbersOnly = (report) => JSON.stringify(report ?? null);
 //
 // The boundary: the consent is read under the trial folder's lock, the one --journal-consent takes, right before each packet is handed to
 // the worker's process (for the questions tool's packets, in the same hold as its held-back list), and the lock is released before that
-// hand-over (a call can take minutes, and holding the lock through it would stop every other action on the folder). So a withdrawal, or
-// another run's hold-back, lands wholly before that reading, and the packet doesn't leave, or after it; one that lands after the reading
-// is honoured at the next packet and before the receipt is written, again under the lock. `workerFor` (a worker for a role of the trial's) and `questionWorker` (GPT's, for the
+// hand-over (a call can take minutes, and holding the lock through it would stop every other action on the folder). So a withdrawal lands
+// wholly before that reading, and the packet doesn't leave, or after it, and it is honoured at the next packet, of the tool or the test,
+// and before the receipt is written, again under the lock. Another run's hold-back is read only before the questions tool's packets: one
+// that lands after a reading is honoured at the tool's next packet, and neither the test's packets nor the receipt step read the list. `workerFor` (a worker for a role of the trial's) and `questionWorker` (GPT's, for the
 // questions) replace the signed-in workers in tests; `random` sets the questions tool's draws.
 export async function runClientColdTest({ home, number, questionsPath = null, gptQuestions = false, provider = null, workerFor = null, questionWorker = null,
   environment = process.env, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS, random = undefined }) {

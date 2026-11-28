@@ -162,7 +162,8 @@ test("a passage of fewer than four words may be its question's evidence whole; o
 test("a journal in French gets its questions in French: the verbs, the subjects' names and the shapes", async () => {
   const french = Array.from({ length: 60 }, (_, place) => `Ce printemps-là, j'ai prêté le ${LENT_THINGS[place]} à ma voisine, et il m'est revenu une semaine plus tard.`);
   assert.deepEqual([journalLanguage(french), journalLanguage(LONG)], ["fr", "en"]);
-  // Phrases with an apostrophe, letters with accents, a hyphen inside a word: words, which pass.
+  // Phrases with an apostrophe, letters with accents, a hyphen inside a word, decimal digits, and a tab, read as one space: words, which
+  // pass.
   let unanswerable = 0;
   const phrases = [];
   const writer = questionWriter({ reply: async (count, request, usual) => {
@@ -172,7 +173,9 @@ test("a journal in French gets its questions in French: the verbs, the subjects'
       value.items[0].phrase = `après l'été du ${word(value.items[0])}`;
       value.items[1].phrase = `avec le ${word(value.items[1])} d'à côté`;
       value.items[2].phrase = `près du ${word(value.items[2])} de l’après-midi`;
-      phrases.push(...value.items.slice(0, 3).map(({ phrase }) => phrase));
+      value.items[3].phrase = `avant le ${word(value.items[3])} du 14 juillet`;
+      value.items[4].phrase = `avant\tla fin du ${word(value.items[4])}`;
+      phrases.push(...value.items.slice(0, 5).map(({ phrase }) => phrase.replace(/\s+/gu, " ")));
     }
     return value;
   } });
@@ -242,7 +245,8 @@ test("each of the program's checks drops a candidate that fails it, and counts i
       items[14].phrase = `after the ${word(items[14])}. Did I lend it`;
     } else if (packet.task === "unanswerable" && unanswerable === 2) {
       // Phrases of words with a character outside the allowlist, none of them sentence punctuation but a colon, each of which could start
-      // or join a second question: a dash, a colon, brackets, quotation marks, a slash, an ampersand, a hyphen between words, a symbol.
+      // or join a second question: a dash, a colon, brackets, quotation marks, a slash, an ampersand, a hyphen between words, a symbol;
+      // and a number that isn't a decimal digit.
       const items = value.items, word = (item) => item.phrase.split(" ").at(-1);
       items[0].phrase = `after the ${word(items[0])} — did I lend it`;
       items[1].phrase = `after the ${word(items[1])}: did I lend it`;
@@ -253,13 +257,14 @@ test("each of the program's checks drops a candidate that fails it, and counts i
       items[6].phrase = `after the ${word(items[6])} & bus`;
       items[7].phrase = `after the ${word(items[7])} - did I lend it`;
       items[8].phrase = `after the ${word(items[8])} ★`;
+      items[9].phrase = `after the ${word(items[9])} ½`;
     }
     return value;
   } });
   const { questions, report } = await write(LONG, writer, { askReader: async (question) => (question.includes(" near the ") ? 0 : 2) });
   assert.deepEqual(report.dropped, { ...NO_DROPS, question_invalid: 2, quote_not_in_passage: 1, quote_length: 2, quote_not_specific: 1, repeated: 1,
-    other_passage_words: 1, verb_not_on_list: 3, phrase_invalid: 19, phrase_not_from_batch: 1, reader_found_nothing: 1, plant_not_written: 1, plant_invalid: 4 });
-  assert.deepEqual([report.batches.unanswerable, report.kept.unanswerable], [3, 21], "a third batch made up for the second's");
+    other_passage_words: 1, verb_not_on_list: 3, phrase_invalid: 20, phrase_not_from_batch: 1, reader_found_nothing: 1, plant_not_written: 1, plant_invalid: 4 });
+  assert.deepEqual([report.batches.unanswerable, report.kept.unanswerable], [3, 20], "a third batch made up for the second's");
   // No key check carried a dropped question or planted answer: each holds its own passage and nothing of another's.
   const checkedText = JSON.stringify(writer.packets("check_keys"));
   for (const words of [...corrupted.questions, ...corrupted.plants]) assert.equal(checkedText.includes(JSON.stringify(words).slice(1, -1)), false, words);
@@ -272,7 +277,7 @@ test("each of the program's checks drops a candidate that fails it, and counts i
     const [, verb] = /^(?:When did I|Did I ever) (\S+) .+ after the \p{L}+\?$/u.exec(question) ?? [];
     assert.ok(QUESTION_VERBS.en.includes(verb), question);
     for (const words of ["zeppelin", " near ", "why", " or ", "rather", "instead", "besides", ",", "north", " and ", ". ", "lend it", "—", ":", "(", "[", "\"", "/", "&", " - ",
-      "★"]) assert.equal(question.includes(words), false, `${words} in ${question}`);
+      "★", "½"]) assert.equal(question.includes(words), false, `${words} in ${question}`);
   }
 });
 
@@ -566,6 +571,13 @@ test("a key check is guarded against every passage holding its questions' eviden
     assert.deepEqual([meanwhile, code], [true, "COLD_QUESTIONS_HELD_BACK_MEANWHILE"], what);
     assert.equal(writer.packets("check_keys").some((packet) => JSON.stringify(packet).includes(B_WORDS)), false, `${what}: nothing of that packet is sent`);
   }
+  // With no hold-back the run goes on, and B, a key passage only, guarded with A's key check but in no packet, isn't counted as sent:
+  // the passages counted are those the packets held.
+  const going = carryingB();
+  const { report } = await outcomeOf(writeColdQuestions({ passages: all.filter(({ quote }) => quote !== PASSAGE_B), keyPassages: all, wordList: true, worker: going,
+    askReader: async () => 2, random: seededRandom(1) }));
+  assert.ok(going.packets("check_keys").some((packet) => JSON.stringify(packet).includes(B_WORDS)), "A's question, with B's words, was checked");
+  assert.equal(report.passages.sent, passagesSent(going).size);
 });
 
 test("a passage another run held back after this one read the list stops this run before the packet that holds it leaves: nothing of that packet is sent, and the ask isn't counted", async () => {
@@ -780,31 +792,40 @@ test("from the copy itself: the passages a reply may quote at the publication te
   }
 });
 
-test("the sentinel counts only as the copy's first passage, the sentence whole: cut as the import cuts a journal, one that opens with it as a paragraph runs, and a copy with it anywhere else is refused before any call", async (t) => {
-  // The import's own sizes: the sentence is at least the 160 bytes below which a passage is joined to the next, and well under a third
-  // of the 1,600 at which a paragraph is cut, no earlier than a third of the way in.
+test("GPT's questions run only on a copy whose first passage is exactly the code's sentence, byte for byte: the check reads the first passage the import makes, not the file, so files that open with the sentence in other ways run too, and a copy whose first passage is anything else is refused before any call", async (t) => {
+  // Each journal is cut as the import cuts one (its own unit sizes). A file that opens with the sentence followed by a long run of spaces
+  // and more words on its line (the import cuts in the spaces), or with a date line right under it, gives that first passage as one
+  // that opens with the sentence as a paragraph does (review 4 found both): each opens with the code's sentence, and runs.
   const S = INVENTED_JOURNAL_SENTINEL;
-  assert.ok(Buffer.byteLength(S) >= QUOTE_UNIT_DEFAULTS.minimumBytes && Buffer.byteLength(S) * 3 < QUOTE_UNIT_DEFAULTS.maximumBytes);
-  const opening = await copyWith(t, [S, ...LONG], { unitOptions: {} });
-  assert.equal(opening.stored[0], S);
-  const writer = questionWriter();
-  assert.equal((await opening.run(writer)).report.passages.excluded, 1);
-  assert.equal(writer.sent.some(({ request }) => request.user.includes(S)), false);
+  for (const [what, paragraphs] of [
+    ["as a paragraph", [S, ...LONG]],
+    ["followed by 1,500 spaces and more words on its line", [`${S}${" ".repeat(1500)}That spring I lent the abacus to my aunt.`, ...LONG]],
+    ["with a date line right under it", [`${S}\nMarch 1, 2019`, ...LONG]]
+  ]) {
+    const { run, stored } = await copyWith(t, paragraphs, { unitOptions: {} });
+    assert.equal(stored[0], S, what);
+    const writer = questionWriter();
+    assert.equal((await run(writer)).report.passages.excluded, 1, what);
+    assert.equal(writer.sent.some(({ request }) => request.user.includes(S)), false, what);
+  }
   // Prose just short enough that, with the sentence after it, the paragraph is over 1,600 bytes: the import cuts it right before the
-  // sentence, which is a passage of its own, the second.
+  // sentence, which is a passage of its own, the second. And the sentence with a blank line inside it: the import joins the short first
+  // piece to the next, so the first passage holds the sentence's words with the blank line between them, not the sentence.
   let prose = lentEntry(0);
   for (let place = 1; Buffer.byteLength(`${prose} ${S}`) <= QUOTE_UNIT_DEFAULTS.maximumBytes; place += 1) prose = `${prose} ${lentEntry(place)}`;
-  for (const [what, paragraphs, { cut = false, ...options } = {}] of [
+  const colon = S.indexOf(":") + 1;
+  for (const [what, paragraphs, { first = null, ...options } = {}] of [
     ["inside other words", [`We read it aloud: ${S} Then we went home.`, ...LONG]],
-    ["at the end of a first paragraph over 1,600 bytes", [`${prose} ${S}`, ...LONG], { cut: true }],
+    ["at the end of a first paragraph over 1,600 bytes", [`${prose} ${S}`, ...LONG], { first: (stored) => stored[0] === prose && stored[1] === S }],
     ["at the start of a first paragraph over 1,600 bytes", [`${S} ${prose}`, ...LONG]],
     ["after another paragraph", [LONG[0], S, ...LONG.slice(1)]],
     ["under a date line", [S, ...LONG], { dates: new Map([[0, "March 1, 2019"]]) }],
-    ["with the next line under it and no blank line between", [`${S}\n${LONG[0]}`, ...LONG.slice(1)]],
+    ["with more words on the next line", [`${S}\n${LONG[0]}`, ...LONG.slice(1)]],
+    ["with a blank line inside it", [S.slice(0, colon), S.slice(colon + 1), ...LONG], { first: (stored) => stored[0] !== S && normal(stored[0]) === S }],
     ["after a passage a reply may not quote", [LONG[0], S, ...LONG.slice(1)], { change: (node) => { if (node.data.quote === LONG[0]) node.lifecycle = "revoked"; } }]
   ]) {
     const { run, stored } = await copyWith(t, paragraphs, { unitOptions: {}, ...options });
-    if (cut) assert.deepEqual(stored.slice(0, 2), [prose, S], "cut right before the sentence");
+    if (first) assert.ok(first(stored), `${what}: ${JSON.stringify(stored.slice(0, 2))}`);
     const idle = questionWriter();
     await assert.rejects(run(idle), { code: "COLD_QUESTIONS_NOT_INVENTED" }, what);
     assert.equal(idle.sent.length, 0, what);
