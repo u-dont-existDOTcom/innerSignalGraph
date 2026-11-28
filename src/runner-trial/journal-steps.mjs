@@ -52,6 +52,7 @@ export const JOURNAL_STEP_WORDS = Object.freeze({
   RUNNER_JOURNAL_CASE_DELETING: "This case is being deleted.",
   RUNNER_JOURNAL_CASE_DELETED: "This case was deleted meanwhile: nothing more of it is written."
 });
+
 const stepError = (code) => new RuntimeError(JOURNAL_STEP_WORDS[code], { code });
 
 export function createRunnerJournalSteps({ trialDir, ownCaseId = null, grantedCaseIds = [], inCaseQueue, lockWaitMs = JOURNAL_STEP_LOCK_WAIT_MS, now = () => new Date() } = {}) {
@@ -144,9 +145,11 @@ export function createRunnerJournalSteps({ trialDir, ownCaseId = null, grantedCa
     addClient({ label } = {}) {
       return underLock(() => addRunnerClientLocked({ trialDir, label, now }));
     },
-    // 4.3: the list changes under the folder's lock alone: the gate reads the consents at every retrieval and before every output.
-    recordConsent({ caseId, action, parts, words = null } = {}) {
-      return underLock(() => recordRunnerConsentLocked({ trialDir, ownCaseId, caseId, action, parts, words, now }));
+    // 4.3: the list changes under the folder's lock alone: the gate reads the consents at every retrieval and before every output. The
+    // page's confirmation names the consent revision it showed.
+    recordConsent({ caseId, action, parts, words = null, revision = null } = {}) {
+      if (action === "confirm" && (typeof revision !== "string" || !/^[0-9a-f]{16}$/u.test(revision))) throw new ValidationError("A confirmation names the consent it was asked on.");
+      return underLock(() => recordRunnerConsentLocked({ trialDir, ownCaseId, caseId, action, parts, words, revision: action === "confirm" ? revision : null, now }));
     }
   });
 }

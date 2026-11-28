@@ -48,7 +48,7 @@ import { OWNER_FALLBACK_SETTING } from "../src/core/config.mjs";
 import { RESPONSE_EVIDENCE_SETTING } from "../src/core/on-off-setting.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
 import { RUNNER_ROLES, validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
-import { JOURNAL_CONSENT_WORDS, JOURNAL_CONSENT_WORDS_VERSION, journalConsentCurrent, journalConsentState, journalConsentWords, readRunnerClients } from "../src/runner-trial/clients.mjs";
+import { JOURNAL_CONSENT_WORDS, JOURNAL_CONSENT_WORDS_VERSION, consentRevision, journalConsentCurrent, journalConsentState, journalConsentWords, readRunnerClients } from "../src/runner-trial/clients.mjs";
 import { RUNNER_TRIAL_PRINCIPAL, addRunnerClientLocked, newCaseKeys, readTrialCredentials, recordRunnerConsentLocked, validCaseKeys, writePrivateTrialFile } from "../src/runner-trial/people.mjs";
 import { TrialFolderLockError, acquireTrialFolderLock as acquireFolderLock, folderLockLeftNotice, releaseAfterFailure, withTrialFolderLock as withFolderLock } from "../src/runner-trial/folder-lock.mjs";
 import {
@@ -372,7 +372,8 @@ export async function addClient({ home, label, now = () => new Date(), lockWaitM
 // (src/runner-trial/people.mjs). A confirmation records version 2's words, also over a standing consent in version 1's, and changes
 // nothing over one in version 2's. A withdrawal holds at once (the server reads the list at every retrieval and before every delivery)
 // and the next start drops the purpose from the client's grant; a consent gives the grant its purpose from the next start.
-export async function setJournalConsent({ home, number, action, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS }) {
+// `revision`: the consent revision of the list the command showed, so a confirmation made on a stale view is refused.
+export async function setJournalConsent({ home, number, action, revision = null, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS }) {
   const resolved = checkTrialHome(home);
   if (!["confirm", "withdraw"].includes(action)) throw new StartError("--journal-consent must be confirm or withdraw.");
   return withTrialFolderLock(resolved, async () => {
@@ -381,7 +382,7 @@ export async function setJournalConsent({ home, number, action, now = () => new 
     if (!client) throw new StartError("There's no client with that number.");
     let result;
     try {
-      result = await recordRunnerConsentLocked({ trialDir: resolved, caseId: client.case_id, action, parts: ["journal"], words: action === "confirm" ? JOURNAL_CONSENT_WORDS_VERSION : null, now });
+      result = await recordRunnerConsentLocked({ trialDir: resolved, caseId: client.case_id, action, parts: ["journal"], words: action === "confirm" ? JOURNAL_CONSENT_WORDS_VERSION : null, revision, now });
     } catch (error) { throw asCommandError(error); }
     return { changed: result.changed, state: journalConsentState(result.entry) };
   }, { waitMs: lockWaitMs });
@@ -541,26 +542,29 @@ const WORKER_WORDS = Object.freeze({
 // --add-client and --journal-consent: the question in the terminal, the change, and a line saying what changed. A label is typed
 // at a hidden prompt, never on the command line, so it stays out of the shell's history and off the screen; only the trial's page
 // shows labels (design, point 1), with each client's number, which these commands use instead.
-async function runListCommand(options, home) {
+// `ask` and `say` are the terminal's question and line (stand-ins in tests).
+export async function runListCommand(options, home, { ask: question = ask, say = (line) => console.log(line) } = {}) {
   if (options.addClient) {
-    const label = await ask("The label you'll know this client by (it isn't shown as you type; only this computer's runner page shows it; initials or a code word are enough): ", { hidden: true });
+    const label = await question("The label you'll know this client by (it isn't shown as you type; only this computer's runner page shows it; initials or a code word are enough): ", { hidden: true });
     const { number } = await addClient({ home, label });
-    console.log(`Added client ${number}, with a case of their own. Start the trial again to give it its grant; the page then lists them.`);
+    say(`Added client ${number}, with a case of their own. Start the trial again to give it its grant; the page then lists them.`);
     return 0;
   }
   const { clients } = await readClientList(checkTrialHome(home));
   if (!clients.length) throw new StartError("There are no clients yet: add one with --add-client.");
-  console.log("Clients (their labels are on the runner page, beside the same numbers):");
-  clients.forEach((client, index) => console.log(`  ${index + 1}. added ${client.added_at.slice(0, 10)}, ${consentWords(client)}`));
-  if (options.journalConsent === "confirm") console.log(`The words to read to the client, which they agree to as theirs:\n  "${JOURNAL_CONSENT_WORDS}"`);
-  const answer = (await ask(options.journalConsent === "confirm"
+  say("Clients (their labels are on the runner page, beside the same numbers):");
+  clients.forEach((client, index) => say(`  ${index + 1}. added ${client.added_at.slice(0, 10)}, ${consentWords(client)}`));
+  if (options.journalConsent === "confirm") say(`The words to read to the client, which they agree to as theirs:\n  "${JOURNAL_CONSENT_WORDS}"`);
+  const answer = (await question(options.journalConsent === "confirm"
     ? "Number of the client who agreed to these words: "
     : "Number of the client who withdrew their journal consent: ")).trim();
   if (!/^[1-9][0-9]{0,2}$/u.test(answer)) throw new StartError("That isn't a client's number; nothing was changed.");
-  const result = await setJournalConsent({ home, number: Number(answer), action: options.journalConsent });
-  if (!result.changed) console.log(`Nothing changed: client ${answer} has ${CONSENT_WORDS[result.state]}${result.state === "confirmed" ? " in these words" : ""}.`);
-  else if (options.journalConsent === "confirm") console.log(`Recorded: client ${answer}'s journal consent, in these words. It holds from the trial's next start; their journal is used only once it has a copy here that passed its cold test.`);
-  else console.log(`Recorded: client ${answer} withdrew their journal consent. From now on no retrieval or delivery uses their journal, also while the trial runs.`);
+  // A confirmation is bound to the consent the list above showed: one changed meanwhile (from the page, say) is refused.
+  const shown = clients[Number(answer) - 1];
+  const result = await setJournalConsent({ home, number: Number(answer), action: options.journalConsent, revision: options.journalConsent === "confirm" && shown ? consentRevision(shown) : null });
+  if (!result.changed) say(`Nothing changed: client ${answer} has ${CONSENT_WORDS[result.state]}${result.state === "confirmed" ? " in these words" : ""}.`);
+  else if (options.journalConsent === "confirm") say(`Recorded: client ${answer}'s journal consent, in these words. It holds at once if it already stood when the trial last started, otherwise from its next start; their journal is used only once it has a copy here that passed its cold test.`);
+  else say(`Recorded: client ${answer} withdrew their journal consent. From now on no retrieval or delivery uses their journal, also while the trial runs.`);
   return 0;
 }
 

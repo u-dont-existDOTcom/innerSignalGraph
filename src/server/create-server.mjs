@@ -251,6 +251,7 @@ const RUNNER_STATUS = Object.freeze({
   RUNNER_CLIENTS_FULL: 409,
   RUNNER_CLIENT_LABEL_TAKEN: 409,
   RUNNER_CONSENT_WORDS_OUTDATED: 409,
+  RUNNER_CONSENT_CHANGED: 409,
   RUNNER_TAB_CONSENT_NEEDS_JOURNAL: 409,
   RUNNER_JOURNAL_CASE_DELETING: 409,
   RUNNER_JOURNAL_CASE_DELETED: 409
@@ -738,7 +739,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           return send(res, 200, { added: true, number: added.number, ready: false });
         }
         const caseId = readCaseId(input.caseId);
-        const recorded = await steps.recordConsent({ caseId, action: input.action, parts: input.parts, words: input.words ?? null });
+        const recorded = await steps.recordConsent({ caseId, action: input.action, parts: input.parts, words: input.words ?? null, revision: input.revision ?? null });
         return send(res, 200, { caseId, changed: recorded.changed });
       }
       // The runner trial page's own routes (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 6, 8 and 9): its

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import fsPromises from "node:fs/promises";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
@@ -17,12 +18,12 @@ import { validateRunnerTrialSettings } from "../src/runner-trial/settings.mjs";
 import { createRunnerTrialController } from "../src/runner-trial/trial-controller.mjs";
 import { acquireTrialFolderLock } from "../src/runner-trial/folder-lock.mjs";
 import {
-  JOURNAL_CONSENT_WORDS, TAB_CONSENT_WORDS, forgetClientCopy, journalConsentCurrent, readRunnerClients, tabConsentCounts, upgradeRunnerClients, validateRunnerClients,
+  JOURNAL_CONSENT_WORDS, TAB_CONSENT_WORDS, consentRevision, forgetClientCopy, journalConsentCurrent, readRunnerClients, tabConsentCounts, upgradeRunnerClients, validateRunnerClients,
   writeRunnerClients
 } from "../src/runner-trial/clients.mjs";
 import { JOURNAL_STEP_WORDS, createRunnerJournalSteps, journalStepGrant } from "../src/runner-trial/journal-steps.mjs";
 import { recordRunnerConsentLocked } from "../src/runner-trial/people.mjs";
-import { addClient, prepareTrialFolder, setJournalConsent } from "../scripts/runner-trial-start.mjs";
+import { addClient, prepareTrialFolder, runListCommand, setJournalConsent } from "../scripts/runner-trial-start.mjs";
 
 // The journal steps' stage 1 (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md, 4.1, 4.2, 4.3 and 4.10;
 // docs/superpowers/plans/2026-11-28-runner-journal-steps.md): the service's lock order and Delete wins, its one-time grants, adding a
@@ -60,7 +61,16 @@ async function trialServer(t, { labels = [LABEL, "Synthetic client two"], launch
   const caseAuthContexts = new Map(Object.entries(prepared.clientTokens).map(([caseId, token]) => [caseId, Object.freeze({ bearerToken: token })]));
   const config = loadConfig({ mode: "mock", ledgerMode: "off", devAutomationEnabled: false, runnerTrialEnabled: true, runnerTrialCaseId: prepared.caseId, runnerTrialDir: home, runnerTrialSettingsPath: null, runnerClaudeConfigDir: null, runnerRulesRoot: null, responseEvidenceEnforced: false });
   const order = [];
-  const source = Object.create(service, { deletePrivateCase: { value: async (...args) => { order.push("vault"); return service.deletePrivateCase(...args); } } });
+  let refuseNextDelete = false;
+  const source = Object.create(service, { deletePrivateCase: { value: async (...args) => {
+    if (refuseNextDelete) {
+      refuseNextDelete = false;
+      order.push("vault refused");
+      throw Object.assign(new Error("A synthetic refusal."), { code: "PRIVATE_CASE_ACCESS_DENIED" });
+    }
+    order.push("vault");
+    return service.deletePrivateCase(...args);
+  } } });
   const trial = createRunnerTrialController({ privateCaseSource: source, config, clientCaseIds: [...caseAuthContexts.keys()], settings: validateRunnerTrialSettings({ writerMode: "whole", checkerMode: "whole" }), parts, workerFor: noWorkers });
   trialsOf.set(t, [...(trialsOf.get(t) ?? []), trial]);
   const server = createInnerSignalServer({ config, providers: createProviders(config), privateCaseAccessService: service, privateAuthContext: Object.freeze({ bearerToken: prepared.token }), privateCaseAuthContexts: caseAuthContexts,
@@ -68,7 +78,12 @@ async function trialServer(t, { labels = [LABEL, "Synthetic client two"], launch
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
   t.after(() => new Promise((resolve) => server.close(resolve)));
   const base = `http://127.0.0.1:${server.address().port}`;
-  return { home, prepared, trial, base, order, ownCase: prepared.caseId, clientCases: Object.keys(prepared.clientTokens), authFor: (caseId) => caseAuthContexts.get(caseId) ?? { bearerToken: prepared.token } };
+  return { home, prepared, trial, base, order, refuseNextDelete: () => { refuseNextDelete = true; }, ownCase: prepared.caseId, clientCases: Object.keys(prepared.clientTokens),
+    authFor: (caseId) => caseAuthContexts.get(caseId) ?? { bearerToken: prepared.token } };
+}
+// The consent revision the People tab shows for a case now.
+async function revisionOf(base, caseId) {
+  return (await people(base)).json.people.find((person) => person.caseId === caseId).revision;
 }
 
 async function post(base, route, body, headers = {}) {
@@ -175,12 +190,12 @@ test("consent versions: a confirmation records version 2's words over a standing
 
 test("the owner's own journal: \"Use my journal\" records his consent in version 2's words without a tab consent, the next start gives his grant session_use while it stands and drops it after a withdrawal, and a list naming another case as his stops the start", async (t) => {
   const s = await trialServer(t, { labels: [LABEL] });
-  const recorded = await post(s.base, "/v1/runner/consent", { caseId: s.ownCase, action: "confirm", parts: ["journal"], words: 2 });
+  const recorded = await post(s.base, "/v1/runner/consent", { caseId: s.ownCase, action: "confirm", parts: ["journal"], words: 2, revision: await revisionOf(s.base, s.ownCase) });
   assert.deepEqual([recorded.status, recorded.json], [200, { caseId: s.ownCase, changed: true }]);
-  assert.equal((await post(s.base, "/v1/runner/consent", { caseId: s.ownCase, action: "confirm", parts: ["tab"], words: 2 })).status, 400);
+  assert.equal((await post(s.base, "/v1/runner/consent", { caseId: s.ownCase, action: "confirm", parts: ["tab"], words: 2, revision: await revisionOf(s.base, s.ownCase) })).status, 400);
   const own = (await readRunnerClients(s.home)).own_journal;
   assert.deepEqual([own.case_id, own.corpus_id, own.consent.words, own.consent.withdrawn_at, Object.keys(own).sort()], [s.ownCase, null, 2, null, ["case_id", "consent", "corpus_id"]]);
-  assert.deepEqual((await people(s.base)).json.people[0], { caseId: s.ownCase, kind: "own", number: null, label: null, ready: true, journal: { consent: "confirmed", words: 2 } });
+  assert.deepEqual((await people(s.base)).json.people[0], { caseId: s.ownCase, kind: "own", number: null, label: null, ready: true, revision: consentRevision({ journal: own }), journal: { consent: "confirmed", words: 2 } });
   const grants = async () => JSON.parse(await fs.readFile(path.join(s.home, "credentials.json"), "utf8")).grants;
   await prepareTrialFolder({ home: s.home, provider: "codex" });
   assert.deepEqual((await grants())[0].purposes, ["session_use"]);
@@ -195,19 +210,24 @@ test("the owner's own journal: \"Use my journal\" records his consent in version
 
 test("Add a client from the page shares the command's function: the keys first, then the list; the label goes into the list alone, and the client is ready after a restart", async (t) => {
   const s = await trialServer(t, { labels: [] });
-  const added = await post(s.base, "/v1/runner/people/add", { label: `  ${LABEL}  ` });
+  const renamed = [];
+  const rename = fsPromises.rename;
+  fsPromises.rename = async (from, to) => { renamed.push(path.basename(to)); return rename.call(fsPromises, from, to); };
+  let added;
+  try { added = await post(s.base, "/v1/runner/people/add", { label: `  ${LABEL}  ` }); } finally { fsPromises.rename = rename; }
+  assert.deepEqual(renamed.filter((name) => ["credentials.json", "clients.json"].includes(name)), ["credentials.json", "clients.json"], "the keys first, then the list");
   assert.deepEqual([added.status, added.json], [200, { added: true, number: 1, ready: false }]);
   const [listed] = (await readRunnerClients(s.home)).clients;
   assert.deepEqual([listed.label, listed.journal], [LABEL, { corpus_id: null, consent: null, tab_consent: null }]);
   assert.ok(JSON.parse(await fs.readFile(path.join(s.home, "credentials.json"), "utf8")).case_keys[listed.case_id], "the keys are there");
   const view = await people(s.base);
   assert.deepEqual([view.status, view.cacheControl, view.json.people.slice(1)], [200, "no-store",
-    [{ caseId: listed.case_id, kind: "client", number: 1, label: LABEL, ready: false, journal: { consent: "none", words: null, tabConsent: "none" } }]]);
+    [{ caseId: listed.case_id, kind: "client", number: 1, label: LABEL, ready: false, revision: consentRevision(listed), journal: { consent: "none", words: null, tabConsent: "none" } }]]);
   assert.deepEqual(view.json.words, { journal: { version: 2, text: JOURNAL_CONSENT_WORDS }, tab: { text: TAB_CONSENT_WORDS } });
   const clients = await (await fetch(`${s.base}/v1/runner/clients`, { headers: { origin: s.base } })).json();
   assert.deepEqual([clients.clientsAwaitingRestart, clients.cases.map((entry) => entry.kind)], [1, ["own"]], "the conversations wait for the restart");
   // A consent may be recorded for them before the restart: it holds from the next start.
-  assert.equal((await post(s.base, "/v1/runner/consent", { caseId: listed.case_id, action: "confirm", parts: ["journal", "tab"], words: 2 })).status, 200);
+  assert.equal((await post(s.base, "/v1/runner/consent", { caseId: listed.case_id, action: "confirm", parts: ["journal", "tab"], words: 2, revision: await revisionOf(s.base, listed.case_id) })).status, 200);
   const refusals = [
     [await post(s.base, "/v1/runner/people/add", { label: LABEL.toUpperCase() }), 409, "RUNNER_CLIENT_LABEL_TAKEN"],
     [await post(s.base, "/v1/runner/people/add", { label: `${PLANTED}\nsecond line` }), 400, "VALIDATION_ERROR"],
@@ -215,9 +235,14 @@ test("Add a client from the page shares the command's function: the keys first, 
   ];
   for (const [answer, status, code] of refusals) {
     assert.deepEqual([answer.status, answer.json.code], [status, code]);
-    assert.equal(JSON.stringify(answer.json).includes(PLANTED), false, "an error never repeats the label");
+    assert.equal(JSON.stringify(answer.json).toLowerCase().includes(PLANTED.toLowerCase()), false, "an error never repeats the label, in any case");
   }
-  assert.equal(JSON.stringify(added.json).includes(PLANTED), false);
+  assert.equal(JSON.stringify(added.json).toLowerCase().includes(PLANTED.toLowerCase()), false);
+  // A write of the list that fails is told in fixed words with its code: never a path, and never as certainly not written.
+  fsPromises.rename = async (from, to) => { if (path.basename(to) === "clients.json") throw Object.assign(new Error(`synthetic failure at ${s.home}`), { code: "EIO" }); return rename.call(fsPromises, from, to); };
+  let failed;
+  try { failed = await post(s.base, "/v1/runner/people/add", { label: "Synthetic client three" }); } finally { fsPromises.rename = rename; }
+  assert.deepEqual([failed.status, failed.json.code, failed.json.error], [500, "RUNNER_CLIENTS_UNWRITTEN", "The client list may not have been written (EIO): look at the list again."]);
   await s.trial.flushLogs();
   for (const name of await fs.readdir(s.home)) {
     if (name === "clients.json" || !(await fs.stat(path.join(s.home, name))).isFile()) continue;
@@ -226,18 +251,23 @@ test("Add a client from the page shares the command's function: the keys first, 
 });
 
 // A request as given, Host and all, which fetch won't send: the status alone.
+// `text` as chunks is sent with no length, chunk by chunk.
 function rawPost(base, route, headers, text) {
   const { hostname, port } = new URL(base);
+  const chunked = Array.isArray(text);
   return new Promise((resolve, reject) => {
-    const request = http.request({ hostname, port, path: route, method: "POST", headers: { "content-length": Buffer.byteLength(text), ...headers } }, (response) => { response.resume(); resolve(response.statusCode); });
-    request.once("error", reject);
-    request.end(text);
+    const request = http.request({ hostname, port, path: route, method: "POST", headers: { ...(chunked ? {} : { "content-length": Buffer.byteLength(text) }), ...headers } }, (response) => { response.resume(); resolve(response.statusCode); });
+    request.once("error", (error) => { if (chunked && ["ECONNRESET", "EPIPE"].includes(error?.code)) return; reject(error); });
+    request.setTimeout(5000, () => { request.destroy(); resolve(null); });
+    if (!chunked) { request.end(text); return; }
+    for (const chunk of text) request.write(chunk);
+    request.end();
   });
 }
 
 test("the people and consent routes answer only the owner's page on this machine, as a JSON object of at most 1 KiB naming a case on the trial's list; with the trial off they don't exist", async (t) => {
   const s = await trialServer(t, { labels: [LABEL] });
-  const consent = JSON.stringify({ caseId: s.clientCases[0], action: "confirm", parts: ["journal"], words: 2 });
+  const consent = JSON.stringify({ caseId: s.clientCases[0], action: "confirm", parts: ["journal"], words: 2, revision: "0123456789abcdef" });
   const label = JSON.stringify({ label: "Synthetic client two" });
   const json = { "content-type": "application/json" };
   const host = new URL(s.base).host;
@@ -253,7 +283,9 @@ test("the people and consent routes answer only the owner's page on this machine
       [{ ...json, origin: s.base }, "{", 400, "not JSON"]
     ];
     for (const [headers, text, status, what] of refusals) assert.equal(await rawPost(s.base, route, { host, ...headers }, text), status, `${route}: ${what}`);
+    assert.equal(await rawPost(s.base, route, { host, ...json, origin: s.base, "transfer-encoding": "chunked" }, ["{\"padding\":\"", "x".repeat(700), "x".repeat(700), "\"}"]), 413, `${route}: a streamed body over the limit`);
   }
+  assert.equal((await post(s.base, "/v1/runner/consent", { ...JSON.parse(consent), revision: undefined })).status, 400, "a confirmation names the consent it was asked on");
   assert.equal((await post(s.base, "/v1/runner/consent", { ...JSON.parse(consent), caseId: CASE_B })).json.code, "RUNNER_CASE_UNKNOWN", "a case that isn't on the trial's list");
   assert.equal((await post(s.base, "/v1/runner/consent", { ...JSON.parse(consent), caseId: "../synthetic" })).status, 400);
   const list = await readRunnerClients(s.home);
@@ -307,44 +339,84 @@ test("a journal step takes the case's queue first and the folder's lock inside i
   const quick = createRunnerJournalSteps({ trialDir: s.home, inCaseQueue: (id, operation) => operation(), lockWaitMs: 40 });
   const held = await acquireTrialFolderLock(s.home, { waitMs: 0 });
   t.after(() => held.release());
-  await assert.rejects(quick.recordConsent({ caseId, action: "confirm", parts: ["journal"], words: 2 }), (error) => error.code === "RUNNER_FOLDER_BUSY" && error.message === JOURNAL_STEP_WORDS.RUNNER_FOLDER_BUSY);
+  await assert.rejects(quick.recordConsent({ caseId, action: "confirm", parts: ["journal"], words: 2, revision: "0123456789abcdef" }), (error) => error.code === "RUNNER_FOLDER_BUSY" && error.message === JOURNAL_STEP_WORDS.RUNNER_FOLDER_BUSY);
 });
 
-test("Delete wins: no journal work of a case is admitted while it is deleted; work admitted before stops at its next check; the work running is stopped and waited for before Delete takes the case's queue; afterwards the case starts afresh", async (t) => {
+test("Delete wins: no journal work of a case is admitted while it is deleted; work admitted before stops at its next check; the work running is stopped and waited for before Delete takes the case's queue; the mark goes however the deletion ends", async (t) => {
   const s = await trialServer(t, { labels: [LABEL] });
   const steps = s.trial.journalSteps;
   const caseId = s.clientCases[0];
+  const trace = s.order;
   const before = steps.admit(caseId);
   const other = steps.admit(s.ownCase);
   let stopped;
   const stopSignal = new Promise((resolve) => { stopped = resolve; });
-  const events = [];
-  // A piece of work that, once stopped, still tries its last step in the case's queue, as a copy's does: Delete must not hold the queue.
+  let finish;
+  const held = new Promise((resolve) => { finish = resolve; });
+  // A piece of work that, once stopped, still tries its last step in the case's queue, as a copy's does, and then stays open: Delete must
+  // neither hold the queue meanwhile nor go on before it ends.
   const work = steps.track(before, async () => {
     await stopSignal;
-    events.push("stopped");
-    await assert.rejects(steps.inQueue(before, async () => { events.push("last step ran"); }), { code: "RUNNER_JOURNAL_CASE_DELETED" });
-    events.push("settled");
+    trace.push("stopped");
+    await assert.rejects(steps.inQueue(before, async () => { trace.push("last step ran"); }), { code: "RUNNER_JOURNAL_CASE_DELETED" });
+    trace.push("last step refused");
+    await held;
+    trace.push("settled");
   }, { stop: () => stopped() });
   const deletion = s.trial.controller.deleteCase({ caseId, authContext: s.authFor(caseId) });
-  await new Promise((resolve) => { setImmediate(resolve); });
   assert.throws(() => steps.admit(caseId), (error) => error.code === "RUNNER_JOURNAL_CASE_DELETING" && error.message === JOURNAL_STEP_WORDS.RUNNER_JOURNAL_CASE_DELETING);
+  for (let tries = 0; !trace.includes("last step refused") && tries < 200; tries += 1) await new Promise((resolve) => { setTimeout(resolve, 5); });
+  await new Promise((resolve) => { setTimeout(resolve, 50); });
+  assert.deepEqual(trace, ["stopped", "last step refused"], "Delete waits for the work, and the vault isn't touched yet");
+  finish();
   await work;
   await deletion;
-  assert.deepEqual([...events, ...s.order], ["stopped", "settled", "vault"], "the work ended before the vault was touched");
+  assert.deepEqual(trace, ["stopped", "last step refused", "settled", "vault"]);
   assert.throws(() => steps.check(before), { code: "RUNNER_JOURNAL_CASE_DELETED" });
-  await assert.rejects(steps.inQueue(before, async () => { events.push("late"); }, { lock: true }), { code: "RUNNER_JOURNAL_CASE_DELETED" });
-  assert.equal(events.includes("late"), false);
+  await assert.rejects(steps.inQueue(before, async () => { trace.push("late"); }, { lock: true }), { code: "RUNNER_JOURNAL_CASE_DELETED" });
+  assert.equal(trace.includes("late"), false);
   assert.doesNotThrow(() => steps.check(other), "another case's work goes on");
-  const after = steps.admit(caseId);
-  assert.equal(await steps.inQueue(after, async () => "ran", { lock: true }), "ran", "the case starts afresh once the deletion is over");
-  // A deletion that fails lets the mark go all the same.
-  const failing = createRunnerJournalSteps({ trialDir: s.home, inCaseQueue: (id, operation) => operation() });
-  const release = await failing.stopForDeletion(CASE_A);
-  assert.equal(failing.deleting(CASE_A), true);
-  release();
-  release();
-  assert.equal(failing.deleting(CASE_A), false);
+  assert.equal(await steps.inQueue(steps.admit(caseId), async () => "ran", { lock: true }), "ran", "the case starts afresh once the deletion is over");
+  // A Delete the vault refuses lets the mark go all the same, and work admitted before it still stops.
+  const beforeFailure = steps.admit(caseId);
+  s.refuseNextDelete();
+  await assert.rejects(s.trial.controller.deleteCase({ caseId, authContext: s.authFor(caseId) }), { code: "PRIVATE_CASE_ACCESS_DENIED" });
+  assert.equal(trace.at(-1), "vault refused");
+  assert.equal(steps.deleting(caseId), false);
+  assert.doesNotThrow(() => steps.admit(caseId));
+  assert.throws(() => steps.check(beforeFailure), { code: "RUNNER_JOURNAL_CASE_DELETED" });
+});
+
+test("a confirmation names the consent it was asked on: one asked on a view that changed since is refused, from the page and from the command, and a withdrawal always holds", async (t) => {
+  const s = await trialServer(t, { labels: [LABEL] });
+  const caseId = s.clientCases[0];
+  const shown = await revisionOf(s.base, caseId);
+  // The command withdraws nothing yet; it confirms, then withdraws, while the page still shows the first view.
+  assert.deepEqual(await setJournalConsent({ home: s.home, number: 1, action: "confirm" }), { changed: true, state: "confirmed" });
+  assert.deepEqual(await setJournalConsent({ home: s.home, number: 1, action: "withdraw" }), { changed: true, state: "withdrawn" });
+  const stale = await post(s.base, "/v1/runner/consent", { caseId, action: "confirm", parts: ["journal"], words: 2, revision: shown });
+  assert.deepEqual([stale.status, stale.json.code], [409, "RUNNER_CONSENT_CHANGED"]);
+  assert.equal((await readRunnerClients(s.home)).clients[0].journal.consent.withdrawn_at === null, false, "the withdrawal stands");
+  const fresh = await post(s.base, "/v1/runner/consent", { caseId, action: "confirm", parts: ["journal"], words: 2, revision: await revisionOf(s.base, caseId) });
+  assert.deepEqual([fresh.status, fresh.json.changed], [200, true]);
+  const withdrawn = await post(s.base, "/v1/runner/consent", { caseId, action: "withdraw", parts: ["journal"], revision: shown });
+  assert.deepEqual([withdrawn.status, withdrawn.json.changed], [200, true], "a withdrawal holds whatever view it came from");
+  // The command shows version 2's words before it asks, and a withdrawal made while it asks refuses its confirmation.
+  const lines = [];
+  const say = (line) => { lines.push(["say", line]); };
+  await setJournalConsent({ home: s.home, number: 1, action: "confirm" });
+  await runListCommand({ addClient: false, journalConsent: "withdraw" }, s.home, { say, ask: async (question) => { lines.push(["ask", question]); return "1"; } });
+  lines.length = 0;
+  await runListCommand({ addClient: false, journalConsent: "confirm" }, s.home, { say, ask: async (question) => { lines.push(["ask", question]); return "1"; } });
+  const words = lines.findIndex(([kind, line]) => kind === "say" && line.includes(`"${JOURNAL_CONSENT_WORDS}"`));
+  const asked = lines.findIndex(([kind, line]) => kind === "ask" && line === "Number of the client who agreed to these words: ");
+  assert.ok(words >= 0 && asked > words, "the words, then the question");
+  assert.equal(lines.at(-1)[1], "Recorded: client 1's journal consent, in these words. It holds at once if it already stood when the trial last started, otherwise from its next start; their journal is used only once it has a copy here that passed its cold test.");
+  await assert.rejects(runListCommand({ addClient: false, journalConsent: "confirm" }, s.home, { say: () => {}, ask: async () => {
+    await setJournalConsent({ home: s.home, number: 1, action: "withdraw" });
+    return "1";
+  } }), /This consent changed since it was shown/u);
+  assert.equal((await readRunnerClients(s.home)).clients[0].journal.consent.withdrawn_at === null, false);
 });
 
 // The People tab in the page's own markup, with the browser's fetch and confirm stood in for: `answers[url]` are the answers in turn.
@@ -364,7 +436,7 @@ async function peoplePage(t, { view, launcher = "on", answers = {} }) {
     runnerTrial: { launcher },
     fetch: async (url, init = {}) => {
       fetched.push({ url, method: init.method ?? "GET", body: init.body ?? null });
-      if (url === "/v1/runner/people") return { ok: true, status: 200, json: async () => structuredClone(page.view) };
+      if (url === "/v1/runner/people") return page.view ? { ok: true, status: 200, json: async () => structuredClone(page.view) } : { ok: false, status: 503, json: async () => ({}) };
       const queue = queues[url] ?? [];
       const next = queue.length > 1 ? queue.shift() : queue[0] ?? { status: 200, body: {} };
       return { ok: next.status < 400, status: next.status, json: async () => structuredClone(next.body) };
@@ -385,12 +457,14 @@ async function peoplePage(t, { view, launcher = "on", answers = {} }) {
 
 const wordsView = { journal: { version: 2, text: JOURNAL_CONSENT_WORDS }, tab: { text: TAB_CONSENT_WORDS } };
 const viewOf = (entries) => ({ people: entries, words: wordsView });
-const ownEntry = (consent = "none") => ({ caseId: OWN, kind: "own", number: null, label: null, ready: true, journal: { consent, words: consent === "none" ? null : 2 } });
-const clientEntry = (journal, { ready = true, label = LABEL, caseId = CASE_A, number = 1 } = {}) => ({ caseId, kind: "client", number, label, ready, journal: { consent: "none", words: null, tabConsent: "none", ...journal } });
+const REVISION = "0123456789abcdef";
+const ownEntry = (consent = "none") => ({ caseId: OWN, kind: "own", number: null, label: null, ready: true, revision: REVISION, journal: { consent, words: consent === "none" ? null : 2 } });
+const clientEntry = (journal, { ready = true, label = LABEL, caseId = CASE_A, number = 1 } = {}) => ({ caseId, kind: "client", number, label, ready, revision: REVISION, journal: { consent: "none", words: null, tabConsent: "none", ...journal } });
 
 test("the People tab lists You and each client by number and label as text, says who is ready only after a restart, and offers each consent in the words the server gives", async (t) => {
   const markup = `<b>${PLANTED}</b>`;
-  const p = await peoplePage(t, { view: viewOf([ownEntry(), clientEntry({}, { ready: false, label: markup }), clientEntry({ consent: "confirmed", words: 1 }, { caseId: CASE_B, number: 2 })]) });
+  const p = await peoplePage(t, { view: viewOf([ownEntry(), clientEntry({}, { ready: false, label: markup }), clientEntry({ consent: "confirmed", words: 1 }, { caseId: CASE_B, number: 2 })]),
+    answers: { "/v1/runner/consent": [{ status: 200, body: { caseId: CASE_B, changed: true } }] } });
   assert.deepEqual(p.rows(), [
     ["You", "Your journal: no consent recorded.", "Use my journal"],
     [`1. ${markup}`, "Ready after a restart. Press Restart at the top.", "Journal: no consent recorded.", "Journal tab: not allowed.", "Record consent"],
@@ -409,7 +483,8 @@ test("the People tab lists You and each client by number and label as text, says
   await p.settle();
   assert.equal(p.asked.at(-1), `Record that 2. ${LABEL} agreed to:\n\n"${JOURNAL_CONSENT_WORDS}"\n\n"${TAB_CONSENT_WORDS}"\n\nThe time is recorded with it.`);
   const sent = p.fetched.find((entry) => entry.url === "/v1/runner/consent");
-  assert.deepEqual(JSON.parse(sent.body), { caseId: CASE_B, action: "confirm", parts: ["journal", "tab"], words: 2 });
+  assert.deepEqual(JSON.parse(sent.body), { caseId: CASE_B, action: "confirm", parts: ["journal", "tab"], words: 2, revision: REVISION });
+  assert.equal(p.document.querySelector("#runner-people-status").textContent, "Recorded, with the time. It holds at once if it already stood when the runner last started, otherwise from its next start; a journal is used only once it has a copy that passed its cold test.");
   assert.equal(p.changes(), 1);
   // Record consent for a client with none: the tab alone is refused on the page too.
   p.button(1, "Record consent").click();
@@ -446,11 +521,46 @@ test("each consent is withdrawn from the same place after the page asks once; a 
   assert.deepEqual(p.fetched.filter((entry) => entry.url === "/v1/runner/consent").map((entry) => JSON.parse(entry.body)), [
     { caseId: CASE_B, action: "withdraw", parts: ["tab"] }, { caseId: CASE_B, action: "withdraw", parts: ["journal"] }
   ]);
+  assert.equal(p.document.querySelector("#runner-people-status").textContent, "Withdrawn, with the time: it holds at once.");
   p.page.confirm = false;
   p.button(0, "Withdraw my journal consent").click();
   await p.settle();
   assert.equal(p.asked.at(-1), "Withdraw your journal consent? From now on nothing uses your journal.");
   assert.equal(p.fetched.filter((entry) => entry.url === "/v1/runner/consent").length, 2, "nothing is sent without the yes");
+});
+
+test("a change whose outcome the page can't tell is told as such and the list read again; a stale confirmation closes its form; a later good read takes away the unreadable line", async (t) => {
+  const p = await peoplePage(t, {
+    view: viewOf([ownEntry(), clientEntry({})]),
+    answers: { "/v1/runner/consent": [
+      { status: 500, body: { error: "The client list may not have been written (EIO): look at the list again.", code: "RUNNER_CLIENTS_UNWRITTEN" } },
+      { status: 409, body: { error: "This consent changed since it was shown: look at it again before recording.", code: "RUNNER_CONSENT_CHANGED" } },
+      { status: 200, body: { caseId: CASE_A, changed: false } }
+    ] }
+  });
+  const reads = () => p.fetched.filter((entry) => entry.url === "/v1/runner/people").length;
+  const record = async () => {
+    p.button(1, "Record consent").click();
+    for (const tick of p.document.querySelectorAll("#runner-consent-questions input")) tick.checked = true;
+    p.document.querySelector("#runner-consent-record").click();
+    await p.settle();
+  };
+  const first = reads();
+  await record();
+  assert.equal(p.document.querySelector("#runner-people-status").textContent, "The client list may not have been written (EIO): look at the list again. The list shows what is recorded now.");
+  assert.equal(reads(), first + 1);
+  await record();
+  assert.equal(p.document.querySelector("#runner-people-status").textContent, "Not recorded: This consent changed since it was shown: look at it again before recording.");
+  assert.equal(p.document.querySelector("#runner-consent-form").hidden, true);
+  await record();
+  assert.equal(p.document.querySelector("#runner-people-status").textContent, "Nothing changed: it was recorded already.");
+  const view = p.page.view;
+  p.page.view = null;
+  await vm.runInContext("loadRunnerPeople()", p.context);
+  assert.equal(p.document.querySelector("#runner-people-status").textContent, "The people can't be read right now.");
+  p.page.view = view;
+  await vm.runInContext("loadRunnerPeople()", p.context);
+  assert.equal(p.document.querySelector("#runner-people-status").hidden, true);
 });
 
 test("Add a client sends the label in a JSON body alone and clears the field; the page keeps no label in its storage or its address", async (t) => {

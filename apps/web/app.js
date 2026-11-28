@@ -678,9 +678,12 @@ const RUNNER_PEOPLE_WORDS = Object.freeze({
   nothingTicked: "Tick what was agreed to, or press Cancel.",
   tabNeedsJournal: "The Journal-tab consent can be recorded only with the journal consent.",
   tabCountsAgain: "Their Journal-tab consent recorded earlier counts again once this is recorded; withdraw it here if they no longer agree to it.",
-  recorded: "Recorded, with the time. Replies use a journal only from the runner's next start, once it has a copy that passed its cold test.",
+  recorded: "Recorded, with the time. It holds at once if it already stood when the runner last started, otherwise from its next start; a journal is used only once it has a copy that passed its cold test.",
   recordedTab: "Recorded, with the time.",
   withdrawn: "Withdrawn, with the time: it holds at once.",
+  alreadyRecorded: "Nothing changed: it was recorded already.",
+  alreadyWithdrawn: "Nothing changed: it was withdrawn already.",
+  lookAgain: "The list shows what is recorded now.",
   typeLabel: "Type the label first."
 });
 
@@ -693,10 +696,12 @@ function runnerPeopleFrom(view) {
     if (!entry || typeof entry.caseId !== "string" || !RUNNER_PEOPLE_CASE_ID.test(entry.caseId) || people.some((person) => person.caseId === entry.caseId)) continue;
     const consent = RUNNER_CONSENT_STATES.includes(entry.journal?.consent) ? entry.journal.consent : "none";
     const words = [1, 2].includes(entry.journal?.words) ? entry.journal.words : null;
-    if (entry.kind === "own") people.push(Object.freeze({ caseId: entry.caseId, kind: "own", number: null, label: null, ready: true, consent, words, tabConsent: "none" }));
+    // The consent revision the page shows, which a confirmation names (design, 5.1).
+    const revision = typeof entry.revision === "string" && /^[0-9a-f]{16}$/u.test(entry.revision) ? entry.revision : null;
+    if (entry.kind === "own") people.push(Object.freeze({ caseId: entry.caseId, kind: "own", number: null, label: null, ready: true, consent, words, tabConsent: "none", revision }));
     else if (entry.kind === "client" && Number.isSafeInteger(entry.number) && entry.number > 0 && typeof entry.label === "string" && entry.label.trim()) {
       const tabConsent = RUNNER_CONSENT_STATES.includes(entry.journal?.tabConsent) ? entry.journal.tabConsent : "none";
-      people.push(Object.freeze({ caseId: entry.caseId, kind: "client", number: entry.number, label: entry.label.trim(), ready: entry.ready === true, consent, words, tabConsent }));
+      people.push(Object.freeze({ caseId: entry.caseId, kind: "client", number: entry.number, label: entry.label.trim(), ready: entry.ready === true, consent, words, tabConsent, revision }));
     }
   }
   return Object.freeze({ people, journalWords: view.words.journal.text, journalWordsVersion: view.words.journal.version, tabWords: view.words.tab.text });
@@ -812,6 +817,7 @@ async function loadRunnerPeople() {
   if (request !== runnerPeople.request) return;
   runnerPeople.view = view;
   if (!view) setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.unreadable);
+  else if ($("#runner-people-status").textContent === RUNNER_PEOPLE_WORDS.unreadable) setRunnerPeopleStatus("");
   if (runnerPeople.form && !view?.people.some((person) => person.caseId === runnerPeople.form.person.caseId)) closeRunnerConsentForm();
   renderRunnerPeople();
 }
@@ -859,7 +865,19 @@ async function sendRunnerPeopleChange(route, body) {
     payload = await response.json().catch(() => ({}));
   } catch { /* the page can't reach the runner */ }
   if (response?.ok) return { ok: true, payload };
-  return { ok: false, words: typeof payload?.error === "string" && payload.error ? payload.error : RUNNER_PEOPLE_WORDS.unreachable };
+  return { ok: false, code: typeof payload?.code === "string" ? payload.code : null, words: typeof payload?.error === "string" && payload.error ? payload.error : RUNNER_PEOPLE_WORDS.unreachable };
+}
+
+// A change the server refused before it wrote anything is told with "Not …"; one whose outcome can't be told (the list may or may not have
+// been written, the lock was left after it, or the runner couldn't be reached) is told as it is, and the list is read again to show what
+// is recorded. Either way the people are read again.
+const RUNNER_PEOPLE_UNCERTAIN = Object.freeze(["RUNNER_CLIENTS_UNWRITTEN", "RUNNER_FOLDER_LOCK_LEFT", "UNEXPECTED_ERROR", null]);
+async function tellRunnerPeopleFailure(refusal, sent) {
+  setRunnerPeopleStatus(RUNNER_PEOPLE_UNCERTAIN.includes(sent.code) ? `${sent.words} ${RUNNER_PEOPLE_WORDS.lookAgain}` : `${refusal}: ${sent.words}`);
+  if (sent.code === "RUNNER_CONSENT_CHANGED") closeRunnerConsentForm();
+  const status = $("#runner-people-status").textContent;
+  await loadRunnerPeople();
+  if (runnerPeople.view) setRunnerPeopleStatus(status);
 }
 
 async function recordRunnerConsent() {
@@ -870,10 +888,10 @@ async function recordRunnerConsent() {
   if (!parts.length) { setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.nothingTicked); return; }
   if (parts.includes("tab") && !parts.includes("journal") && form.person.consent !== "confirmed") { setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.tabNeedsJournal); return; }
   if (!confirm(runnerConsentConfirmText(form.person, parts, view))) return;
-  const sent = await sendRunnerPeopleChange("/v1/runner/consent", { caseId: form.person.caseId, action: "confirm", parts, words: view.journalWordsVersion });
-  if (!sent.ok) { setRunnerPeopleStatus(`Not recorded: ${sent.words}`); return; }
+  const sent = await sendRunnerPeopleChange("/v1/runner/consent", { caseId: form.person.caseId, action: "confirm", parts, words: view.journalWordsVersion, revision: form.person.revision });
+  if (!sent.ok) { await tellRunnerPeopleFailure("Not recorded", sent); return; }
   closeRunnerConsentForm();
-  setRunnerPeopleStatus(parts.includes("journal") ? RUNNER_PEOPLE_WORDS.recorded : RUNNER_PEOPLE_WORDS.recordedTab);
+  setRunnerPeopleStatus(sent.payload?.changed === false ? RUNNER_PEOPLE_WORDS.alreadyRecorded : parts.includes("journal") ? RUNNER_PEOPLE_WORDS.recorded : RUNNER_PEOPLE_WORDS.recordedTab);
   await loadRunnerPeople();
   await runnerPeople.afterChange();
 }
@@ -881,9 +899,9 @@ async function recordRunnerConsent() {
 async function withdrawRunnerConsent(person, part) {
   if (!confirm(runnerWithdrawConfirmText(person, part))) return;
   const sent = await sendRunnerPeopleChange("/v1/runner/consent", { caseId: person.caseId, action: "withdraw", parts: [part] });
-  if (!sent.ok) { setRunnerPeopleStatus(`Not withdrawn: ${sent.words}`); return; }
+  if (!sent.ok) { await tellRunnerPeopleFailure("Not withdrawn", sent); return; }
   if (runnerPeople.form?.person.caseId === person.caseId) closeRunnerConsentForm();
-  setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.withdrawn);
+  setRunnerPeopleStatus(sent.payload?.changed === false ? RUNNER_PEOPLE_WORDS.alreadyWithdrawn : RUNNER_PEOPLE_WORDS.withdrawn);
   await loadRunnerPeople();
   await runnerPeople.afterChange();
 }
@@ -892,7 +910,7 @@ async function addRunnerClient() {
   const field = $("#runner-add-client-label");
   if (!field.value.trim()) { setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.typeLabel); return; }
   const sent = await sendRunnerPeopleChange("/v1/runner/people/add", { label: field.value });
-  if (!sent.ok) { setRunnerPeopleStatus(`Not added: ${sent.words}`); return; }
+  if (!sent.ok) { await tellRunnerPeopleFailure("Not added", sent); return; }
   field.value = "";
   const number = Number.isSafeInteger(sent.payload?.number) ? sent.payload.number : null;
   setRunnerPeopleStatus(`Added${number ? ` client ${number}` : ""}. ${RUNNER_PEOPLE_WORDS.readyAfterRestart} ${runnerTrial.launcher === "on" ? "Press Restart at the top." : "Start the runner again."}`);

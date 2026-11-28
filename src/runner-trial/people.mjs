@@ -2,8 +2,10 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { randomBytes, randomUUID } from "node:crypto";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
+import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import {
   JOURNAL_CONSENT_WORDS_VERSION,
+  consentRevision,
   MAX_RUNNER_CLIENTS,
   journalConsentCurrent,
   readRunnerClients,
@@ -23,6 +25,9 @@ export const RUNNER_TRIAL_PRINCIPAL = "runner-trial-local-owner";
 export const CREDENTIALS_FILE = "credentials.json";
 
 const fail = (code, message) => new RuntimeError(message, { code });
+// A write of the list that failed: whether it landed can't be told (the rename may have, and its folder's sync not), so the words say to
+// look again, with the failure's code and never its message (which can name a path).
+const unwritten = (error) => fail("RUNNER_CLIENTS_UNWRITTEN", `The client list may not have been written (${/^[A-Z][A-Z0-9_]{1,40}$/u.test(error?.code ?? "") ? error.code : "failed"}): look at the list again.`);
 
 export const newCaseKeys = () => ({ routine_kek_base64: randomBytes(32).toString("base64"), recovery_secret_base64: randomBytes(32).toString("base64") });
 export const validCaseKeys = (keys) => Boolean(keys) && typeof keys === "object" && typeof keys.routine_kek_base64 === "string" && typeof keys.recovery_secret_base64 === "string";
@@ -50,16 +55,21 @@ export async function writePrivateTrialFile(file, text) {
 
 // The trial's credentials as the start script makes them (docs/PRIVATE-CASE-CONTINUITY.md): the owner's own case's grant first, every
 // case's keys made once and never changed. Null when the file isn't there; a file the script didn't make is refused and left as it is.
+// The file is opened once, without following a link or waiting on a pipe, and checked and read through that one handle.
 export async function readTrialCredentials(file, vault) {
-  let info;
-  try { info = await fsp.lstat(file); } catch (error) {
+  let text;
+  try {
+    text = await withOpenedRegularFile(file, async (handle, info) => {
+      if ((info.mode & 0o077) !== 0) throw fail("RUNNER_CREDENTIALS_INVALID", `${file} can be read by others (it must be mode 0600); it was left as it is.`);
+      return handle.readFile("utf8");
+    });
+  } catch (error) {
     if (error?.code === "ENOENT") return null;
+    if (["ELOOP", "ENXIO", "ERR_NOT_REGULAR_FILE"].includes(error?.code)) throw fail("RUNNER_CREDENTIALS_INVALID", `${file} must be a file, not a link or a folder.`);
     throw error;
   }
-  if (!info.isFile()) throw fail("RUNNER_CREDENTIALS_INVALID", `${file} must be a file, not a link or a folder.`);
-  if ((info.mode & 0o077) !== 0) throw fail("RUNNER_CREDENTIALS_INVALID", `${file} can be read by others (it must be mode 0600); it was left as it is.`);
   let value;
-  try { value = JSON.parse(await fsp.readFile(file, "utf8")); } catch { throw fail("RUNNER_CREDENTIALS_INVALID", `${file} isn't valid JSON; it was left as it is.`); }
+  try { value = JSON.parse(text); } catch { throw fail("RUNNER_CREDENTIALS_INVALID", `${file} isn't valid JSON; it was left as it is.`); }
   const grant = Array.isArray(value?.grants) && value.grants.length >= 1 ? value.grants[0] : null;
   const caseId = Array.isArray(grant?.case_ids) && grant.case_ids.length === 1 ? grant.case_ids[0] : null;
   const keys = typeof caseId === "string" && value?.case_keys && typeof value.case_keys === "object" && !Array.isArray(value.case_keys) ? value.case_keys[caseId] : null;
@@ -92,7 +102,7 @@ export async function addRunnerClientLocked({ trialDir, label, now = () => new D
   await writePrivateTrialFile(credentialsPath, `${JSON.stringify(credentials, null, 2)}\n`);
   const added = { case_id: caseId, label: checked, added_at: now().toISOString(), journal: { corpus_id: null, consent: null, tab_consent: null } };
   try { await writeRunnerClients(trialDir, { ...list, clients: [...list.clients, added] }); }
-  catch (error) { throw fail("RUNNER_CLIENTS_UNWRITTEN", `The client list couldn't be written: ${error.message}`); }
+  catch (error) { throw unwritten(error); }
   return { number: list.clients.length + 1, caseId };
 }
 
@@ -104,9 +114,10 @@ export const CONSENT_ACTIONS = Object.freeze(["confirm", "withdraw"]);
 // journal consent names the version of the words that were read out, which must be the current one: it records a new confirmation over a
 // standing one in version 1's words ("Ask again in the new words") and changes nothing over a standing one in version 2's. The tab consent
 // is recorded only while the journal consent stands (after this request's own part), and counts only while both do; a withdrawal of the
-// journal consent leaves the tab consent's record as it is. A withdrawal of what doesn't stand changes nothing. One write for the request,
-// with the time. Returns whether anything changed and the person's entry as recorded.
-export async function recordRunnerConsentLocked({ trialDir, ownCaseId = null, caseId, action, parts, words = null, now = () => new Date() }) {
+// journal consent leaves the tab consent's record as it is. A withdrawal of what doesn't stand changes nothing. A confirmation that names
+// the consent revision it was asked on (`revision`, the page's and the command's) is refused when the records changed since; a withdrawal
+// always holds. One write for the request, with the time. Returns whether anything changed and the person's entry as recorded.
+export async function recordRunnerConsentLocked({ trialDir, ownCaseId = null, caseId, action, parts, words = null, revision = null, now = () => new Date() }) {
   if (!CONSENT_ACTIONS.includes(action)) throw new ValidationError("A consent is confirmed or withdrawn.");
   if (!Array.isArray(parts) || parts.length < 1 || parts.length > 2 || parts.some((part) => !CONSENT_PARTS.includes(part)) || new Set(parts).size !== parts.length) {
     throw new ValidationError("A consent's parts are the journal and the Journal tab.");
@@ -115,6 +126,9 @@ export async function recordRunnerConsentLocked({ trialDir, ownCaseId = null, ca
   const found = runnerListEntry(list, caseId, { ownCaseId });
   if (!found) throw fail("RUNNER_CASE_UNKNOWN", "This case isn't one of the runner trial's cases.");
   if (found.kind === "own" && parts.includes("tab")) throw new ValidationError("Your own journal has no Journal-tab consent.");
+  if (action === "confirm" && revision !== null && revision !== consentRevision(found.entry)) {
+    throw fail("RUNNER_CONSENT_CHANGED", "This consent changed since it was shown: look at it again before recording.");
+  }
   if (action === "confirm" && parts.includes("journal") && words !== JOURNAL_CONSENT_WORDS_VERSION) {
     throw fail("RUNNER_CONSENT_WORDS_OUTDATED", "These aren't the consent's current words: reload the page and read them out again.");
   }
@@ -142,6 +156,6 @@ export async function recordRunnerConsentLocked({ trialDir, ownCaseId = null, ca
   if (found.kind === "own") list.own_journal = { case_id: caseId, ...journal };
   else found.entry.journal = journal;
   try { await writeRunnerClients(trialDir, list); }
-  catch (error) { throw fail("RUNNER_CLIENTS_UNWRITTEN", `The client list couldn't be written: ${error.message}`); }
+  catch (error) { throw unwritten(error); }
   return { changed, kind: found.kind, entry: { case_id: caseId, journal } };
 }

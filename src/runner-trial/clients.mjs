@@ -1,7 +1,7 @@
 import { constants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { COLD_QUESTION_AUTHORS, COLD_TEST_RULE } from "./cold-test-rule.mjs";
@@ -151,6 +151,15 @@ export function tabConsentState(client) {
   const consent = client?.journal?.tab_consent;
   if (!consent) return "none";
   return consent.withdrawn_at === null ? "confirmed" : "withdrawn";
+}
+
+// The consent revision (design, 5.1: when the two consents were recorded): an opaque digest of both records, which changes with every
+// confirmation or withdrawal. A confirmation from the page names the revision it showed, so one made on a stale view is refused.
+export function consentRevision(entry) {
+  const consent = entry?.journal?.consent ?? null;
+  const tab = entry?.journal?.tab_consent ?? null;
+  const parts = [consent?.confirmed_at ?? null, consent?.withdrawn_at ?? null, consent?.words ?? null, tab?.confirmed_at ?? null, tab?.withdrawn_at ?? null];
+  return createHash("sha256").update(JSON.stringify(parts), "utf8").digest("hex").slice(0, 16);
 }
 
 // The Journal-tab consent counts only while both it and the journal consent stand (design, 4.3).
@@ -417,11 +426,11 @@ export function runnerPeopleView({ ownCaseId, list, grantedCaseIds }) {
   const people = [];
   if (ownCaseId) {
     const own = runnerListEntry(list, ownCaseId, { ownCaseId })?.entry ?? null;
-    people.push({ caseId: ownCaseId, kind: "own", number: null, label: null, ready: true, journal: { consent: journalConsentState(own), words: journalConsentWords(own) } });
+    people.push({ caseId: ownCaseId, kind: "own", number: null, label: null, ready: true, revision: consentRevision(own), journal: { consent: journalConsentState(own), words: journalConsentWords(own) } });
   }
   for (const [index, client] of list.clients.entries()) {
     people.push({
-      caseId: client.case_id, kind: "client", number: index + 1, label: client.label, ready: granted.has(client.case_id),
+      caseId: client.case_id, kind: "client", number: index + 1, label: client.label, ready: granted.has(client.case_id), revision: consentRevision(client),
       journal: { consent: journalConsentState(client), words: journalConsentWords(client), tabConsent: tabConsentState(client) }
     });
   }
