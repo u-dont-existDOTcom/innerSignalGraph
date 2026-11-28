@@ -215,17 +215,18 @@ A client's journal can inform their replies only through the session-use journal
    ```
 
    The trial's sealed Codex worker (no tools, an empty folder, no session kept; on your ChatGPT plan, whatever `--provider` says) gets
-   passages of the copy sampled across it, under opaque names, each with the date its entry gives, and writes questions about them, their
-   exact evidence and planted wrong answers. For the questions the journal doesn't answer, the program chooses the subject from a fixed
-   list among those no passage names, and GPT gives a verb from the program's list and a short phrase ("When did I visit the planetarium
-   after the market?"). Passages about dying are sampled like any other. The program checks every candidate, and GPT checks each
-   answerable key on its evidence passage alone. Short of what a pass needs, or of 8 questions in other words, after one more batch of
-   each kind that is short, the tool stops with a code and its counts, and no test runs. At most 150 passages and 20 calls a run. A
-   packet still without an answer in its schema after two more asks (which is how a refusal by GPT would most likely come), or that a
-   worker says it refused, is dropped, and its passages are held back from the tool's later calls for that client, by the digests of
-   their words in `journal/<case id>/questions-held-back.json` (the design's sections 3.2 and 12 say what is matched, and what that
-   leaves). The questions and their key live in the command's memory for that run alone; the command prints the tool's numbers before
-   the test's. The questions' author is `openai`, so the tool doesn't run with `--provider codex`, whose judge is GPT too.
+   passages of the copy sampled across it, under opaque names, each with the date its entry gives, and writes questions about some of
+   them, with their exact evidence and planted wrong answers. For the questions the journal doesn't answer, the program chooses the
+   subject from a fixed list among those no passage names, and GPT gives a verb from the program's list and a short phrase holding a
+   word of a passage it was given ("When did I visit the planetarium after the market?"). Passages about dying are sampled like any
+   other. The program checks every candidate, and GPT checks each answerable key on its evidence passage alone. Short of what a pass
+   needs, or of 8 questions in other words, after at most one more batch of each kind that is short, the tool stops with a code and its
+   counts, and no test runs. At most 150 passages and 20 calls a run. A packet still without an answer in its schema after two more asks
+   (which is how a refusal by GPT would most likely come), or that a worker says it refused, is dropped, and its passages are held back
+   from the tool's later calls for that client, by the digests of their words in `journal/<case id>/questions-held-back.json` (the
+   design's sections 3.2 and 12 say what is matched, and what that leaves). The questions and their key live in the command's memory for
+   that run alone; the command prints the tool's numbers before the test's. The questions' author is `openai`, so the tool doesn't run
+   with `--provider codex`, whose judge is GPT too.
 
    Until a consent in its new words names GPT's questions (pull request 3 of that design), they run only on an invented journal: in a
    trial folder set apart for invented journals by a file named `invented-journals-only` in it (with no permission for group or others;

@@ -364,9 +364,9 @@ const coded = (code) => Object.assign(new Error("The questions tool's worker gav
 
 // The check of an unanswerable question's phrase (3.2), on the phrase as unanswerableBatch reads it (trimmed, each run of white space one
 // space): every character on the allowlist PHRASE (letters, combining marks and decimal digits; an apostrophe or a hyphen only between
-// two of those; single spaces), so that no punctuation can start or join a second question; at most eight space-separated words; and
-// none of the terms lexicalTerms reads in it a question word or a joining word, of either language. It checks characters and words, not
-// meaning: words alone can still read as a second question (design, section 12).
+// two of those; single spaces), so that a full stop, a dash, a colon or a bracket can't start a second question; at most eight
+// space-separated words; and none of the terms lexicalTerms reads in it a question word or a joining word, of either language. It checks
+// characters and words, not meaning: words alone, spaced or joined by hyphens, can still read as a second question (design, section 12).
 const QUESTION_WORDS = new Set(("what when where who whom whose why how which whether "
   + "quand où qui que quoi pourquoi comment quel quelle quels quelles lequel laquelle lesquels lesquelles combien").split(" "));
 const JOINING_WORDS = new Set("or and rather instead besides nor ou et plutôt sinon ni".split(" "));
@@ -520,9 +520,10 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     const names = spec.names(packet);
     const failures = { form: 0, passing: 0 };
     const watched = [...new Set([...ids, ...guarded])];
-    // Right before the packet leaves: the caller's check (`beforeSend`, or the job's inside `readHeldBack`), and the held-back list read
-    // again. A packet that holds or guards a held-back passage, or carries all the words of one, stops the tool before it is sent, and
-    // this ask isn't counted as made.
+    // Right before the packet leaves: `beforeSend`, when the caller gives it, and `readHeldBack`, when the caller gives it, which reads
+    // the held-back list again (the job's runs its consent check first, in the same hold of the lock). After that read, a packet that
+    // holds or guards a held-back passage, or carries all the words of one, stops the tool before it is sent, and this ask isn't counted
+    // as made.
     const guard = async () => {
       if (beforeSend) await beforeSend();
       if (!readHeldBack) return;
