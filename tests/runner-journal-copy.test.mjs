@@ -2056,9 +2056,9 @@ test("the client list, the cold-test receipt and its test's marker are each open
 
 // ---- GPT's questions (--gpt-questions) -------------------------------------------------------------------------------------------
 
-// An invented journal: the invented-journal sentinel on a line of its own (unless left out), then entries of things lent. A client's copy
-// of it, in a trial folder set apart for invented journals (unless not), and a cold test of it with GPT's questions, from a stand-in
-// writer, answered and judged by `workers`.
+// An invented journal: the invented-journal sentinel as its first passage (unless left out; `generatedJournal` makes each line a passage),
+// then entries of things lent. A client's copy of it, in a trial folder set apart for invented journals (unless not), and a cold test of
+// it with GPT's questions, from a stand-in writer, answered and judged by `workers`.
 const taskOf = (request) => JSON.parse(request.user).task;
 const inventedJournal = (count, sentinel) => generatedJournal([{ sourceId: "source:invented", representationId: "invented",
   lines: [...(sentinel ? [INVENTED_JOURNAL_SENTINEL] : []), ...Array.from({ length: count }, (_, place) => lentEntry(place))] }]);
@@ -2111,7 +2111,7 @@ test("--gpt-questions: refused before any call with codex, outside a trial folde
   await assert.rejects(gpt(plain.home), notSetApart);
   await fs.rm(launcherFile);
   // Set apart, but the copy doesn't hold the sentinel: refused before any call, from the publication the test reads.
-  await assert.rejects(gpt(plain.home), { message: /^This copy doesn't hold the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them\. Nothing was sent; /u });
+  await assert.rejects(gpt(plain.home), { message: /^This copy doesn't open with the invented-journal sentinel, its first passage the sentence alone, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them\. Nothing was sent; /u });
   assert.deepEqual([idle.sent.length, unasked.sent.length], [0, 0]);
   await absent(plain.receiptPath);
   // A questions file runs as before, in a folder set apart as in any other.

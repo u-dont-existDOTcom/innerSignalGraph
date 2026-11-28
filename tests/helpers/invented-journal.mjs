@@ -82,21 +82,24 @@ const GENERATIONS = Object.freeze({ "quote-index-v4": 4, "quote-index-v2": 2 });
  * - "none": passages only, no quote index.
  * `change(node)` may change a passage before the generation is stored (its lifecycle, or hold its words back); the word list is built
  * from the quotes as they were, so a list can name a passage that may no longer be used. `passageOf(text)` is the passage id of a quote.
+ * `unitOptions` are the quote index's unit sizes: by default a short paragraph is never joined to the next, so each is a passage; `{}`
+ * cuts the journal as the import does (its own sizes).
  */
-export async function persistInventedJournal({ corpusStore, caseId, corpusId, pages, index = "quote-index-v4", change = null, permittedUses = ["archive", "organize_search", "session_use"] }) {
+export async function persistInventedJournal({ corpusStore, caseId, corpusId, pages, index = "quote-index-v4", change = null, permittedUses = ["archive", "organize_search", "session_use"],
+  unitOptions = { minimumBytes: 0 } }) {
   const generation = `invented-${index}`;
   const sources = Object.fromEntries(pages.map((page) => [page.representation_id, page.text]));
   let graph, extraIndexes = {};
   if (GENERATIONS[index]) {
     const built = buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId: "original:invented", mediaType: "text/plain", representations: pages,
-      unitOptions: { minimumBytes: 0 }, version: GENERATIONS[index] });
+      unitOptions, version: GENERATIONS[index] });
     graph = built.graph;
     extraIndexes = { quote_meta: built.quoteMeta, quote_months: built.quoteMonths };
   } else {
     const nodes = [], edges = [];
     let order = 0;
     for (const page of pages) {
-      const units = splitQuoteUnits({ representationId: page.representation_id, text: page.text, minimumBytes: 0 }).map((unit) => ({ ...unit, source_order: order++ }));
+      const units = splitQuoteUnits({ representationId: page.representation_id, text: page.text, ...unitOptions }).map((unit) => ({ ...unit, source_order: order++ }));
       const part = adaptExtractionToGraph({ caseId, corpusId, generation,
         source: { id: `source:${sha256(page.representation_id).slice(0, 32)}`, representation_id: page.representation_id, original_object_id: "original:invented",
           media_type: "text/plain", byte_length: Buffer.byteLength(page.text), parse_status: "readable", page: page.page_number },

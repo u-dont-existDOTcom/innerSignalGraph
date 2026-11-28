@@ -4,14 +4,15 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { ProviderError } from "../src/core/errors.mjs";
+import { QUOTE_UNIT_DEFAULTS } from "../src/journal-import/quote-index.mjs";
 import { evidenceWordsShared } from "../src/journal-import/retrieval.mjs";
 import { createPrivateCaseAccessService, PRIVATE_JOURNAL_PURPOSES } from "../src/storage/private-case-access.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { QUESTIONS_HELD_BACK_FILE, addQuestionsHeldBack, clientJournalFolder, readQuestionsHeldBack } from "../src/runner-trial/clients.mjs";
 import { PLANTED_KINDS } from "../src/runner-trial/cold-test-rule.mjs";
-import { COLD_QUESTIONS_TOOL, INVENTED_JOURNAL_SENTINEL, QUESTION_SUBJECTS, QUESTION_VERBS, answerableForFile, eligibleSubjects, journalLanguage, passageDigest,
-  seededRandom, writeColdQuestions } from "../src/runner-trial/cold-questions.mjs";
-import { createGptQuestionsWriter } from "../src/runner-trial/cold-test-job.mjs";
+import { COLD_QUESTIONS_TOOL, INVENTED_JOURNAL_SENTINEL, QUESTION_SUBJECTS, QUESTION_VERBS, answerableForFile, eligibleSubjects, journalLanguage, openingPassageId,
+  passageDigest, seededRandom, writeColdQuestions } from "../src/runner-trial/cold-questions.mjs";
+import { createGptQuestionsWriter, runColdTestJob } from "../src/runner-trial/cold-test-job.mjs";
 import { resolveColdKey, validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
 import { openSessionUseReader } from "../src/runner-trial/journal-gate.mjs";
 import { PLANTED, questionWriter, riddleWord } from "./helpers/cold-workers.mjs";
@@ -161,14 +162,30 @@ test("a passage of fewer than four words may be its question's evidence whole; o
 test("a journal in French gets its questions in French: the verbs, the subjects' names and the shapes", async () => {
   const french = Array.from({ length: 60 }, (_, place) => `Ce printemps-là, j'ai prêté le ${LENT_THINGS[place]} à ma voisine, et il m'est revenu une semaine plus tard.`);
   assert.deepEqual([journalLanguage(french), journalLanguage(LONG)], ["fr", "en"]);
-  const writer = questionWriter();
+  // Phrases with an apostrophe, letters with accents, a hyphen inside a word: words, which pass.
+  let unanswerable = 0;
+  const phrases = [];
+  const writer = questionWriter({ reply: async (count, request, usual) => {
+    const value = await usual();
+    if (taskOf(request) === "unanswerable" && (unanswerable += 1) === 1) {
+      const word = (item) => item.phrase.split(" ").at(-1);
+      value.items[0].phrase = `après l'été du ${word(value.items[0])}`;
+      value.items[1].phrase = `avec le ${word(value.items[1])} d'à côté`;
+      value.items[2].phrase = `près du ${word(value.items[2])} de l’après-midi`;
+      phrases.push(...value.items.slice(0, 3).map(({ phrase }) => phrase));
+    }
+    return value;
+  } });
   const { questions, report } = await write(french, writer);
   assert.equal(report.language, "fr");
   for (const packet of writer.packets("unanswerable")) {
     assert.deepEqual(packet.verbs, [...QUESTION_VERBS.fr]);
     assert.ok(packet.subjects.every(({ words }) => QUESTION_SUBJECTS.some((entry) => entry.fr === words)));
   }
-  for (const { question } of questions.questions.filter(({ answerable }) => !answerable)) assert.match(question, /^(Quand ai-je|Ai-je déjà) visité .+ après le \p{L}+ \?$/u);
+  assert.equal(report.dropped.phrase_invalid, 0);
+  const unanswered = questions.questions.filter(({ answerable }) => !answerable).map(({ question }) => question);
+  for (const phrase of phrases) assert.ok(unanswered.some((question) => question.endsWith(` ${phrase} ?`)), phrase);
+  for (const question of unanswered.filter((entry) => !phrases.some((phrase) => entry.includes(phrase)))) assert.match(question, /^(Quand ai-je|Ai-je déjà) visité .+ après le \p{L}+ \?$/u);
 });
 
 // ---- What the program checks -----------------------------------------------------------------------------------------------------
@@ -207,7 +224,8 @@ test("each of the program's checks drops a candidate that fails it, and counts i
       corrupted.plants.push(...[otherKind, long, copy, carryPlant].map(({ planted_answer: answer }) => answer));
     } else if (packet.task === "unanswerable" && (unanswerable += 1) === 1) {
       // Verbs of saying; phrases with a question word, a joining word, a comma, a question mark, a full stop that starts a second
-      // question, more than eight words, a word of no passage of the batch; and one for which the replies' reader finds nothing.
+      // question, more than eight words, a word of no passage of the batch; and one for which the replies' reader finds nothing. Then
+      // (the second batch) phrases with other characters than words: a third batch makes up the questions they cost.
       const items = value.items, word = (item) => item.phrase.split(" ").at(-1);
       [items[0].verb, items[1].verb, items[2].verb] = ["mention", "write about", "name"];
       items[3].phrase = `why after the ${word(items[3])}`;
@@ -222,12 +240,26 @@ test("each of the program's checks drops a candidate that fails it, and counts i
       items[12].phrase = `near the ${word(items[12])}`;
       items[13].phrase = `after the ${word(items[13])} and the bus`;
       items[14].phrase = `after the ${word(items[14])}. Did I lend it`;
+    } else if (packet.task === "unanswerable" && unanswerable === 2) {
+      // Phrases of words with a character outside the allowlist, none of them sentence punctuation but a colon, each of which could start
+      // or join a second question: a dash, a colon, brackets, quotation marks, a slash, an ampersand, a hyphen between words, a symbol.
+      const items = value.items, word = (item) => item.phrase.split(" ").at(-1);
+      items[0].phrase = `after the ${word(items[0])} — did I lend it`;
+      items[1].phrase = `after the ${word(items[1])}: did I lend it`;
+      items[2].phrase = `(after the ${word(items[2])})`;
+      items[3].phrase = `after the [${word(items[3])}]`;
+      items[4].phrase = `after the "${word(items[4])}"`;
+      items[5].phrase = `after the ${word(items[5])}/bus`;
+      items[6].phrase = `after the ${word(items[6])} & bus`;
+      items[7].phrase = `after the ${word(items[7])} - did I lend it`;
+      items[8].phrase = `after the ${word(items[8])} ★`;
     }
     return value;
   } });
   const { questions, report } = await write(LONG, writer, { askReader: async (question) => (question.includes(" near the ") ? 0 : 2) });
   assert.deepEqual(report.dropped, { ...NO_DROPS, question_invalid: 2, quote_not_in_passage: 1, quote_length: 2, quote_not_specific: 1, repeated: 1,
-    other_passage_words: 1, verb_not_on_list: 3, phrase_invalid: 10, phrase_not_from_batch: 1, reader_found_nothing: 1, plant_not_written: 1, plant_invalid: 4 });
+    other_passage_words: 1, verb_not_on_list: 3, phrase_invalid: 19, phrase_not_from_batch: 1, reader_found_nothing: 1, plant_not_written: 1, plant_invalid: 4 });
+  assert.deepEqual([report.batches.unanswerable, report.kept.unanswerable], [3, 21], "a third batch made up for the second's");
   // No key check carried a dropped question or planted answer: each holds its own passage and nothing of another's.
   const checkedText = JSON.stringify(writer.packets("check_keys"));
   for (const words of [...corrupted.questions, ...corrupted.plants]) assert.equal(checkedText.includes(JSON.stringify(words).slice(1, -1)), false, words);
@@ -239,7 +271,8 @@ test("each of the program's checks drops a candidate that fails it, and counts i
   for (const { question } of questions.questions.filter(({ answerable }) => !answerable)) {
     const [, verb] = /^(?:When did I|Did I ever) (\S+) .+ after the \p{L}+\?$/u.exec(question) ?? [];
     assert.ok(QUESTION_VERBS.en.includes(verb), question);
-    for (const words of ["zeppelin", " near ", "why", " or ", "rather", "instead", "besides", ",", "north", " and ", ". ", "lend it"]) assert.equal(question.includes(words), false, `${words} in ${question}`);
+    for (const words of ["zeppelin", " near ", "why", " or ", "rather", "instead", "besides", ",", "north", " and ", ". ", "lend it", "—", ":", "(", "[", "\"", "/", "&", " - ",
+      "★"]) assert.equal(question.includes(words), false, `${words} in ${question}`);
   }
 });
 
@@ -492,6 +525,46 @@ test("the context of the questions the journal doesn't answer is drawn from the 
   for (const { passages } of context) for (const { words } of passages) assert.equal(held.has(passageDigest(words)), false, words);
 });
 
+// Sixty passages, each written about once. A and B both hold the sentence the stand-in quotes as A's evidence, so both are A's evidence
+// passages, and A's question carries B's words whole, which its key check would send with it. Seed 1 puts A's writing batch before B's,
+// seed 5 after it.
+const SHARED_QUOTE = "I left the spare key under the mat", B_WORDS = `${SHARED_QUOTE} by the blue bench`;
+const PASSAGE_A = `On Monday ${SHARED_QUOTE} for my neighbour, and the abacus stayed in the shed all week.`, PASSAGE_B = `${B_WORDS}.`;
+const SHARING = Object.freeze(Array.from({ length: 60 }, (_, place) => (place === 3 ? PASSAGE_A : place === 40 ? PASSAGE_B : lentEntry(place))));
+const carryingB = ({ drop = () => false, ...options } = {}) => questionWriter({ ...options, reply: async (count, request, usual) => {
+  const packet = JSON.parse(request.user);
+  if (drop(packet)) return { items: [] };
+  const value = await usual();
+  if (packet.task === "answerable") {
+    value.items.forEach((item, index) => { if (packet.passages[index].words === PASSAGE_A) Object.assign(item, { evidence_quote: SHARED_QUOTE, question: `What happened when ${B_WORDS}?` }); });
+  }
+  return value;
+} });
+const batchOf = (writer, words) => writer.packets("answerable").findIndex(({ passages }) => passages.some((passage) => passage.words === words));
+
+test("a question whose evidence quote another passage holds too is dropped before its key check once that passage is held back: its check would carry that passage's words", async () => {
+  // B's writing batch is answered outside its schema three times, so this run holds B back, before A's batch is written or after: A's
+  // question is dropped before its key check, and no key check holds B's words.
+  for (const [seed, bFirst] of [[1, false], [5, true]]) {
+    const writer = carryingB({ drop: (packet) => packet.task === "answerable" && packet.passages.some(({ words }) => words === PASSAGE_B) });
+    const { report } = await outcomeOf(write(SHARING, writer, { seed }));
+    assert.equal(batchOf(writer, PASSAGE_B) < batchOf(writer, PASSAGE_A), bFirst, `${seed}: B's batch and A's are apart, in this order`);
+    assert.deepEqual([report.batches.dropped_for_form, report.passages.in_dropped_batches, report.dropped.passage_held_back], [1, 15, 1], `${seed}`);
+    assert.equal(JSON.stringify(writer.packets("check_keys")).includes(B_WORDS), false, `${seed}`);
+  }
+});
+
+test("a key check is guarded against every passage holding its questions' evidence quotes: one another run holds back right before it leaves stops the run, though it isn't one of the check's own passages", async () => {
+  // B has nothing to ask about (skipped), so no question of its own; another run holds B back right before the key check that holds A's
+  // question leaves.
+  let meanwhile = false;
+  const writer = carryingB({ skip: (words) => words === PASSAGE_B,
+    prepare: async (count, request) => { if (taskOf(request) === "check_keys" && request.user.includes(B_WORDS)) meanwhile = true; } });
+  const { code } = await outcomeOf(write(SHARING, writer, { seed: 1, readHeldBack: async () => (meanwhile ? [passageDigest(PASSAGE_B)] : []) }));
+  assert.deepEqual([meanwhile, code], [true, "COLD_QUESTIONS_HELD_BACK_MEANWHILE"]);
+  assert.equal(writer.packets("check_keys").some((packet) => JSON.stringify(packet).includes(B_WORDS)), false, "nothing of that packet is sent");
+});
+
 test("a passage another run held back after this one read the list stops this run before the packet that holds it leaves: nothing of that packet is sent, and the ask isn't counted", async () => {
   const writer = questionWriter();
   const all = LONG.map(passageDigest);
@@ -500,6 +573,15 @@ test("a passage another run held back after this one read the list stops this ru
   assert.equal(code, "COLD_QUESTIONS_HELD_BACK_MEANWHILE");
   assert.equal(writer.sent.length, 1);
   assert.deepEqual([report.calls.made, report.calls.asked_again, report.passages.sent], [1, 0, 15]);
+
+  // On an ask again: the first packet's answer is outside its schema, and before it is asked again another run holds back one of its
+  // passages. The ask again isn't made, nor counted: calls made and asked again are back to the first ask's; the first ask's passages,
+  // which left, stay counted as sent.
+  const retrying = questionWriter({ reply: async (count, request, usual) => (count === 1 ? { items: [] } : usual()) });
+  const first = () => [passageDigest(retrying.sent[0].packet.passages[0].words)];
+  const again = await outcomeOf(write(LONG, retrying, { readHeldBack: async () => (retrying.sent.length >= 1 ? first() : []) }));
+  assert.deepEqual([again.code, retrying.sent.length], ["COLD_QUESTIONS_HELD_BACK_MEANWHILE", 1]);
+  assert.deepEqual([again.report.calls.made, again.report.calls.asked_again, again.report.passages.sent], [1, 0, 15]);
 });
 
 test("with fewer than sixty passages each is written about twice: one a dropped packet held back goes in no later packet of the run, the writing batch that held it again leaves it out, and its other question goes unchecked, so dropped", async () => {
@@ -608,8 +690,9 @@ const CASE = "case-13131313-1313-4131-8131-131313131313", CORPUS = "corpus:inven
 const ACCESS = Object.freeze({ requiredScope: "case:read", requiredPurpose: "session_use" });
 
 // A published copy of an invented journal in a vault of its own, a trial folder with the client's journal folder, and the GPT questions
-// writer of the shared cold-test job on them, under no lock (`call` changes what the job gives it).
-async function copyWith(t, paragraphs, { dates = new Map() } = {}) {
+// writer of the shared cold-test job on them, under no lock (`call` changes what the job gives it). `unitOptions: {}` cuts the journal
+// as the import does (by default each paragraph is a passage); `change(node)` may change a passage before the copy is stored.
+async function copyWith(t, paragraphs, { dates = new Map(), unitOptions = undefined, change = null } = {}) {
   const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-questions-"));
   const keys = { routineKek: Buffer.alloc(32, 81), recoverySecretBytes: Buffer.alloc(32, 82) };
   const store = createEncryptedPrivateCaseStore({ rootDir, ...keys, developmentExternalCredentialAuthorized: true });
@@ -623,7 +706,7 @@ async function copyWith(t, paragraphs, { dates = new Map() } = {}) {
   await service.createJournalCorpus(CASE, { corpusId: CORPUS, manifestObjectId: "manifest:staging" }, AUTH);
   let invented;
   await service.withJournalCorpus(CASE, CORPUS, { requiredScope: "case:write", requiredPurpose: "archive" }, async ({ corpusStore }) => {
-    invented = await persistInventedJournal({ corpusStore, caseId: CASE, corpusId: CORPUS, pages: inventedPages(paragraphs, { dates }) });
+    invented = await persistInventedJournal({ corpusStore, caseId: CASE, corpusId: CORPUS, pages: inventedPages(paragraphs, { dates }), change, ...(unitOptions ? { unitOptions } : {}) });
   }, AUTH);
   await service.publishJournalGeneration(CASE, { corpusId: CORPUS, generation: invented.generation, manifestObjectId: invented.persisted.manifest_object_id }, AUTH);
   const { reference } = await service.inspectJournalCorpus(CASE, CORPUS, ACCESS, AUTH);
@@ -633,12 +716,13 @@ async function copyWith(t, paragraphs, { dates = new Map() } = {}) {
   const run = (worker, { writer = {}, call = {} } = {}) => createGptQuestionsWriter({ trialDir, worker, random: seededRandom(3), ...writer })({ service, auth: AUTH, caseId: CASE,
     corpusId: CORPUS, tested: reference, beforeSend: null, underLock: (operation) => operation(), ...call });
   const passages = invented.graph.nodes.filter((node) => node.kind === "passage");
-  return { reference, trialDir, run, stored: passages.map((node) => node.data.quote), ids: passages.map((node) => node.id) };
+  return { reference, trialDir, run, service, stored: passages.map((node) => node.data.quote), ids: passages.map((node) => node.id) };
 }
 
-test("from the copy itself: the passages a reply may quote at the publication tested, the sentinel required and never sent, packets with their words and dates and nothing that names the case, passages held back for good", async (t) => {
-  const paragraphs = [...LONG.slice(0, 50), INVENTED_JOURNAL_SENTINEL, ...LONG.slice(50)];
-  const { run, reference, trialDir, stored, ids } = await copyWith(t, paragraphs, { dates: new Map(Array.from({ length: 20 }, (_, index) => [index * 5, `March ${index + 1}, 2019`])) });
+test("from the copy itself: the passages a reply may quote at the publication tested, the sentinel required as the first passage and never sent, packets with their words and dates and nothing that names the case, passages held back for good", async (t) => {
+  // The sentinel first, then entries, twenty of them under date lines.
+  const paragraphs = [INVENTED_JOURNAL_SENTINEL, ...LONG];
+  const { run, reference, trialDir, stored, ids } = await copyWith(t, paragraphs, { dates: new Map(Array.from({ length: 20 }, (_, index) => [index * 5 + 1, `March ${index + 1}, 2019`])) });
   const writer = questionWriter();
   const read = [];
   const recording = async (input) => {
@@ -693,11 +777,76 @@ test("from the copy itself: the passages a reply may quote at the publication te
   }
 });
 
-test("the sentinel counts only on a line of its own: a copy that holds its sentence inside other words is refused before any call", async (t) => {
-  const { run } = await copyWith(t, [`We read it aloud: ${INVENTED_JOURNAL_SENTINEL} Then we went home.`, ...LONG]);
-  const idle = questionWriter();
-  await assert.rejects(run(idle), { code: "COLD_QUESTIONS_NOT_INVENTED" });
-  assert.equal(idle.sent.length, 0);
+test("the sentinel counts only as the copy's first passage, the sentence whole: cut as the import cuts a journal, one that opens with it as a paragraph runs, and a copy with it anywhere else is refused before any call", async (t) => {
+  // The import's own sizes: the sentence is at least the 160 bytes below which a passage is joined to the next, and well under a third
+  // of the 1,600 at which a paragraph is cut, no earlier than a third of the way in.
+  const S = INVENTED_JOURNAL_SENTINEL;
+  assert.ok(Buffer.byteLength(S) >= QUOTE_UNIT_DEFAULTS.minimumBytes && Buffer.byteLength(S) * 3 < QUOTE_UNIT_DEFAULTS.maximumBytes);
+  const opening = await copyWith(t, [S, ...LONG], { unitOptions: {} });
+  assert.equal(opening.stored[0], S);
+  const writer = questionWriter();
+  assert.equal((await opening.run(writer)).report.passages.excluded, 1);
+  assert.equal(writer.sent.some(({ request }) => request.user.includes(S)), false);
+  // Prose just short enough that, with the sentence after it, the paragraph is over 1,600 bytes: the import cuts it right before the
+  // sentence, which is a passage of its own, the second.
+  let prose = lentEntry(0);
+  for (let place = 1; Buffer.byteLength(`${prose} ${S}`) <= QUOTE_UNIT_DEFAULTS.maximumBytes; place += 1) prose = `${prose} ${lentEntry(place)}`;
+  for (const [what, paragraphs, { cut = false, ...options } = {}] of [
+    ["inside other words", [`We read it aloud: ${S} Then we went home.`, ...LONG]],
+    ["at the end of a first paragraph over 1,600 bytes", [`${prose} ${S}`, ...LONG], { cut: true }],
+    ["at the start of a first paragraph over 1,600 bytes", [`${S} ${prose}`, ...LONG]],
+    ["after another paragraph", [LONG[0], S, ...LONG.slice(1)]],
+    ["under a date line", [S, ...LONG], { dates: new Map([[0, "March 1, 2019"]]) }],
+    ["with the next line under it and no blank line between", [`${S}\n${LONG[0]}`, ...LONG.slice(1)]],
+    ["after a passage a reply may not quote", [LONG[0], S, ...LONG.slice(1)], { change: (node) => { if (node.data.quote === LONG[0]) node.lifecycle = "revoked"; } }]
+  ]) {
+    const { run, stored } = await copyWith(t, paragraphs, { unitOptions: {}, ...options });
+    if (cut) assert.deepEqual(stored.slice(0, 2), [prose, S], "cut right before the sentence");
+    const idle = questionWriter();
+    await assert.rejects(run(idle), { code: "COLD_QUESTIONS_NOT_INVENTED" }, what);
+    assert.equal(idle.sent.length, 0, what);
+  }
+});
+
+test("a copy's first passage is the one first in source order of all its passages; it has none when a passage has no place or two share the first", () => {
+  const place = (id, order) => ({ id, order });
+  assert.equal(openingPassageId([place("b", [0, 120]), place("a", [1, 0]), place("c", [0, 0])]), "c");
+  assert.equal(openingPassageId([place("b", 7), place("a", 3)]), "a", "an older index's single numbers");
+  assert.equal(openingPassageId([place("b", [0, 0]), place("a", null)]), null, "a passage with no place");
+  assert.equal(openingPassageId([place("b", [0, 0]), place("a", [0, "x"])]), null, "a place that isn't one");
+  assert.equal(openingPassageId([place("b", [0, 0]), place("a", [0, 0]), place("c", [0, 9])]), null, "two share the first place");
+  assert.equal(openingPassageId([]), null);
+});
+
+test("right before each packet of the questions tool leaves, the job's consent check and the held-back list run in one hold of the folder's lock", async (t) => {
+  const { service, trialDir } = await copyWith(t, [INVENTED_JOURNAL_SENTINEL, ...LONG]);
+  // A lock that numbers each hold, and spies that note the hold they run in: the consent check (it reads the client list first), the
+  // held-back list, and each packet of the tool as it is prepared. The test's own workers stop it after the questions.
+  let holds = 0, holding = null;
+  const underLock = async (operation) => {
+    holding = holds += 1;
+    try { return await operation(); } finally { holding = null; }
+  };
+  const seen = [];
+  const client = { case_id: CASE, journal: { corpus_id: CORPUS, consent: { withdrawn_at: null } } };
+  const writer = questionWriter({ prepare: async () => { seen.push({ what: "packet", hold: holding }); } });
+  const stopping = { async call() { throw Object.assign(new Error("A synthetic stop after the questions."), { code: "SYNTHETIC_STOP" }); } };
+  await assert.rejects(runColdTestJob({ trialDir, underLock, findClient: async () => client,
+    readClients: async () => { seen.push({ what: "check", hold: holding }); return { clients: [client] }; },
+    openVault: async () => ({ service, auth: AUTH, close() {} }),
+    ensureFolder: (folder) => fs.mkdir(folder, { recursive: true, mode: 0o700 }),
+    writeFile: (file, text) => fs.writeFile(file, text, { mode: 0o600 }),
+    consumer: stopping, judge: stopping,
+    writeQuestions: createGptQuestionsWriter({ trialDir, worker: writer, random: seededRandom(3),
+      readHeld: async (dir, caseId) => { seen.push({ what: "read", hold: holding }); return readQuestionsHeldBack(dir, caseId); } }) }), { code: "SYNTHETIC_STOP" });
+  // Each packet the tool sent: prepared, then the check and the list, both in one hold.
+  const packets = seen.flatMap((entry, index) => (entry.what === "packet" ? [seen.slice(index + 1, index + 3)] : []));
+  assert.ok(writer.sent.length >= 10, `${writer.sent.length}`);
+  assert.equal(packets.length, writer.sent.length);
+  for (const [check, read] of packets) {
+    assert.deepEqual([check?.what, read?.what], ["check", "read"]);
+    assert.ok(check.hold !== null && check.hold === read.hold, JSON.stringify([check, read]));
+  }
 });
 
 test("the job reads the client's held-back passages again right before each packet leaves: another run's hold-back, written while this one runs, stops it before the packet goes", async (t) => {

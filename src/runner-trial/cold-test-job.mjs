@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { RuntimeError } from "../core/errors.mjs";
 import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, addQuestionsHeldBack, clientJournalFolder, journalConsentState, readColdTestAttempt, readColdTestMarker,
   readQuestionsHeldBack, syncFolder } from "./clients.mjs";
-import { holdsInventedJournalSentinel, readQuestionPassages, writeColdQuestions } from "./cold-questions.mjs";
+import { inventedJournalOpening, readQuestionPassages, writeColdQuestions } from "./cold-questions.mjs";
 import { createSealedColdTestPort, runJournalColdTest } from "./journal-cold-test.mjs";
 import { openSessionUseReader } from "./journal-gate.mjs";
 
@@ -18,7 +18,7 @@ import { openSessionUseReader } from "./journal-gate.mjs";
 // - only a pass, still marked as the test started last, writes the receipt; of tests that overlap, the newest decides; a test that
 //   doesn't pass takes the receipt away only while it is still the newest.
 // What it adds: the questions may be written by GPT for this run (section 3: `createGptQuestionsWriter`), after the start and before the
-// test, with the same reads before each packet.
+// test, with the same reads before each packet, and the held-back list read in the same hold of the lock (3.2).
 //
 // The caller gives what differs between the command and the page: how to find the client under the lock (`findClient`), how to read the
 // list (`readClients`), the folder's lock (`underLock`), the vault with a one-time read grant (`openVault`), the private folder and file
@@ -39,7 +39,7 @@ export const COLD_TEST_JOB_WORDS = Object.freeze({
   COLD_TEST_CHANGED: "The client's consent or copy changed during the cold test: it stopped, and gave no receipt.",
   COLD_TEST_MARKER_GONE: "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again.",
   COLD_TEST_NEWER_STARTED: "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again.",
-  COLD_QUESTIONS_NOT_INVENTED: "This copy doesn't hold the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them. Nothing was sent; as with any test that starts, the copy has no cold-test receipt now."
+  COLD_QUESTIONS_NOT_INVENTED: "This copy doesn't open with the invented-journal sentinel, its first passage the sentence alone, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them. Nothing was sent; as with any test that starts, the copy has no cold-test receipt now."
 });
 
 // A file of the client's journal folder removed (their cold-test receipt, or the marker of the test started last), and that made durable.
@@ -107,7 +107,8 @@ export async function runColdTestJob({ trialDir, findClient, readClients, underL
       const beforeSend = () => underLock(stillSo);
       let file = questions;
       if (writeQuestions) {
-        const written = await writeQuestions({ service, auth, caseId, corpusId, tested, beforeSend, underLock });
+        // The writer gets the check unlocked (`check`) too, to run it in the one hold of the lock in which it reads the held-back list.
+        const written = await writeQuestions({ service, auth, caseId, corpusId, tested, beforeSend, check: stillSo, underLock });
         file = written.questions;
         questionsReport = written.report;
       }
@@ -138,18 +139,21 @@ export async function runColdTestJob({ trialDir, findClient, readClients, underL
 
 /**
  * GPT's questions for one run (section 3), as `runColdTestJob`'s `writeQuestions`: the copy's passages read from exactly the snapshot
- * under test; with `inventedOnly` (pull request 1, until a consent in its new words names the questions), the invented-journal sentinel
- * required among them, on a line of its own, before any call, and its passage left out of the sample; the client's held-back passages
- * read, read again right before each packet leaves, and added to, under the folder's lock; the replies' reader asked with each unanswerable question, on that same snapshot; and `worker`, the sealed Codex
- * worker, for every call.
+ * under test; with `inventedOnly` (pull request 1, until a consent in its new words names the questions), the copy's first passage in
+ * source order, of all its passages, required to be the invented-journal sentinel whole, before any call, and that passage left out of
+ * the sample; the client's held-back passages read (`readHeld`), and added to, under the folder's lock; right before each packet leaves,
+ * one hold of that lock in which the job's consent check (`check`) runs and the held-back list is read again (a caller with no `check`
+ * gives `beforeSend`, which takes the lock on its own); the replies' reader asked with each unanswerable question, on that same snapshot;
+ * and `worker`, the sealed Codex worker, for every call.
  */
-export function createGptQuestionsWriter({ trialDir, worker, inventedOnly = true, readerFor = openSessionUseReader, random = undefined, timeoutMs = undefined }) {
-  return async ({ service, auth, caseId, corpusId, tested, beforeSend, underLock }) => {
+export function createGptQuestionsWriter({ trialDir, worker, inventedOnly = true, readerFor = openSessionUseReader, readHeld = readQuestionsHeldBack, random = undefined,
+  timeoutMs = undefined }) {
+  return async ({ service, auth, caseId, corpusId, tested, beforeSend = null, check = null, underLock }) => {
     if (!tested?.active_generation) throw new RuntimeError("The copy isn't published.", { code: "COLD_TEST_NOT_PUBLISHED" });
-    const { passages, keyPassages, wordList } = await readQuestionPassages({ service, auth, caseId, corpusId, before: tested });
-    const sentinel = passages.filter(({ quote }) => holdsInventedJournalSentinel(quote));
-    if (inventedOnly && !sentinel.length) refuse("COLD_QUESTIONS_NOT_INVENTED", COLD_TEST_JOB_WORDS.COLD_QUESTIONS_NOT_INVENTED);
-    const heldBack = await underLock(() => readQuestionsHeldBack(trialDir, caseId));
+    const { passages, keyPassages, wordList, openingId } = await readQuestionPassages({ service, auth, caseId, corpusId, before: tested });
+    const opening = inventedJournalOpening({ passages, openingId });
+    if (inventedOnly && !opening) refuse("COLD_QUESTIONS_NOT_INVENTED", COLD_TEST_JOB_WORDS.COLD_QUESTIONS_NOT_INVENTED);
+    const heldBack = await underLock(() => readHeld(trialDir, caseId));
     const reader = await readerFor({ caseAccessService: service, corpusId });
     const askReader = async (question) => {
       const part = await reader.read({ caseId, query: question, authContext: auth });
@@ -159,9 +163,14 @@ export function createGptQuestionsWriter({ trialDir, worker, inventedOnly = true
         || read.visibility_epoch !== tested.visibility_epoch) throw new RuntimeError("The copy changed during the questions.", { code: "COLD_TEST_SNAPSHOT_CHANGED" });
       return part.source_items.length;
     };
-    return writeColdQuestions({ passages, keyPassages, wordList, worker, askReader, beforeSend, heldBack,
-      holdBack: (digests) => underLock(() => addQuestionsHeldBack(trialDir, caseId, digests)),
-      readHeldBack: () => underLock(() => readQuestionsHeldBack(trialDir, caseId)),
-      exclude: new Set(sentinel.map(({ id }) => id)), ...(random ? { random } : {}), ...(timeoutMs ? { timeoutMs } : {}) });
+    // One hold of the lock a packet: the consent and copy checked and the held-back list read in it, so that nothing changes between the
+    // two. The packet leaves after the lock is released (section 12).
+    const readHeldBack = () => underLock(async () => {
+      if (check) await check();
+      return readHeld(trialDir, caseId);
+    });
+    return writeColdQuestions({ passages, keyPassages, wordList, worker, askReader, beforeSend: check ? null : beforeSend, heldBack,
+      holdBack: (digests) => underLock(() => addQuestionsHeldBack(trialDir, caseId, digests)), readHeldBack,
+      exclude: new Set(opening ? [opening.id] : []), ...(random ? { random } : {}), ...(timeoutMs ? { timeoutMs } : {}) });
   };
 }
