@@ -14,11 +14,15 @@ import { RUNNER_TRIAL_CASE_ID_PATTERN } from "./switch.mjs";
 // or a report. Nothing here reads the vault.
 
 export const RUNNER_CLIENTS_FILE = "clients.json";
-// Each client's journal folder in the trial folder: their key for journal copies, their copy's cold-test receipt and the marker of the
-// cold test started last (scripts/runner-trial-journal.mjs). "Delete this case" removes it with the case.
+// Each client's journal folder in the trial folder: their key for journal copies, their copy's cold-test receipt, the marker of the
+// cold test started last (scripts/runner-trial-journal.mjs) and the questions tool's held-back passages. "Delete this case" removes it
+// with the case.
 export const RUNNER_JOURNAL_FOLDER = "journal";
 export const COLD_TEST_RECEIPT_FILE = "cold-test-receipt.json";
 export const COLD_TEST_ATTEMPT_FILE = "cold-test-attempt.json";
+// The digests of the passages the cold test's questions tool holds back from its GPT calls (src/runner-trial/cold-questions.mjs): those
+// of a packet it dropped as a possible refusal. Digests only; their Delete removes them with the folder.
+export const QUESTIONS_HELD_BACK_FILE = "questions-held-back.json";
 export const MAX_RUNNER_CLIENTS = 50;
 export const CLIENT_LABEL_MAX = 80;
 
@@ -255,6 +259,49 @@ export async function readColdTestMarker(trialDir, caseId) {
 
 export async function readColdTestAttempt(trialDir, caseId) {
   return (await readColdTestMarker(trialDir, caseId))?.attempt ?? null;
+}
+
+const DIGEST = /^[0-9a-f]{64}$/u;
+const MAX_HELD_BACK = 100_000;
+const heldBackPath = (trialDir, caseId) => path.join(clientJournalFolder(trialDir, caseId), QUESTIONS_HELD_BACK_FILE);
+
+// The passages the questions tool holds back for a client, as digests: none when the file isn't there. A file that isn't the tool's
+// stops the tool (what it holds back can't be told), as any private file of the trial folder does.
+export async function readQuestionsHeldBack(trialDir, caseId) {
+  const text = await readPrivateFile(heldBackPath(trialDir, caseId), QUESTIONS_HELD_BACK_FILE);
+  if (text === null) return new Set();
+  let value;
+  try { value = JSON.parse(text); } catch { invalid(`${QUESTIONS_HELD_BACK_FILE} isn't valid JSON.`); }
+  exactKeys(value, ["schema_version", "kind", "digests"], QUESTIONS_HELD_BACK_FILE);
+  if (value.schema_version !== 1 || value.kind !== "runner_questions_held_back" || !Array.isArray(value.digests) || value.digests.length > MAX_HELD_BACK
+    || !value.digests.every((digest) => typeof digest === "string" && DIGEST.test(digest))) invalid(`${QUESTIONS_HELD_BACK_FILE} isn't the questions tool's.`);
+  return new Set(value.digests);
+}
+
+// Adds digests to a client's held-back passages, written whole or not at all (mode 0600) and made durable. The caller holds the folder's
+// lock, and the client's journal folder exists.
+export async function addQuestionsHeldBack(trialDir, caseId, digests) {
+  if (!Array.isArray(digests) || !digests.every((digest) => typeof digest === "string" && DIGEST.test(digest))) invalid("Held-back passages are digests.");
+  const all = new Set(await readQuestionsHeldBack(trialDir, caseId));
+  for (const digest of digests) all.add(digest);
+  if (all.size > MAX_HELD_BACK) invalid(`${QUESTIONS_HELD_BACK_FILE} would hold too many passages.`);
+  const file = heldBackPath(trialDir, caseId);
+  const temporary = `${file}.${randomUUID()}.tmp`;
+  const handle = await fs.open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
+  try {
+    await handle.writeFile(`${JSON.stringify({ schema_version: 1, kind: "runner_questions_held_back", digests: [...all].sort() }, null, 2)}\n`, "utf8");
+    await handle.sync();
+  } catch (error) {
+    await handle.close().catch(() => {});
+    await fs.rm(temporary, { force: true });
+    throw error;
+  }
+  await handle.close();
+  try { await fs.rename(temporary, file); } catch (error) {
+    await fs.rm(temporary, { force: true });
+    throw error;
+  }
+  await syncFolder(path.dirname(file));
 }
 
 // Whether a receipt names the version of the reader given and the pass rule as it is. One of the first form names neither.

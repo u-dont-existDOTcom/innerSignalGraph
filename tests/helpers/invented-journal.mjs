@@ -82,21 +82,24 @@ const GENERATIONS = Object.freeze({ "quote-index-v4": 4, "quote-index-v2": 2 });
  * - "none": passages only, no quote index.
  * `change(node)` may change a passage before the generation is stored (its lifecycle, or hold its words back); the word list is built
  * from the quotes as they were, so a list can name a passage that may no longer be used. `passageOf(text)` is the passage id of a quote.
+ * `unitOptions` are the quote index's unit sizes: by default a short paragraph is never joined to the next, so each is a passage; `{}`
+ * cuts the journal as the import does (its own sizes).
  */
-export async function persistInventedJournal({ corpusStore, caseId, corpusId, pages, index = "quote-index-v4", change = null, permittedUses = ["archive", "organize_search", "session_use"] }) {
+export async function persistInventedJournal({ corpusStore, caseId, corpusId, pages, index = "quote-index-v4", change = null, permittedUses = ["archive", "organize_search", "session_use"],
+  unitOptions = { minimumBytes: 0 } }) {
   const generation = `invented-${index}`;
   const sources = Object.fromEntries(pages.map((page) => [page.representation_id, page.text]));
   let graph, extraIndexes = {};
   if (GENERATIONS[index]) {
     const built = buildQuoteGeneration({ caseId, corpusId, generation, originalObjectId: "original:invented", mediaType: "text/plain", representations: pages,
-      unitOptions: { minimumBytes: 0 }, version: GENERATIONS[index] });
+      unitOptions, version: GENERATIONS[index] });
     graph = built.graph;
     extraIndexes = { quote_meta: built.quoteMeta, quote_months: built.quoteMonths };
   } else {
     const nodes = [], edges = [];
     let order = 0;
     for (const page of pages) {
-      const units = splitQuoteUnits({ representationId: page.representation_id, text: page.text, minimumBytes: 0 }).map((unit) => ({ ...unit, source_order: order++ }));
+      const units = splitQuoteUnits({ representationId: page.representation_id, text: page.text, ...unitOptions }).map((unit) => ({ ...unit, source_order: order++ }));
       const part = adaptExtractionToGraph({ caseId, corpusId, generation,
         source: { id: `source:${sha256(page.representation_id).slice(0, 32)}`, representation_id: page.representation_id, original_object_id: "original:invented",
           media_type: "text/plain", byte_length: Buffer.byteLength(page.text), parse_status: "readable", page: page.page_number },
@@ -127,3 +130,23 @@ export async function persistInventedJournal({ corpusStore, caseId, corpusId, pa
   const persisted = await persistGraphGeneration({ corpusStore, graph, sourceRepresentations: sources, permittedUses, extraIndexes, indexRepresentations: GENERATIONS[index] !== undefined });
   return { persisted, graph, passageOf, generation };
 }
+
+// Things an invented journal tells of, each in one entry, for the tests of the cold test's questions tool: none of them is, or reads as,
+// a subject the tool asks about (src/runner-trial/cold-questions.mjs), so all of those stay subjects no passage names.
+export const LENT_THINGS = Object.freeze(("abacus anvil bassoon bellows birdcage bobbin brazier chisel cogwheel crowbar dulcimer easel gargoyle "
+  + "goblet hourglass jigsaw kiln lathe loom marionette monocle oboe parasol pendulum quill sextant sundial tapestry trellis weathervane "
+  + "zither barometer candelabra clarinet corkscrew crossbow decanter foghorn gramophone ladle mortar pestle thimble spindle anchor bugle "
+  + "cauldron flagon kettledrum lute mandolin metronome spyglass tambourine teapot thermos trowel tuba typewriter wrench armchair bookcase "
+  + "bracelet brooch cufflink dartboard doorknob earmuffs fishbowl footstool gauntlet hairbrush handbell hatbox inkwell jukebox "
+  + "kaleidoscope lampshade lunchbox magnet mousetrap nutcracker paperweight pinwheel quilt satchel scarecrow seesaw shoehorn snowglobe "
+  + "stopwatch suitcase tablecloth teacup toaster trinket umbrella vase wallet whistle windchime").split(" "));
+const LENT_PEOPLE = Object.freeze(["neighbour", "cousin", "teacher", "landlord", "aunt", "colleague"]);
+const LONG_TAIL = ", wrapped in brown paper and tied with string, and I put it on the shelf by the window where the light comes in during the long afternoons of the year.";
+/** The entry that tells of the `place`th thing, lent and given back: 17 words, or 46 with `long`. */
+export const lentEntry = (place, { long = false } = {}) => `That spring I lent the ${LENT_THINGS[place]} to my ${LENT_PEOPLE[place % LENT_PEOPLE.length]}, and it came back after a week${long ? LONG_TAIL : "."}`;
+/** An entry about dying, telling of the `thing`th thing too: three forms in turn, by `place`. */
+export const dyingEntry = (place, thing = place) => [
+  `My grandfather died in the night, and at his funeral I held the ${LENT_THINGS[thing]} the whole time.`,
+  `I keep thinking about my own death since the ${LENT_THINGS[thing]} broke in my hands.`,
+  `We buried my aunt on a grey morning, and someone left the ${LENT_THINGS[thing]} on her grave.`
+][place % 3];
