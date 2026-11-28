@@ -234,8 +234,8 @@ A client's journal can inform their replies only through the session-use journal
    Until a consent in its new words names GPT's questions (pull request 3 of that design), they run only on an invented journal: in a
    trial folder set apart for invented journals by a file named `invented-journals-only` in it (mode 0600; no command writes it), never
    the default trial folder or a folder a runner starts from, one holding the icon's `launcher.json` (refused even with the file), and on
-   a copy whose first passage, in the copy's source order, is exactly this sentence of the code's, byte for byte (the invented-journal
-   sentinel):
+   a copy whose first passage, in the copy's source order, is a passage a reply may quote whose words are exactly this sentence of the
+   code's, byte for byte (the invented-journal sentinel):
 
    ```text
    This journal is invented for a test of InnerSignal, and nothing in it is anyone's: no person wrote it, no person is in it, and no reply to any person will ever quote it.
