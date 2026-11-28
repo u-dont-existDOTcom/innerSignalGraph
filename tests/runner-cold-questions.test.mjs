@@ -601,7 +601,7 @@ const carryingShort = (where, options) => {
 };
 const holdsShort = (packets) => JSON.stringify(packets).toLowerCase().includes(SHORT_WORDS);
 
-test("a question or a planted answer that holds all the words of a held-back passage goes to no key check: dropped before it (the planted answer alone) once the run knows the passage is held back, and one another run holds back right before the check leaves stops the run", async () => {
+test("a question or a planted answer that holds all the words of a held-back passage of the copy goes to no key check: dropped before it (the planted answer alone) once the run knows the passage is held back, and one another run holds back right before the check leaves stops the run", async () => {
   for (const where of ["question", "plant"]) {
     // Another run holds the short passage back after the writing batches, read before a context packet that doesn't hold it.
     let holding = false;
@@ -628,7 +628,7 @@ test("a question or a planted answer that holds all the words of a held-back pas
   }
 });
 
-test("a passage another run held back after this one read the list stops this run before the packet that holds it leaves: nothing of that packet is sent, and the ask isn't counted", async () => {
+test("a passage another run held back after this one read the list stops this run before the packet that holds it leaves: that ask isn't sent, nor counted, and on an ask again the asks before it, which left, stay counted", async () => {
   const writer = questionWriter();
   const all = LONG.map(passageDigest);
   // The list as another run leaves it: empty when this run starts, every passage once this run's first packet has gone.
@@ -675,7 +675,7 @@ test("with thirty passages each is written about twice: one a dropped packet hel
   }
 });
 
-test("an answer outside its schema and a passing failure are counted apart, so their order changes nothing: a third answer outside it drops the batch, a third passing failure stops the tool", async () => {
+test("an answer outside its schema and a passing failure are counted apart: a third answer outside it drops the batch and a third passing failure stops the tool, whichever third comes first", async () => {
   // The first writing packet fails as `sequence` says, each time it is asked, then answers in its schema.
   const run = async (sequence, held = new Set()) => {
     const ordinal = new Map();

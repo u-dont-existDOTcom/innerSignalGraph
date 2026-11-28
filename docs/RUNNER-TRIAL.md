@@ -214,9 +214,10 @@ A client's journal can inform their replies only through the session-use journal
    node scripts/runner-trial-journal.mjs --cold-test --gpt-questions --provider mixed --dir /absolute/path/invented-trial
    ```
 
-   The trial's sealed Codex worker (no tools, an empty folder, no session kept; on your ChatGPT plan, whatever `--provider` says) gets
-   passages of the copy sampled across it, under opaque names, each with the date its entry gives, and writes questions about some of
-   them, with their exact evidence and planted wrong answers. For the questions the journal doesn't answer, the program chooses the
+   The trial's sealed Codex worker (an empty folder, no session kept; Codex still offers it actions, and a call that takes one is
+   refused; on your ChatGPT plan, whatever `--provider` says) gets passages of the copy sampled across it, under opaque names, each with
+   the date its entry gives, and writes questions about some of them, with their exact evidence and planted wrong answers. For the
+   questions the journal doesn't answer, the program chooses the
    subject from a fixed list among those no passage names, and GPT gives a verb from the program's list and a short phrase holding a
    word of a passage it was given ("When did I visit the planetarium after the market?"). Passages about dying are sampled like any
    other. The program checks every candidate, and GPT checks each answerable key on its evidence passage alone. Short of what a pass

@@ -31,7 +31,7 @@ export const COLD_QUESTIONS_TOOL = Object.freeze({
   sameOfBatch: 12,
   otherOfBatch: 3,
   plantsOfBatch: 7,
-  // The tool's own floor: the 48 answerable questions it aims at, at two a passage, need 24 passages (not the rule's).
+  // The tool's own floor: the 48 answerable questions it needs, at two a passage, take 24 passages (not the rule's).
   floor: 24,
   aims: Object.freeze({ same: 48, other: 12, unanswerable: 26, planted: 28 }),
   needs: Object.freeze({ same: 40, other: 8, unanswerable: 20, planted: 20, plantedOfEachKind: 3 }),
@@ -497,8 +497,8 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     const words = plainWords(quote);
     if (words.length) passageWords.set(passageDigest(quote), ` ${words.join(" ")} `);
   }
-  // Whether `text`, a question or a planted answer GPT wrote, holds all the plain words of a held-back passage, in order (3.4): its key
-  // check would send them.
+  // Whether `text`, a question or a planted answer GPT wrote, holds all the plain words of a held-back passage of the copy, in order
+  // (3.4): its key check would send them.
   const holdsHeldWords = (text) => {
     const words = ` ${plainWords(text).join(" ")} `;
     for (const [digest, passage] of passageWords) if (held.has(digest) && words.includes(passage)) return true;
@@ -522,8 +522,8 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     const watched = [...new Set([...ids, ...guarded])];
     // Right before the packet leaves: `beforeSend`, when the caller gives it, and `readHeldBack`, when the caller gives it, which reads
     // the held-back list again (the job's runs its consent check first, in the same hold of the lock). After that read, a packet that
-    // holds or guards a held-back passage, or carries all the words of one, stops the tool before it is sent, and this ask isn't counted
-    // as made.
+    // holds or guards a held-back passage, or carries all the words of a held-back passage of the copy, stops the tool before it is sent,
+    // and this ask isn't counted as made.
     const guard = async () => {
       if (beforeSend) await beforeSend();
       if (!readHeldBack) return;
@@ -626,9 +626,9 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
   // GPT's check of each answerable key on its evidence passage alone (3.4): one it doubts is dropped, and so is a planted answer it
   // doesn't find contradicted. A check dropped for its form drops its questions, whose passages are held back. Before each check, with
   // the held-back passages the run knows then: a question with any of its evidence passages held back (`group`, its own included) is
-  // dropped, and so is one that holds all the words of a held-back passage, or the planted answer alone when that holds them. The
-  // check's packet is guarded against its questions' evidence passages and the texts it carries, so that a passage another run held back
-  // meanwhile stops the run (ask).
+  // dropped, and so is one that holds all the words of a held-back passage of the copy, or the planted answer alone when that holds
+  // them. The check's packet is guarded against its questions' evidence passages and the texts it carries, so that a passage another run
+  // held back meanwhile stops the run (ask).
   async function checkKeys() {
     for (;;) {
       for (const candidate of candidates) {

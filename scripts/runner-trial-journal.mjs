@@ -80,8 +80,8 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      are kept nowhere. Not with --provider codex, whose judge is GPT too. Until a consent in new words names it, it
                      runs only on an invented journal: in a trial folder holding the file ${INVENTED_JOURNALS_ONLY_FILE} (no permission
                      for group or others; no command writes it), never the default trial folder or one a runner starts from (holding
-                     ${LAUNCHER_SETTINGS_FILE}), and on a copy whose first passage is exactly the invented-journal sentinel
-                     (docs/RUNNER-TRIAL.md).
+                     ${LAUNCHER_SETTINGS_FILE}), and on a copy whose first passage is a passage a reply may quote whose words are
+                     exactly the invented-journal sentinel (docs/RUNNER-TRIAL.md).
   --provider mixed|claude|codex  the cold test's workers: mixed (the answers from GPT, judged by Claude), claude (both through
                      \`claude -p\`, signed in at ${RUNNER_CLAUDE_CONFIG_DIR}) or codex (both through \`codex exec\`, signed in)
   --dir PATH         the trial folder (default ${defaultTrialHome()})`;
@@ -385,11 +385,11 @@ async function requireInventedFolder(resolved) {
 const QUESTIONS_TOOL_STOPS = Object.freeze({
   COLD_QUESTIONS_TOO_FEW_PASSAGES: `the copy has fewer than ${COLD_QUESTIONS_TOOL.floor} passages to draw from (those a reply may quote, less the invented-journal sentinel's and those held back), the tool's floor`,
   COLD_QUESTIONS_TOO_FEW_SUBJECTS: "the journal names too many of the subjects the tool asks about for questions it doesn't answer",
-  COLD_QUESTIONS_NOT_ENOUGH: "too few of GPT's questions passed the checks for the rule",
+  COLD_QUESTIONS_NOT_ENOUGH: `too few of GPT's questions passed the checks for the rule, or for the ${COLD_QUESTIONS_TOOL.needs.other} questions in other words the tool needs of its own`,
   COLD_QUESTIONS_CALL_BUDGET: `the tool's ${COLD_QUESTIONS_TOOL.budget.calls} calls were spent before the questions were complete`,
   COLD_QUESTIONS_PASSAGE_BUDGET: `the tool's ${COLD_QUESTIONS_TOOL.budget.passages} passages were spent before the questions were complete`,
   COLD_QUESTIONS_SNAPSHOT_CHANGED: "the copy changed while the questions were written",
-  COLD_QUESTIONS_HELD_BACK_MEANWHILE: "another run held back, after this one last read the list, a passage of the packet this one was about to send, or one holding the evidence quote of one of its questions, or one whose words a question or planted answer of it holds whole; nothing of that packet was sent, and this run has no test"
+  COLD_QUESTIONS_HELD_BACK_MEANWHILE: "another run held back, after this one last read the list, a passage of the packet this one was about to send, or one holding the evidence quote of one of its questions, or one whose words a question or planted answer of it holds whole; that packet didn't leave this time (when it was being asked again, its earlier asks had), and this run has no test"
 });
 const numbersOnly = (report) => JSON.stringify(report ?? null);
 

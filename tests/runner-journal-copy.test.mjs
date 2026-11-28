@@ -2231,7 +2231,7 @@ test("with GPT's questions too: a withdrawal before any kind of packet stops the
     return value;
   } });
   const unused = gptAnswers();
-  await assert.rejects(gptTest(doubting, unused), { message: /^The questions tool stopped: too few of GPT's questions passed the checks for the rule \(COLD_QUESTIONS_NOT_ENOUGH\)\. No test ran, and no receipt was given\. Its counts: \{"version":"cold-questions-v1",/u });
+  await assert.rejects(gptTest(doubting, unused), { message: /^The questions tool stopped: too few of GPT's questions passed the checks for the rule, or for the 8 questions in other words the tool needs of its own \(COLD_QUESTIONS_NOT_ENOUGH\)\. No test ran, and no receipt was given\. Its counts: \{"version":"cold-questions-v1",/u });
   assert.equal(unused.sent.length, 0);
   // Too few passages: no call at all.
   const small = await inventedClient(t, { count: 20 });
