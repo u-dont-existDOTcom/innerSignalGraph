@@ -2112,7 +2112,7 @@ test("--gpt-questions: refused before any call with codex, outside a trial folde
   await assert.rejects(gpt(plain.home), notSetApart);
   await fs.rm(launcherFile);
   // Set apart, but the copy doesn't hold the sentinel: refused before any call, from the publication the test reads.
-  await assert.rejects(gpt(plain.home), { message: /^This copy's first passage isn't a passage a reply may quote whose words are exactly the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them\. Nothing was sent, and this test gave no receipt; as at the start of any test, the receipt the copy had before it started is gone\.$/u });
+  await assert.rejects(gpt(plain.home), { message: /^This copy's first passage, if it has one, isn't a passage a reply may quote whose words are exactly the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them\. Nothing was sent, and this test gave no receipt; as at the start of any test, the receipt the copy had before it started is gone\.$/u });
   assert.deepEqual([idle.sent.length, unasked.sent.length], [0, 0]);
   await absent(plain.receiptPath);
   // A questions file runs as before, in a folder set apart as in any other.

@@ -409,10 +409,10 @@ const numbersOnly = (report) => JSON.stringify(report ?? null);
 // the worker's process (for the questions tool's packets, in the same hold as its held-back list), and the lock is released before that
 // hand-over (a call can take minutes, and holding the lock through it would stop every other action on the folder). So a withdrawal lands
 // wholly before that reading, and the packet doesn't leave, or after it, and it stops the run at the next packet, of the tool or the
-// test, or before the receipt is written, again under the lock. Another run's hold-back is read only before each of the questions tool's
-// packets: a packet that holds or guards a passage held back stops the run before it leaves; a passage held back is left out of the
-// packets the tool prepares after that read; a hold-back that lands after the read before a packet doesn't stop that packet. Neither the
-// test's packets nor the receipt step read the list. `workerFor` (a worker for a role of the trial's) and `questionWorker` (GPT's, for the
+// test, or before the receipt is written, again under the lock. The held-back list is read when the questions tool starts and again
+// right before each of its packets, and by nothing else: a packet that holds or guards a passage the read finds held back stops the run
+// before it leaves; the packets the tool prepares after a read leave out the passages it found; a hold-back that lands after the read
+// before a packet doesn't stop that packet. Neither the test's packets nor the receipt step read the list. `workerFor` (a worker for a role of the trial's) and `questionWorker` (GPT's, for the
 // questions) replace the signed-in workers in tests; `random` sets the questions tool's draws.
 export async function runClientColdTest({ home, number, questionsPath = null, gptQuestions = false, provider = null, workerFor = null, questionWorker = null,
   environment = process.env, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS, random = undefined }) {

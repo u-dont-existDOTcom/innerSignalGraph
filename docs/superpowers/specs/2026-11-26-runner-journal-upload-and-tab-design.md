@@ -248,9 +248,9 @@ with its exact words and the date its entry gives, or none. Nothing else: no cas
   and so does, in a key check's packet, any passage holding the evidence quote of one of its questions (3.4); the sampling leaves them
   out and counts them. The packet leaves after the lock is released: a withdrawal, or another run's hold-back, committed in that
   instant doesn't stop that packet. A withdrawal stops the run at the next packet, of the tool or of the test, or before the receipt is
-  written. A hold-back is read only before each of the tool's packets: a later packet that holds or guards that passage stops the run,
-  the packets the tool prepares after reading it leave the passage out, and the test's packets and the receipt step don't read the
-  list. Holding the lock through a call,
+  written. The list is read when the tool starts and again right before each of its packets, and by nothing else: a packet that holds
+  or guards a passage the read finds held back stops the run before it leaves, the packets the tool prepares after a read leave out the
+  passages it found, and the test's packets and the receipt step don't read the list. Holding the lock through a call,
   which can take minutes, would stop every other action on the trial folder for that long, the consent's withdrawal included; the cold
   test's own packets have the same instant (section 12). A passage is known by its exact words: section 12 says what that misses. The
   tool's worker is pinned to Codex, which gives no sign of a refusal, so such a failure is always ambiguous; should a worker say that
@@ -940,9 +940,10 @@ was asked as i84 and answered `1c` (see "What the owner decided"). No choice of 
 - The consent, the copy and the held-back list are read in one hold of the folder's lock right before each of the questions tool's
   packets leaves (3.2, 3.7), and the packet leaves after the lock is released: a withdrawal, or another run's hold-back, committed in
   that instant doesn't stop that packet. A withdrawal stops the run at the next packet, of the tool or of the test, or before the
-  receipt is written. A hold-back is read only before each of the tool's packets: a later packet that holds or guards that passage
-  stops the run, the packets the tool prepares after reading it leave the passage out, and the test's packets and the receipt step
-  don't read the list (held-back passages reach the test as any passage does, as said above). Holding the lock through a call, which can take minutes, would stop every other action on
+  receipt is written. The list is read when the tool starts and again right before each of its packets, and by nothing else: a packet
+  that holds or guards a passage the read finds held back stops the run before it leaves, the packets the tool prepares after a read
+  leave out the passages it found, and the test's packets and the receipt step don't read the list (held-back passages reach the test
+  as any passage does, as said above). Holding the lock through a call, which can take minutes, would stop every other action on
   the trial folder for that long, the withdrawal itself included. The cold test's own packets have the same instant.
 - A phrase of an unanswerable question is checked for its characters and words (3.2), not for its meaning: words alone, spaced or
   joined by hyphens, can still read as a second question ("after the abacus did I lend it"), which the key check doesn't see, since unanswerable questions have no model
@@ -1148,7 +1149,7 @@ the count of passages guarded only fixed, and its P3 on the stop words partly; t
 | # | Finding | What changed after it |
 |---|---|---|
 | 1 | P3: the refusal said the first passage "isn't exactly" the sentinel, false for an exact one a reply may not quote; and that "the copy has no cold-test receipt now", false when a newer test has given its own | The refusal names a passage a reply may quote whose words are exactly the sentinel, and says that this test gave no receipt and that the one the copy had before it started is gone; a test of the sentence in a revoked first passage, refused; the command's test reads the refusal's whole words (3, 12; R18) |
-| 3, 5 | P3: "honoured at the tool's next packet" said more than a read of the held-back list does | The command's comment, 3.2 and section 12 say what it does: a later packet that holds or guards the passage stops the run, and the packets the tool prepares after the read leave it out |
+| 3, 5 | P3: "honoured at the tool's next packet" said more than a read of the held-back list does | The command's comment, 3.2 and section 12 say what a read does: a packet that holds or guards a passage it finds held back stops the run, the packets the tool prepares after it leave those passages out, and the list is read when the tool starts and before each of its packets, by nothing else |
 | 13 | P3: the appendix said that the import reads white space as one and cuts at a paragraph's last space | The earlier comparison read white space as one; the import cuts after a sentence or a line end, and at the last space only failing one |
 
 All three were statements saying more than the code does. So before this round's commit every claim this pull request added (in the

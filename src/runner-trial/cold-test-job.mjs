@@ -39,7 +39,7 @@ export const COLD_TEST_JOB_WORDS = Object.freeze({
   COLD_TEST_CHANGED: "The client's consent or copy changed during the cold test: it stopped, and gave no receipt.",
   COLD_TEST_MARKER_GONE: "The marker of this cold test's start is gone or can't be read: it gave no receipt. Run it again.",
   COLD_TEST_NEWER_STARTED: "A newer cold test of this copy has started, and that one decides: this one gave no receipt. If no other is running, run it again.",
-  COLD_QUESTIONS_NOT_INVENTED: "This copy's first passage isn't a passage a reply may quote whose words are exactly the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them. Nothing was sent, and this test gave no receipt; as at the start of any test, the receipt the copy had before it started is gone."
+  COLD_QUESTIONS_NOT_INVENTED: "This copy's first passage, if it has one, isn't a passage a reply may quote whose words are exactly the invented-journal sentinel, so GPT's questions don't run on it: they run only on an invented journal until a consent in its new words names them. Nothing was sent, and this test gave no receipt; as at the start of any test, the receipt the copy had before it started is gone."
 });
 
 // A file of the client's journal folder removed (their cold-test receipt, or the marker of the test started last), and that made durable.
