@@ -322,6 +322,9 @@ send here without a preflight the server never answers; no label, theme or file 
 | `GET /v1/runner/journal/days?caseId=`, `/v1/runner/journal/then-and-now` | the Journal tab (section 5) |
 | `/v1/runner/restart`, `/v1/runner/stop` | IS24's rest (built: pull request 254) |
 
+As built (pull request 3, stage 1): the People tab reads `GET /v1/runner/people` (each person, label and consent, and the words), a route
+the table didn't name.
+
 **4.2 Add a client.** A text field and "Add", with `validateClientLabel`'s rule (one line of 1 to 80 characters; no two labels alike
 but for capitals). The server does what `addClientLocked` does (the keys first, then the list), and the command and the page share
 that one function. The label goes into `clients.json` alone (no log, URL or report), and the page shows it as text, as it shows
@@ -354,6 +357,8 @@ of their own. The owner's own case gets an `own_journal` entry with the same fie
 treat it as a client's (his grant holds `session_use` while his own consent stands, and his case, once it has read his journal, stops
 while its gate is closed). The command `--journal-consent` keeps working on the first part; from pull request 3 it shows version 2's
 words and records them.
+As built (pull request 3, stage 1): a consent can be recorded for a client added since the start, before the restart (the route takes a
+client on the list, and the consent holds from the next start); `own_journal` also names the owner's case, which a start checks.
 
 **4.4 Add journal: the kinds and the limits.** Shown under a person whose journal consent stands (for a client, once restarted after
 being added); a file needs it in version 2's words, a sealed copy from the server in either (4.3). One file at a time, up to 64 MB (the journal import's own limits are 128 MB and 20,000 pages). The

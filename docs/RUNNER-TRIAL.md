@@ -79,7 +79,8 @@ One folder outside the checkout, only yours (mode 0700): `$HOME/.local/share/inn
   server through its environment, nowhere else. Nothing prints a key or a token. This is the development file provider, not
   OS-backed security: whoever can read your files can open the vault. If the file goes missing while the vault or the client list
   holds anything, the command stops instead of making new keys, which couldn't open them.
-- `clients.json` (mode 0600), once you add a client: each client's label, case and journal consent (below).
+- `clients.json` (mode 0600), once you add a client or record a consent: each client's label, case and both consents, and your own
+  journal consent (below, "People and consent").
 - `released-rules/`: a private (0700) snapshot of `origin/stable`'s `plugins/inner-signal-therapy`, extracted with `git archive`.
   Before starting the server the command quietly tries `git fetch origin stable`; if that fails it uses the local ref. A complete
   snapshot is published through an atomically replaced commit link, never an in-progress extraction.
@@ -124,13 +125,38 @@ client's own words, so your own notes don't belong there. The server refuses a c
 and each client's token opens only that client's case. A client added while the trial runs is counted on the page until the next
 start, which Restart at the top of the page makes for a runner the icon started; a consent recorded meanwhile takes effect then too.
 
+## People and consent
+
+The page's **People** tab (design: `docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md`, 4.2, 4.3 and 4.10;
+build plan: `docs/superpowers/plans/2026-11-28-runner-journal-steps.md`, stage 1) lists "You" and each client by number and label, and
+does without a terminal what `--add-client` and `--journal-consent` do, through the same functions (`src/runner-trial/people.mjs`):
+
+- **Add a client** takes the label in the request's body alone, never in an address; the page keeps no label in the browser's storage.
+  The client's row says "Ready after a restart" until the next start gives the case its grant.
+- **Record consent** shows the two questions in the words you read out, you tick what the client agreed to, and the page repeats it
+  before it is recorded, with the time. The journal consent's words, version 2, name the reading (OpenAI's GPT reads the whole journal
+  when it is added) and both companies; the Journal-tab consent, separate and optional, lets you see their Journal tab. The tab consent
+  can be recorded only while the journal consent stands, and counts only while both do; withdrawing the journal consent leaves the tab
+  consent's record as it is, so it counts again once the journal consent is recorded again (the page says so, and each can be
+  withdrawn from the same place). A consent recorded in version 1's words still holds for what it named, and the page shows it as given
+  in the earlier words, with "Ask again in the new words"; `--journal-consent confirm` now shows version 2's words and does the same.
+- **Use my journal** records your own consent, in the same words, without a tab consent (`own_journal` on the list); the next start
+  gives your grant the session-use purpose while it stands.
+- **Delete this case** first stops the case's journal work and admits none until it is over (`createRunnerJournalSteps`,
+  `stopForDeletion`); both consents stay as recorded.
+
+A change of the list waits up to ten seconds for the trial folder's lock, then the page says the runner is busy. These routes are the
+owner page's only, with the Run log's checks and a 1 KiB JSON body (`/v1/runner/people`, `/v1/runner/people/add`, `/v1/runner/consent`);
+with the trial off they don't exist. Tests: `tests/runner-journal-steps.test.mjs`. Limit: the Journal-tab consent's words are new with this
+build and are the owner's to approve; nothing here uses the journal yet beyond what the consent already allowed.
+
 ## A client's journal
 
 A client's journal can inform their replies only through the session-use journal reader (pull request 241), with
 `--response-evidence` on, and only when all three hold for that client at that moment:
 
-1. **Consent.** You confirm that the client agreed to their journal being used in these sessions, and to their words and journal
-   excerpts going to the companies that run the trial's workers (with `--provider mixed`, Anthropic and OpenAI):
+1. **Consent.** You confirm that the client agreed to the journal consent's words (above, "People and consent"), on the People tab or
+   with the command:
 
    ```bash
    node scripts/runner-trial-start.mjs --journal-consent confirm
