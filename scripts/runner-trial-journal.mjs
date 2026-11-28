@@ -388,7 +388,8 @@ const QUESTIONS_TOOL_STOPS = Object.freeze({
   COLD_QUESTIONS_NOT_ENOUGH: "too few of GPT's questions passed the checks for the rule",
   COLD_QUESTIONS_CALL_BUDGET: `the tool's ${COLD_QUESTIONS_TOOL.budget.calls} calls were spent before the questions were complete`,
   COLD_QUESTIONS_PASSAGE_BUDGET: `the tool's ${COLD_QUESTIONS_TOOL.budget.passages} passages were spent before the questions were complete`,
-  COLD_QUESTIONS_SNAPSHOT_CHANGED: "the copy changed while the questions were written"
+  COLD_QUESTIONS_SNAPSHOT_CHANGED: "the copy changed while the questions were written",
+  COLD_QUESTIONS_HELD_BACK_MEANWHILE: "another run on this copy held back a passage this one was about to send; nothing of that packet was sent, and this run has no test"
 });
 const numbersOnly = (report) => JSON.stringify(report ?? null);
 

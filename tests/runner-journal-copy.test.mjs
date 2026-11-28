@@ -2153,7 +2153,8 @@ test("--gpt-questions on an invented journal: GPT writes the run's questions fro
     imported.corpus_id, RECEIPTS.W, RECEIPTS.CW, 1]);
   assert.equal(await modeOf(receiptPath), 0o600);
   assert.deepEqual([result.questionsReport.kept.same_words, result.questionsReport.kept.other_words, result.questionsReport.kept.unanswerable, result.questionsReport.kept.planted], [48, 12, 26, 28]);
-  // GPT's calls came first, all of them before the test's; the sentinel's passage went to none.
+  // GPT's calls came first, all of them before the test's; the sentinel's passage went to none of GPT's question calls (the test itself
+  // reads an invented copy as it reads any copy, the sentinel's passage included: nothing in it is anyone's).
   assert.ok(writer.sent.length >= 10 && workers.sent.length >= 86);
   assert.equal(writer.sent.some(({ request }) => request.user.includes(INVENTED_JOURNAL_SENTINEL)), false);
 

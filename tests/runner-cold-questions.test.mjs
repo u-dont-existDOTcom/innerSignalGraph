@@ -7,7 +7,7 @@ import { ProviderError } from "../src/core/errors.mjs";
 import { evidenceWordsShared } from "../src/journal-import/retrieval.mjs";
 import { createPrivateCaseAccessService, PRIVATE_JOURNAL_PURPOSES } from "../src/storage/private-case-access.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
-import { QUESTIONS_HELD_BACK_FILE, clientJournalFolder, readQuestionsHeldBack } from "../src/runner-trial/clients.mjs";
+import { QUESTIONS_HELD_BACK_FILE, addQuestionsHeldBack, clientJournalFolder, readQuestionsHeldBack } from "../src/runner-trial/clients.mjs";
 import { PLANTED_KINDS } from "../src/runner-trial/cold-test-rule.mjs";
 import { COLD_QUESTIONS_TOOL, INVENTED_JOURNAL_SENTINEL, QUESTION_SUBJECTS, QUESTION_VERBS, answerableForFile, eligibleSubjects, journalLanguage, passageDigest,
   seededRandom, writeColdQuestions } from "../src/runner-trial/cold-questions.mjs";
@@ -44,7 +44,7 @@ const countsOf = (questions) => ({ answerable: questions.questions.filter(({ ans
   unanswerable: questions.questions.filter(({ answerable }) => !answerable).length, planted: questions.questions.filter(({ planted }) => planted).length });
 const WEEKDAYS = Object.freeze(["Sunday.", "Monday.", "Tuesday.", "Wednesday.", "Thursday.", "Friday.", "Saturday."]);
 const DATE_LINE = /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\.$/u;
-const NO_DROPS = Object.freeze({ question_invalid: 0, quote_not_in_passage: 0, quote_length: 0, quote_not_specific: 0, passage_used_twice: 0, repeated: 0,
+const NO_DROPS = Object.freeze({ question_invalid: 0, quote_not_in_passage: 0, quote_length: 0, quote_not_specific: 0, passage_used_twice: 0, other_passage_words: 0, repeated: 0,
   verb_not_on_list: 0, phrase_invalid: 0, phrase_not_from_batch: 0, reader_found_nothing: 0, key_doubted: 0, in_dropped_key_checks: 0,
   passage_held_back: 0, plant_not_written: 0, plant_invalid: 0, plant_doubted: 0 });
 const SKIP = Object.freeze({ skip: true, question: "", evidence_quote: "", wording: "none", planted_kind: "none", planted_answer: "" });
@@ -181,8 +181,9 @@ test("each of the program's checks drops a candidate that fails it, and counts i
     const value = await usual();
     if (packet.task === "answerable" && (writing += 1) === 1) {
       // A question empty or too long; an evidence quote not in its passage, of three words or of forty-one, or in every passage; a
-      // question asked before, in other letters and spacing.
-      const [empty, long, nowhere, short, overlong, everywhere, kept, again] = value.items;
+      // question asked before, in other letters and spacing; one that carries nine words of the next passage of its batch, which its key
+      // check, on its own passage alone, would send.
+      const [empty, long, nowhere, short, overlong, everywhere, kept, again, carry] = value.items;
       const words = (item) => normal(packet.passages[value.items.indexOf(item)].words).split(" ");
       empty.question = "";
       long.question = `${long.question} ${"and so on ".repeat(40)}`.trim();
@@ -191,18 +192,22 @@ test("each of the program's checks drops a candidate that fails it, and counts i
       overlong.evidence_quote = words(overlong).slice(0, 41).join(" ");
       everywhere.evidence_quote = "and it came back after a week";
       again.question = kept.question.toUpperCase().replaceAll(" ", "  ");
-      corrupted.questions.push(...[long, nowhere, short, overlong, everywhere, again].map(({ question }) => question));
+      carry.question = `What happened when ${normal(packet.passages[9].words).split(" ").slice(0, 9).join(" ")}?`;
+      corrupted.questions.push(...[long, nowhere, short, overlong, everywhere, again, carry].map(({ question }) => question));
     } else if (packet.task === "answerable" && writing === 2) {
-      // A planted answer of another kind than asked, empty, over 300 characters, or holding its evidence quote.
-      const [otherKind, empty, long, copy] = value.items.filter((item) => item.planted_kind !== "none");
+      // A planted answer of another kind than asked, empty, over 300 characters, holding its evidence quote, or carrying nine words of
+      // another passage of its batch.
+      const [otherKind, empty, long, copy, carryPlant] = value.items.filter((item) => item.planted_kind !== "none");
       otherKind.planted_kind = PLANTED_KINDS.find((kind) => kind !== otherKind.planted_kind);
       empty.planted_answer = "";
       long.planted_answer = `${PLANTED} ${"x".repeat(300)}`;
       copy.planted_answer = `${PLANTED}: ${copy.evidence_quote}`;
-      corrupted.plants.push(...[otherKind, long, copy].map(({ planted_answer: answer }) => answer));
+      const sibling = packet.passages[(value.items.indexOf(carryPlant) + 1) % packet.passages.length].words;
+      carryPlant.planted_answer = `${PLANTED}: ${normal(sibling).split(" ").slice(0, 9).join(" ")}`;
+      corrupted.plants.push(...[otherKind, long, copy, carryPlant].map(({ planted_answer: answer }) => answer));
     } else if (packet.task === "unanswerable" && (unanswerable += 1) === 1) {
-      // Verbs of saying; phrases with a question word, a joining word, a comma, a question mark, more than eight words, a word of no
-      // passage of the batch; and one for which the replies' reader finds nothing.
+      // Verbs of saying; phrases with a question word, a joining word, a comma, a question mark, a full stop that starts a second
+      // question, more than eight words, a word of no passage of the batch; and one for which the replies' reader finds nothing.
       const items = value.items, word = (item) => item.phrase.split(" ").at(-1);
       [items[0].verb, items[1].verb, items[2].verb] = ["mention", "write about", "name"];
       items[3].phrase = `why after the ${word(items[3])}`;
@@ -216,12 +221,16 @@ test("each of the program's checks drops a candidate that fails it, and counts i
       items[11].phrase = "after the zeppelin";
       items[12].phrase = `near the ${word(items[12])}`;
       items[13].phrase = `after the ${word(items[13])} and the bus`;
+      items[14].phrase = `after the ${word(items[14])}. Did I lend it`;
     }
     return value;
   } });
   const { questions, report } = await write(LONG, writer, { askReader: async (question) => (question.includes(" near the ") ? 0 : 2) });
   assert.deepEqual(report.dropped, { ...NO_DROPS, question_invalid: 2, quote_not_in_passage: 1, quote_length: 2, quote_not_specific: 1, repeated: 1,
-    verb_not_on_list: 3, phrase_invalid: 9, phrase_not_from_batch: 1, reader_found_nothing: 1, plant_not_written: 1, plant_invalid: 3 });
+    other_passage_words: 1, verb_not_on_list: 3, phrase_invalid: 10, phrase_not_from_batch: 1, reader_found_nothing: 1, plant_not_written: 1, plant_invalid: 4 });
+  // No key check carried a dropped question or planted answer: each holds its own passage and nothing of another's.
+  const checkedText = JSON.stringify(writer.packets("check_keys"));
+  for (const words of [...corrupted.questions, ...corrupted.plants]) assert.equal(checkedText.includes(JSON.stringify(words).slice(1, -1)), false, words);
   const asked = questions.questions.map(({ question }) => question);
   for (const question of corrupted.questions) assert.equal(asked.includes(question), false, question);
   const plantedAnswers = questions.questions.map(({ planted }) => planted?.answer).filter(Boolean);
@@ -230,7 +239,7 @@ test("each of the program's checks drops a candidate that fails it, and counts i
   for (const { question } of questions.questions.filter(({ answerable }) => !answerable)) {
     const [, verb] = /^(?:When did I|Did I ever) (\S+) .+ after the \p{L}+\?$/u.exec(question) ?? [];
     assert.ok(QUESTION_VERBS.en.includes(verb), question);
-    for (const words of ["zeppelin", " near ", "why", " or ", "rather", "instead", "besides", ",", "north", " and "]) assert.equal(question.includes(words), false, `${words} in ${question}`);
+    for (const words of ["zeppelin", " near ", "why", " or ", "rather", "instead", "besides", ",", "north", " and ", ". ", "lend it"]) assert.equal(question.includes(words), false, `${words} in ${question}`);
   }
 });
 
@@ -254,6 +263,25 @@ test("an evidence quote in more than three passages is dropped, and so is a ques
   assert.deepEqual([report.dropped.quote_not_specific, report.dropped.passage_used_twice], [8, 4]);
   const checked = writer.packets("check_keys").flatMap(({ items }) => items);
   assert.deepEqual([SHARED, TRIPLED].map((quote) => checked.filter(({ evidence_quote: evidence }) => evidence === quote).length), [0, 2]);
+});
+
+test("while there are passages enough for the sixty places, a passage is the evidence of one question only: two that share a quoted sentence give one question, not two", async () => {
+  // Sixty passages, each written about once; the first two share a sentence, which the stand-in quotes as the evidence of both.
+  const SHARED = "The kiln stayed cold all week.";
+  const texts = Array.from({ length: 60 }, (_, place) => (place < 2 ? `${SHARED} I lent the ${LENT_THINGS[place]} to my cousin.` : lentEntry(place)));
+  let tag = 0;
+  const writer = questionWriter({ reply: async (count, request, usual) => {
+    const packet = JSON.parse(request.user), value = await usual();
+    if (packet.task !== "answerable") return value;
+    value.items.forEach((item, index) => {
+      if (packet.passages[index].words.startsWith(SHARED)) Object.assign(item, { evidence_quote: SHARED, question: `${riddleWord(tag += 1)}: what happened when the kiln stayed cold all week?` });
+    });
+    return value;
+  } });
+  const { report } = await outcomeOf(write(texts, writer));
+  assert.deepEqual([report.passages.population, report.dropped.passage_used_twice], [60, 1]);
+  const checked = writer.packets("check_keys").flatMap(({ items }) => items);
+  assert.equal(checked.filter(({ evidence_quote: evidence }) => evidence === SHARED).length, 1);
 });
 
 test("GPT checks each answerable key on its evidence passage alone: a key it doubts goes, a planted answer it doesn't find contradicted goes, and the check sends no other passage", async () => {
@@ -453,6 +481,27 @@ test("a batch or a key check without an answer in its schema after two more asks
   assert.deepEqual([made.report.dropped.in_dropped_key_checks, made.report.batches.dropped_for_form, made.report.batches.answerable], [15, 1, 5]);
 });
 
+test("the context of the questions the journal doesn't answer is drawn from the passages not held back: a writing packet dropped before it leaves both context packets their fifteen", async () => {
+  let failed = 0;
+  const writer = questionWriter({ reply: async (count, request, usual) => (taskOf(request) === "answerable" && (failed += 1) <= 3 ? { items: [] } : usual()) });
+  const held = new Set();
+  await outcomeOf(write(LONG, writer, { holdBack: async (digests) => { for (const digest of digests) held.add(digest); } }));
+  assert.equal(held.size, 15);
+  const context = writer.packets("unanswerable").slice(0, 2);
+  assert.deepEqual(context.map(({ passages }) => passages.length), [15, 15]);
+  for (const { passages } of context) for (const { words } of passages) assert.equal(held.has(passageDigest(words)), false, words);
+});
+
+test("a passage another run held back after this one read the list stops this run before the packet that holds it leaves: nothing of that packet is sent, and the ask isn't counted", async () => {
+  const writer = questionWriter();
+  const all = LONG.map(passageDigest);
+  // The list as another run leaves it: empty when this run starts, every passage once this run's first packet has gone.
+  const { code, report } = await outcomeOf(write(LONG, writer, { readHeldBack: async () => (writer.sent.length >= 1 ? all : []) }));
+  assert.equal(code, "COLD_QUESTIONS_HELD_BACK_MEANWHILE");
+  assert.equal(writer.sent.length, 1);
+  assert.deepEqual([report.calls.made, report.calls.asked_again, report.passages.sent], [1, 0, 15]);
+});
+
 test("with fewer than sixty passages each is written about twice: one a dropped packet held back goes in no later packet of the run, the writing batch that held it again leaves it out, and its other question goes unchecked, so dropped", async () => {
   // Thirty passages: the first writing batch and the third hold the same fifteen, and so do the first and the third key checks.
   const texts = Array.from({ length: 30 }, (_, place) => lentEntry(place));
@@ -642,6 +691,23 @@ test("from the copy itself: the passages a reply may quote at the publication te
   for (const [part, code] of [[{ availability: "unavailable" }, "COLD_TEST_READER_UNAVAILABLE"], [{ availability: "available", receipts: [another], source_items: [] }, "COLD_TEST_SNAPSHOT_CHANGED"]]) {
     await assert.rejects(run(questionWriter(), { writer: { readerFor: async () => ({ read: async () => part }) } }), { code });
   }
+});
+
+test("the sentinel counts only on a line of its own: a copy that holds its sentence inside other words is refused before any call", async (t) => {
+  const { run } = await copyWith(t, [`We read it aloud: ${INVENTED_JOURNAL_SENTINEL} Then we went home.`, ...LONG]);
+  const idle = questionWriter();
+  await assert.rejects(run(idle), { code: "COLD_QUESTIONS_NOT_INVENTED" });
+  assert.equal(idle.sent.length, 0);
+});
+
+test("the job reads the client's held-back passages again right before each packet leaves: another run's hold-back, written while this one runs, stops it before the packet goes", async (t) => {
+  const { run, trialDir } = await copyWith(t, [INVENTED_JOURNAL_SENTINEL, ...LONG]);
+  // Another run on the copy holds back the passages of this run's second packet just before it leaves.
+  const racing = questionWriter({ prepare: async (count, request) => {
+    if (count === 2) await addQuestionsHeldBack(trialDir, CASE, wordsIn(JSON.parse(request.user)).map(passageDigest));
+  } });
+  await assert.rejects(run(racing), { code: "COLD_QUESTIONS_HELD_BACK_MEANWHILE" });
+  assert.equal(racing.sent.length, 1);
 });
 
 test("a copy without the invented-journal sentinel: refused before any call while GPT's questions run on invented journals only", async (t) => {

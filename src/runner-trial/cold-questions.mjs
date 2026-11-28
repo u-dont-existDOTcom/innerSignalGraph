@@ -54,6 +54,11 @@ export const COLD_QUESTIONS_TOOL = Object.freeze({
 // command runs them only on a copy whose tested publication holds it among the passages a reply may quote, and the passage that holds
 // it is never sampled.
 export const INVENTED_JOURNAL_SENTINEL = "This journal is invented for a test of InnerSignal, and nothing in it is anyone's.";
+/** Whether a passage holds the sentinel on a line of its own (3): the sentence alone on its line, not inside other words. */
+export const holdsInventedJournalSentinel = (quote) => String(quote).split(/\r\n|[\r\n\u2028\u2029]/u)
+  .some((line) => line.normalize("NFC").replace(/\s+/gu, " ").trim() === INVENTED_JOURNAL_SENTINEL);
+// How many words in a row of another passage make a question or a planted answer carry it (3.4).
+const CARRIED_WORDS = 6;
 
 // The verbs of doing an unanswerable question may use (3.2): none of saying, writing, naming, mentioning, describing, thinking or
 // remembering, which would make it a question about the journal's words, answered by their absence. French ones are past participles,
@@ -352,8 +357,10 @@ const coded = (code) => Object.assign(new Error("The questions tool's worker gav
 const QUESTION_WORDS = new Set(("what when where who whom whose why how which whether "
   + "quand où qui que quoi pourquoi comment quel quelle quels quelles lequel laquelle lesquels lesquelles combien").split(" "));
 const JOINING_WORDS = new Set("or and rather instead besides nor ou et plutôt sinon ni".split(" "));
+// No sentence punctuation, in any script (Unicode's terminal punctuation, the ellipsis too): a second sentence would be a second
+// question ("after the abacus. Did I lend it"), and a comma or a semicolon would join one.
 function phraseHolds(phrase) {
-  if (!phrase || /[?,;\r\n]/u.test(phrase) || phrase.split(" ").length > COLD_QUESTIONS_TOOL.phraseWords) return false;
+  if (!phrase || /[\p{Terminal_Punctuation}\u2026\r\n]/u.test(phrase) || phrase.split(" ").length > COLD_QUESTIONS_TOOL.phraseWords) return false;
   const words = lexicalTerms(phrase);
   return words.length > 0 && !words.some((word) => QUESTION_WORDS.has(word) || JOINING_WORDS.has(word));
 }
@@ -403,6 +410,7 @@ const chunks = (list, size) => Array.from({ length: Math.ceil(list.length / size
  * those the cold test resolves a key against; `wordList` how the search reads words; `worker` the sealed Codex worker (`call`);
  * `askReader(question)` how many passages the replies' reader returns for the question as the message; `beforeSend` what must still hold
  * before each packet leaves; `heldBack` the digests of passages held back from the tool's calls, and `holdBack(digests)` adds to them;
+ * `readHeldBack()` reads them again right before each packet leaves (another run on the copy may have added some since);
  * `exclude` ids never sampled (the invented-journal sentinel's passage). `budget` is the tool's own (3.1, 3.8), given otherwise only by
  * tests: the run's draws never reach its 150 passages (at most 135), so only a smaller one shows the stop. So are `fileAims`, the most of
  * each wording the file keeps (the tool's aims): the file's own check against the rule after its cut (3.5) can't fail with the tool's,
@@ -410,12 +418,12 @@ const chunks = (list, size) => Array.from({ length: Math.ceil(list.length / size
  * `{ questions, report }`, or stops with a code and a report of numbers only.
  */
 export async function writeColdQuestions({ passages, keyPassages, wordList, worker, askReader, beforeSend = null, heldBack = new Set(),
-  holdBack = async () => {}, exclude = new Set(), random = seededRandom(randomSeed()), timeoutMs = COLD_QUESTIONS_TOOL.timeoutMs, budget = COLD_QUESTIONS_TOOL.budget,
+  holdBack = async () => {}, readHeldBack = null, exclude = new Set(), random = seededRandom(randomSeed()), timeoutMs = COLD_QUESTIONS_TOOL.timeoutMs, budget = COLD_QUESTIONS_TOOL.budget,
   fileAims = COLD_QUESTIONS_TOOL.aims }) {
   const tool = COLD_QUESTIONS_TOOL;
   if (!Array.isArray(passages) || !Array.isArray(keyPassages) || typeof wordList !== "boolean") invalid("COLD_QUESTIONS_INPUT_INVALID");
   if (typeof worker?.call !== "function") invalid("COLD_QUESTIONS_WORKER_INVALID");
-  if (typeof askReader !== "function" || typeof holdBack !== "function") invalid("COLD_QUESTIONS_INPUT_INVALID");
+  if (typeof askReader !== "function" || typeof holdBack !== "function" || (readHeldBack !== null && typeof readHeldBack !== "function")) invalid("COLD_QUESTIONS_INPUT_INVALID");
   if (![budget?.passages, budget?.calls].every((limit) => Number.isSafeInteger(limit) && limit > 0)) invalid("COLD_QUESTIONS_INPUT_INVALID");
   if (![fileAims?.same, fileAims?.other, fileAims?.unanswerable].every((aim) => Number.isSafeInteger(aim) && aim >= 0)) invalid("COLD_QUESTIONS_INPUT_INVALID");
   const held = new Set(heldBack);
@@ -428,7 +436,10 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     subjects: { eligible: 0, used: 0 },
     batches: { answerable: 0, unanswerable: 0, key_checks: 0, dropped_for_form: 0, refused: 0 },
     // passage_held_back: questions dropped before their key check because a packet of this run that was dropped held their passage back.
-    dropped: { question_invalid: 0, quote_not_in_passage: 0, quote_length: 0, quote_not_specific: 0, passage_used_twice: 0, repeated: 0,
+    // passage_used_twice: a question whose evidence is a passage already the evidence of as many questions as allowed (one while there
+    // are enough passages, two when not: 3.1). other_passage_words: a question that carries words of another passage of its batch, which
+    // its key check, on its evidence passage alone, would send (3.4); a planted answer that does is counted in plant_invalid.
+    dropped: { question_invalid: 0, quote_not_in_passage: 0, quote_length: 0, quote_not_specific: 0, passage_used_twice: 0, other_passage_words: 0, repeated: 0,
       verb_not_on_list: 0, phrase_invalid: 0, phrase_not_from_batch: 0, reader_found_nothing: 0, key_doubted: 0, in_dropped_key_checks: 0,
       passage_held_back: 0, plant_not_written: 0, plant_invalid: 0, plant_doubted: 0 },
     kept: null
@@ -459,6 +470,10 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
   const candidates = [], unanswerables = [];
   const quarters = quartersOf(population);
   const quarterOf = new Map(quarters.flatMap((quarter, index) => quarter.map(({ id }) => [id, index])));
+  // 3.1: each passage the evidence of one question while there are enough for the sixty slots, of two (the rule's limit) when not.
+  const usesOfAPassage = population.length >= tool.answerableBatches * tool.batch ? 1 : MAX_QUESTIONS_OF_A_PASSAGE;
+  const passageById = new Map(passages.map((passage) => [passage.id, passage]));
+  const isHeld = (passage) => held.has(passageDigest(passage.quote));
 
   // One packet: the passages it sends and the call count against the budget, then the call, asked again at most twice for its form and
   // at most twice for a passing failure (a timeout), the two counted apart so that their order changes nothing, each ask counted against
@@ -473,10 +488,23 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     const spec = TASKS[task];
     const names = spec.names(packet);
     const failures = { form: 0, passing: 0 };
+    const inPacket = [...new Set(ids)].map((id) => passageById.get(id)).filter(Boolean);
+    // What must still hold right before the packet leaves: the caller's (consent and copy), then the held-back list read again, since
+    // another run on the copy may have held a passage back after this one read it (3.2). A passage of the packet held back meanwhile
+    // stops the tool, and nothing of the packet is sent: this ask isn't counted as made.
+    const guard = async () => {
+      if (beforeSend) await beforeSend();
+      if (!readHeldBack) return;
+      for (const digest of await readHeldBack()) held.add(digest);
+      if (!inPacket.some(isHeld)) return;
+      calls -= 1;
+      if (failures.form + failures.passing === 0) { for (const id of fresh) sent.delete(id); } else again -= 1;
+      stop("COLD_QUESTIONS_HELD_BACK_MEANWHILE");
+    };
     for (;;) {
       try {
         const { value } = await worker.call({ system: spec.system, user: JSON.stringify(packet), schema: structuredClone(spec.schema), timeoutMs,
-          stage: `cold_questions_${task}`, beforeSend });
+          stage: `cold_questions_${task}`, beforeSend: guard });
         if (!answers(task, value, names, spec.field)) throw coded(FORM);
         return { value };
       } catch (error) {
@@ -506,7 +534,18 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     for (const id of candidate.group) uses.set(id, uses.get(id) - 1);
   };
 
-  const isHeld = (passage) => held.has(passageDigest(passage.quote));
+  // Whether `text` (a question or a planted answer GPT wrote for `slot`) carries words of another passage of the batch: a run of six of
+  // its words, read as words of letters and digits, that another passage holds and none of its own evidence passages does. Its key
+  // check gets the evidence passage alone (3.4), so such a text would send the other passage's words with it.
+  const runsOf = (text) => {
+    const words = normal(text).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    return new Set(words.slice(0, Math.max(0, words.length - CARRIED_WORDS + 1)).map((_, index) => words.slice(index, index + CARRIED_WORDS).join(" ")));
+  };
+  function carriesOther(text, slots, slot, group) {
+    const own = new Set(group.flatMap((id) => [...runsOf(keyText.get(id) ?? "")]));
+    const runs = [...runsOf(text)].filter((run) => !own.has(run));
+    return runs.length > 0 && slots.some((other) => other !== slot && !group.includes(other.passage.id) && runs.some((run) => runsOf(other.passage.quote).has(run)));
+  }
   // An answerable batch (3.2, 3.3): each answer checked by the program; a skipped passage handed back for a replacement. A passage a
   // dropped packet of this run held back, after its batch was drawn, goes in no packet again: its place stays empty.
   async function answerableBatch(drawn) {
@@ -534,15 +573,16 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
       if (wordsOf(slot.passage.quote).length >= tool.quoteWords.min ? quoteWords < tool.quoteWords.min || quoteWords > tool.quoteWords.max : !whole) return drop("quote_length");
       const group = groupOf(quote);
       if (!group.length || group.length > MAX_KEY_QUOTE_PASSAGES || !group.includes(slot.passage.id)) return drop("quote_not_specific");
-      if (group.some((id) => (uses.get(id) ?? 0) >= MAX_QUESTIONS_OF_A_PASSAGE)) return drop("passage_used_twice");
+      if (group.some((id) => (uses.get(id) ?? 0) >= usesOfAPassage)) return drop("passage_used_twice");
       if (asked.has(sameWording(question))) return drop("repeated");
+      if (carriesOther(question, slots, slot, group)) return drop("other_passage_words");
       // The program's count of whether the question shares a word the search goes by with its evidence, not GPT's label (3.3).
       const kind = group.some((id) => evidenceWordsShared(question, keyText.get(id), { wordList }).length > 0) ? "same" : "other";
       let plant = null;
       if (slot.plant) {
         const answer = item.planted_answer.trim();
         if (item.planted_kind !== slot.plant) drop("plant_not_written");
-        else if (!answer || answer.length > tool.plantedCharacters || normal(answer).includes(normal(quote))) drop("plant_invalid");
+        else if (!answer || answer.length > tool.plantedCharacters || normal(answer).includes(normal(quote)) || carriesOther(answer, slots, slot, group)) drop("plant_invalid");
         else plant = { kind: slot.plant, answer };
       }
       asked.add(sameWording(question));
@@ -661,7 +701,8 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     report.passages.replaced = replacements.length;
     if (replacements.length) await answerableBatch(replacements);
   }
-  const context = drawSpread(quarters, tool.unanswerableBatches * tool.batch, new Set(), random);
+  // Drawn from the passages not held back, so a writing packet dropped before it leaves the context its thirty where the quarters allow.
+  const context = drawSpread(quarters.map((quarter) => quarter.filter((passage) => !isHeld(passage))), tool.unanswerableBatches * tool.batch, new Set(), random);
   const subjectQueue = [...subjects];
   for (const batch of chunks(context, tool.batch).slice(0, tool.unanswerableBatches)) {
     await unanswerableBatch(subjectQueue.splice(0, tool.batch), batch.filter((passage) => !held.has(passageDigest(passage.quote))));

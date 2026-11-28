@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { RuntimeError } from "../core/errors.mjs";
 import { COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, addQuestionsHeldBack, clientJournalFolder, journalConsentState, readColdTestAttempt, readColdTestMarker,
   readQuestionsHeldBack, syncFolder } from "./clients.mjs";
-import { INVENTED_JOURNAL_SENTINEL, readQuestionPassages, writeColdQuestions } from "./cold-questions.mjs";
+import { holdsInventedJournalSentinel, readQuestionPassages, writeColdQuestions } from "./cold-questions.mjs";
 import { createSealedColdTestPort, runJournalColdTest } from "./journal-cold-test.mjs";
 import { openSessionUseReader } from "./journal-gate.mjs";
 
@@ -136,20 +136,18 @@ export async function runColdTestJob({ trialDir, findClient, readClients, underL
   return { passed: result.passed, newerStarted, report: result.report, questionsReport };
 }
 
-const normal = (text) => text.normalize("NFC").replace(/\s+/gu, " ").trim();
-
 /**
  * GPT's questions for one run (section 3), as `runColdTestJob`'s `writeQuestions`: the copy's passages read from exactly the snapshot
  * under test; with `inventedOnly` (pull request 1, until a consent in its new words names the questions), the invented-journal sentinel
- * required among them before any call, and its passage left out of the sample; the client's held-back passages read and added to under
- * the folder's lock; the replies' reader asked with each unanswerable question, on that same snapshot; and `worker`, the sealed Codex
+ * required among them, on a line of its own, before any call, and its passage left out of the sample; the client's held-back passages
+ * read, read again right before each packet leaves, and added to, under the folder's lock; the replies' reader asked with each unanswerable question, on that same snapshot; and `worker`, the sealed Codex
  * worker, for every call.
  */
 export function createGptQuestionsWriter({ trialDir, worker, inventedOnly = true, readerFor = openSessionUseReader, random = undefined, timeoutMs = undefined }) {
   return async ({ service, auth, caseId, corpusId, tested, beforeSend, underLock }) => {
     if (!tested?.active_generation) throw new RuntimeError("The copy isn't published.", { code: "COLD_TEST_NOT_PUBLISHED" });
     const { passages, keyPassages, wordList } = await readQuestionPassages({ service, auth, caseId, corpusId, before: tested });
-    const sentinel = passages.filter(({ quote }) => normal(quote).includes(normal(INVENTED_JOURNAL_SENTINEL)));
+    const sentinel = passages.filter(({ quote }) => holdsInventedJournalSentinel(quote));
     if (inventedOnly && !sentinel.length) refuse("COLD_QUESTIONS_NOT_INVENTED", COLD_TEST_JOB_WORDS.COLD_QUESTIONS_NOT_INVENTED);
     const heldBack = await underLock(() => readQuestionsHeldBack(trialDir, caseId));
     const reader = await readerFor({ caseAccessService: service, corpusId });
@@ -163,6 +161,7 @@ export function createGptQuestionsWriter({ trialDir, worker, inventedOnly = true
     };
     return writeColdQuestions({ passages, keyPassages, wordList, worker, askReader, beforeSend, heldBack,
       holdBack: (digests) => underLock(() => addQuestionsHeldBack(trialDir, caseId, digests)),
+      readHeldBack: () => underLock(() => readQuestionsHeldBack(trialDir, caseId)),
       exclude: new Set(sentinel.map(({ id }) => id)), ...(random ? { random } : {}), ...(timeoutMs ? { timeoutMs } : {}) });
   };
 }
