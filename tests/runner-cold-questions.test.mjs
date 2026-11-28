@@ -852,6 +852,20 @@ test("right before each packet of the questions tool leaves, the job's consent c
   }
 });
 
+test("a caller that gives the writer no consent check of its own gives beforeSend, which still runs right before each packet leaves", async (t) => {
+  const { run } = await copyWith(t, [INVENTED_JOURNAL_SENTINEL, ...LONG]);
+  const order = [];
+  const writer = questionWriter({ prepare: async () => { order.push("packet"); } });
+  await run(writer, { call: { beforeSend: async () => { order.push("beforeSend"); } } });
+  assert.ok(writer.sent.length >= 10, `${writer.sent.length}`);
+  assert.deepEqual(order, writer.sent.flatMap(() => ["packet", "beforeSend"]));
+  // What it refuses stops the run before that packet leaves.
+  const refusing = questionWriter();
+  const withdrawn = async () => { if (refusing.sent.length === 2) throw Object.assign(new Error("A synthetic withdrawal."), { code: "COLD_TEST_CHANGED" }); };
+  await assert.rejects(run(refusing, { call: { beforeSend: withdrawn } }), { code: "COLD_TEST_CHANGED" });
+  assert.equal(refusing.sent.length, 2);
+});
+
 test("the job reads the client's held-back passages again right before each packet leaves: another run's hold-back, written while this one runs, stops it before the packet goes", async (t) => {
   const { run, trialDir } = await copyWith(t, [INVENTED_JOURNAL_SENTINEL, ...LONG]);
   // Another run on the copy holds back the passages of this run's second packet just before it leaves.
