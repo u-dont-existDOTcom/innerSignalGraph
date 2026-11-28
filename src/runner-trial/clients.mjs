@@ -20,8 +20,8 @@ export const RUNNER_CLIENTS_FILE = "clients.json";
 export const RUNNER_JOURNAL_FOLDER = "journal";
 export const COLD_TEST_RECEIPT_FILE = "cold-test-receipt.json";
 export const COLD_TEST_ATTEMPT_FILE = "cold-test-attempt.json";
-// The digests of the passages the cold test's questions tool sends GPT no more (src/runner-trial/cold-questions.mjs): those of a batch
-// that came back without an answer in its schema, which may have been a refusal. Digests only; their Delete removes them with the folder.
+// The digests of the passages the cold test's questions tool holds back from its GPT calls (src/runner-trial/cold-questions.mjs): those
+// of a packet it dropped as a possible refusal. Digests only; their Delete removes them with the folder.
 export const QUESTIONS_HELD_BACK_FILE = "questions-held-back.json";
 export const MAX_RUNNER_CLIENTS = 50;
 export const CLIENT_LABEL_MAX = 80;

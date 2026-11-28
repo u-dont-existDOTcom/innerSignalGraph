@@ -215,27 +215,23 @@ A client's journal can inform their replies only through the session-use journal
    ```
 
    The trial's sealed Codex worker (no tools, an empty folder, no session kept; on your ChatGPT plan, whatever `--provider` says) gets
-   passages of the copy sampled across it, an equal share of each quarter, fifteen to a call under opaque names, each with the date its
-   entry gives: 60 to write a question about, with its exact evidence and, for 28 of them, a planted wrong answer of the kind the program
-   names; and 30 as context for questions the journal doesn't answer, whose subject the program chooses from a fixed list among those no
-   passage names in any of their names, GPT giving a verb from the program's list and a short phrase, the program the shape ("When did I
-   visit the planetarium after the market?"). Passages about dying are sampled like any other. The program checks every candidate (the
-   quote exact and in one to three passages, its length, no passage the evidence of more than two questions, no question twice, the
-   planted answers' kinds and lengths, the verbs and phrases, and that the replies' reader returns a passage for each question the journal
-   doesn't answer), and GPT checks each answerable key on its evidence passage alone. The tool needs 40 questions in their passages'
-   words, 8 in other words, 20 the journal doesn't answer and 20 planted answers, three of each kind; short of that it makes one more batch
-   of each kind that is short, then stops with a code and its counts, and no test runs. At most 150 passages and 20 calls a run, every
-   call asked again included. A batch or a key check still without an answer in its schema after two more asks (which is how a refusal by
-   GPT would most likely come), or one a worker says it refused, is dropped whole, and its passages go to no later call of the tool for
-   that client: their digests are kept in `journal/<case id>/questions-held-back.json`. The questions and their key live in the command's
-   memory for that run alone, and the command prints the tool's numbers before the test's. The questions' author is `openai`, so the
-   tool doesn't run with `--provider codex`, whose judge is GPT too.
+   passages of the copy sampled across it, under opaque names, each with the date its entry gives, and writes questions about them, their
+   exact evidence and planted wrong answers. For the questions the journal doesn't answer, the program chooses the subject from a fixed
+   list among those no passage names, and GPT gives a verb from the program's list and a short phrase ("When did I visit the planetarium
+   after the market?"). Passages about dying are sampled like any other. The program checks every candidate, and GPT checks each
+   answerable key on its evidence passage alone. Short of what a pass needs, or of 8 questions in other words, after one more batch of
+   each kind that is short, the tool stops with a code and its counts, and no test runs. At most 150 passages and 20 calls a run. A
+   packet still without an answer in its schema after two more asks (which is how a refusal by GPT would most likely come), or that a
+   worker says it refused, is dropped, and its passages are held back from the tool's later calls for that client, by the digests of
+   their words in `journal/<case id>/questions-held-back.json` (the design's sections 3.2 and 12 say what is matched, and what that
+   leaves). The questions and their key live in the command's memory for that run alone; the command prints the tool's numbers before
+   the test's. The questions' author is `openai`, so the tool doesn't run with `--provider codex`, whose judge is GPT too.
 
    Until a consent in its new words names GPT's questions (pull request 3 of that design), they run only on an invented journal: in a
-   trial folder set apart for invented journals by a file named `invented-journals-only` in it (mode 0600; no command writes it), never
-   the default trial folder or a folder a runner starts from, one holding the icon's `launcher.json` (refused even with the file), and on
-   a copy whose first passage, in the copy's source order, is a passage a reply may quote whose words are exactly this sentence of the
-   code's, byte for byte (the invented-journal sentinel):
+   trial folder set apart for invented journals by a file named `invented-journals-only` in it (with no permission for group or others;
+   no command writes it), never the default trial folder or a folder a runner starts from, one holding the icon's `launcher.json`
+   (refused even with the file), and on a copy whose first passage, in the copy's source order, is a passage a reply may quote whose
+   words are exactly this sentence of the code's, byte for byte (the invented-journal sentinel):
 
    ```text
    This journal is invented for a test of InnerSignal, and nothing in it is anyone's: no person wrote it, no person is in it, and no reply to any person will ever quote it.
