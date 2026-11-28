@@ -25,6 +25,16 @@ export const COLD_TEST_ATTEMPT_FILE = "cold-test-attempt.json";
 export const QUESTIONS_HELD_BACK_FILE = "questions-held-back.json";
 export const MAX_RUNNER_CLIENTS = 50;
 export const CLIENT_LABEL_MAX = 80;
+// The list's version (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md, 4.3): version 2 adds the words a journal
+// consent was confirmed in, the Journal-tab consent and the owner's own journal. A version 1 file is read as version 2, its consents
+// confirmed in version 1's words; every write is version 2.
+export const RUNNER_CLIENTS_VERSION = 2;
+// The journal consent's words, version 2, exactly as the design gives them (4.3): what a person agrees to, read out by the owner. Version
+// 1 was the command's ("their words and excerpts going to the companies running the workers"), which names neither the reading nor OpenAI.
+export const JOURNAL_CONSENT_WORDS_VERSION = 2;
+export const JOURNAL_CONSENT_WORDS = "InnerSignal may use my journal in these sessions. When it is added, the whole journal goes to OpenAI, whose model (GPT) reads all of it before it is copied in; in the sessions and their tests, my words and excerpts of my journal go to Anthropic and OpenAI, whose models answer, check and write the test's questions.";
+// The Journal-tab consent's words (the owner's answer i80 3a): new with this build, and shown to him with it (design, section 12).
+export const TAB_CONSENT_WORDS = "The person who runs these sessions may see my Journal tab on their computer: the days I wrote on, and short passages of my journal in my own words, with their dates.";
 
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/u;
 const CORPUS_ID = /^[A-Za-z0-9:_-]{1,160}$/u;
@@ -50,9 +60,10 @@ export function validateClientLabel(value) {
   return label;
 }
 
-function validateConsent(value, name) {
+function validateConsent(value, name, { words = false } = {}) {
   if (value === null) return null;
-  exactKeys(value, ["confirmed_at", "withdrawn_at"], name);
+  exactKeys(value, words ? ["confirmed_at", "withdrawn_at", "words"] : ["confirmed_at", "withdrawn_at"], name);
+  if (words && ![1, JOURNAL_CONSENT_WORDS_VERSION].includes(value.words)) invalid(`${name} names words of an unknown version.`);
   timestamp(value.confirmed_at, `${name}.confirmed_at`);
   if (value.withdrawn_at !== null) {
     timestamp(value.withdrawn_at, `${name}.withdrawn_at`);
@@ -61,9 +72,21 @@ function validateConsent(value, name) {
   return value;
 }
 
+// A journal's fields on the list: the copy the list names, the consent, a client's tab consent (version 2) and, once a first import has
+// touched the vault, the server case its copies come from.
+function validateJournalFields(journal, name, { version, tab }) {
+  const fields = ["corpus_id", "consent", ...(version === 2 && tab ? ["tab_consent"] : [])];
+  exactKeys(journal, Object.hasOwn(journal ?? {}, "source_sha256") ? [...fields, "source_sha256"] : fields, `${name}.journal`);
+  if (Object.hasOwn(journal, "source_sha256") && !/^[0-9a-f]{64}$/u.test(journal.source_sha256 ?? "")) invalid(`${name}'s journal source is invalid.`);
+  if (journal.corpus_id !== null && (typeof journal.corpus_id !== "string" || !CORPUS_ID.test(journal.corpus_id))) invalid(`${name}'s journal corpus id is invalid.`);
+  validateConsent(journal.consent, `${name}'s journal consent`, { words: version === 2 });
+  if (version === 2 && tab) validateConsent(journal.tab_consent, `${name}'s Journal-tab consent`);
+}
+
 export function validateRunnerClients(value) {
-  exactKeys(value, ["schema_version", "clients"], "The client list");
-  if (value.schema_version !== 1) invalid("The client list's version is unknown.");
+  exactKeys(value, value?.schema_version === 1 ? ["schema_version", "clients"] : ["schema_version", "own_journal", "clients"], "The client list");
+  if (![1, RUNNER_CLIENTS_VERSION].includes(value.schema_version)) invalid("The client list's version is unknown.");
+  const version = value.schema_version;
   if (!Array.isArray(value.clients) || value.clients.length > MAX_RUNNER_CLIENTS) invalid(`The client list holds at most ${MAX_RUNNER_CLIENTS} clients.`);
   const caseIds = new Set();
   const labels = new Set();
@@ -81,21 +104,69 @@ export function validateRunnerClients(value) {
     // `source_sha256`: a digest of the server case the client's copies come from (scripts/runner-trial-journal.mjs, --import), written
     // before the first import touches the vault and kept until a Delete of theirs that the vault finishes: no other server case can be
     // imported for them, and this one for no other client. Absent before a first import.
-    exactKeys(client.journal, Object.hasOwn(client.journal ?? {}, "source_sha256") ? ["corpus_id", "consent", "source_sha256"] : ["corpus_id", "consent"], `${name}.journal`);
-    if (Object.hasOwn(client.journal, "source_sha256") && !/^[0-9a-f]{64}$/u.test(client.journal.source_sha256 ?? "")) invalid(`${name}'s journal source is invalid.`);
-    if (client.journal.corpus_id !== null && (typeof client.journal.corpus_id !== "string" || !CORPUS_ID.test(client.journal.corpus_id))) invalid(`${name}'s journal corpus id is invalid.`);
-    validateConsent(client.journal.consent, `${name}'s journal consent`);
+    validateJournalFields(client.journal, name, { version, tab: true });
   });
+  // The owner's own journal (version 2): its case and the same fields as a client's, without a tab consent; null until he records one.
+  if (version === 2 && value.own_journal !== null) {
+    const own = value.own_journal;
+    if (!plainObject(own) || typeof own.case_id !== "string" || !RUNNER_TRIAL_CASE_ID_PATTERN.test(own.case_id) || caseIds.has(own.case_id)) invalid("The owner's own journal names no case of his.");
+    const { case_id: _caseId, ...fields } = own;
+    validateJournalFields(fields, "The owner's own journal", { version, tab: false });
+  }
   return value;
 }
 
-export const emptyRunnerClients = () => ({ schema_version: 1, clients: [] });
+// A list of either version as version 2: a version 1 consent was confirmed in version 1's words, and no tab consent or own journal was
+// recorded under version 1.
+export function upgradeRunnerClients(value) {
+  const list = validateRunnerClients(value);
+  if (list.schema_version === RUNNER_CLIENTS_VERSION) return list;
+  return {
+    schema_version: RUNNER_CLIENTS_VERSION,
+    own_journal: null,
+    clients: list.clients.map((client) => ({
+      ...client,
+      journal: { ...client.journal, consent: client.journal.consent === null ? null : { ...client.journal.consent, words: 1 }, tab_consent: null }
+    }))
+  };
+}
+
+export const emptyRunnerClients = () => ({ schema_version: RUNNER_CLIENTS_VERSION, own_journal: null, clients: [] });
 
 // Whether the owner has confirmed this client's consent and not withdrawn it (design, point 5a). Read at every journal retrieval
 // and again before every delivery, because a grant is read only once, when the server starts.
-export function journalConsentCurrent(client) {
+// With `words`, only a consent confirmed in those words or later ones counts (a file's journal needs version 2's: design, 4.3 and 4.4).
+export function journalConsentCurrent(client, { words = 1 } = {}) {
   const consent = client?.journal?.consent;
-  return Boolean(consent && typeof consent.confirmed_at === "string" && consent.withdrawn_at === null);
+  return Boolean(consent && typeof consent.confirmed_at === "string" && consent.withdrawn_at === null && (consent.words ?? 1) >= words);
+}
+
+// The version of the words a standing or withdrawn journal consent was confirmed in; null without one.
+export function journalConsentWords(client) {
+  const consent = client?.journal?.consent;
+  return consent ? consent.words ?? 1 : null;
+}
+
+export function tabConsentState(client) {
+  const consent = client?.journal?.tab_consent;
+  if (!consent) return "none";
+  return consent.withdrawn_at === null ? "confirmed" : "withdrawn";
+}
+
+// The Journal-tab consent counts only while both it and the journal consent stand (design, 4.3).
+export const tabConsentCounts = (client) => tabConsentState(client) === "confirmed" && journalConsentCurrent(client);
+
+// The list's entry for a case, in one shape for both kinds: a client's, or the owner's own journal as `{ case_id, journal }` (its case
+// named on the list, or `ownCaseId` before he has recorded anything). Null for a case that is neither.
+export function runnerListEntry(list, caseId, { ownCaseId = null } = {}) {
+  const client = list.clients.find((entry) => entry.case_id === caseId);
+  if (client) return { kind: "client", number: list.clients.indexOf(client) + 1, entry: client };
+  const own = list.own_journal ?? null;
+  if (typeof caseId === "string" && (own?.case_id === caseId || (!own && caseId === ownCaseId))) {
+    const { case_id: _caseId, ...journal } = own ?? { case_id: caseId, corpus_id: null, consent: null };
+    return { kind: "own", number: null, entry: { case_id: caseId, journal } };
+  }
+  return null;
 }
 
 export function journalConsentState(client) {
@@ -132,12 +203,12 @@ export async function readRunnerClients(trialDir) {
   if (text === null) return emptyRunnerClients();
   let value;
   try { value = JSON.parse(text); } catch { invalid(`${RUNNER_CLIENTS_FILE} isn't valid JSON.`); }
-  return validateRunnerClients(value);
+  return upgradeRunnerClients(value);
 }
 
-// Written whole or not at all, mode 0600: a new file beside it, synced, then renamed over it.
+// Written whole or not at all, mode 0600: a new file beside it, synced, then renamed over it. Always as version 2.
 export async function writeRunnerClients(trialDir, value) {
-  validateRunnerClients(value);
+  value = upgradeRunnerClients(value);
   const file = runnerClientsPath(trialDir);
   const temporary = `${file}.${randomUUID()}.tmp`;
   const handle = await fs.open(temporary, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | constants.O_NOFOLLOW, 0o600);
@@ -160,14 +231,14 @@ export async function writeRunnerClients(trialDir, value) {
 // After "Delete this case" of a client has removed their copies from the vault: the list names no copy of theirs and no server case they
 // came from, so a copy from another one can be imported for them. With `keepSource` (the vault removed the case and couldn't finish, so
 // the case and its copies may come back after a power cut) the list keeps naming the server case, which stays theirs alone. Their consent
-// stays as recorded. A list with nothing to take off is made durable, since an earlier Delete may have changed it and not got that far.
-// The caller holds the folder's lock.
+// stays as recorded, both parts of it (design, 4.10). A list with nothing to take off is made durable, since an earlier Delete may have
+// changed it and not got that far. The caller holds the folder's lock.
 export async function forgetClientCopy(trialDir, caseId, { keepSource = false } = {}) {
   const list = await readRunnerClients(trialDir);
   const client = list.clients.find((entry) => entry.case_id === caseId);
   const tied = Boolean(client) && Object.hasOwn(client.journal, "source_sha256");
   if (!client || (client.journal.corpus_id === null && (keepSource || !tied))) return syncFolder(trialDir);
-  client.journal = { corpus_id: null, consent: client.journal.consent, ...(keepSource && tied ? { source_sha256: client.journal.source_sha256 } : {}) };
+  client.journal = { corpus_id: null, consent: client.journal.consent, tab_consent: client.journal.tab_consent, ...(keepSource && tied ? { source_sha256: client.journal.source_sha256 } : {}) };
   await writeRunnerClients(trialDir, list);
 }
 
@@ -336,4 +407,23 @@ export function runnerCasesView({ ownCaseId, clients, grantedCaseIds, receiptsFo
     });
   }
   return { cases, clientsAwaitingRestart: waiting };
+}
+
+// What the People tab shows (design, section 2, steps 2 and 3): "You" and each client on the list, by number and label, whether the running
+// server can use them yet (a client added since it started can't, until a restart), each consent's state and the version of the words a
+// journal consent was confirmed in, with the words the page asks in. Nothing else of the list: no times, copies or server cases.
+export function runnerPeopleView({ ownCaseId, list, grantedCaseIds }) {
+  const granted = new Set(grantedCaseIds);
+  const people = [];
+  if (ownCaseId) {
+    const own = runnerListEntry(list, ownCaseId, { ownCaseId })?.entry ?? null;
+    people.push({ caseId: ownCaseId, kind: "own", number: null, label: null, ready: true, journal: { consent: journalConsentState(own), words: journalConsentWords(own) } });
+  }
+  for (const [index, client] of list.clients.entries()) {
+    people.push({
+      caseId: client.case_id, kind: "client", number: index + 1, label: client.label, ready: granted.has(client.case_id),
+      journal: { consent: journalConsentState(client), words: journalConsentWords(client), tabConsent: tabConsentState(client) }
+    });
+  }
+  return { people, words: { journal: { version: JOURNAL_CONSENT_WORDS_VERSION, text: JOURNAL_CONSENT_WORDS }, tab: { text: TAB_CONSENT_WORDS } } };
 }

@@ -158,7 +158,7 @@ test("each client gets a case with keys of its own, a grant of its own with a ne
   await assert.rejects(addClient({ home, label: "Synthetic\nsecond line" }), /one line/u);
   assert.equal(await mode(path.join(home, "clients.json")), 0o600);
   const { clients } = await readRunnerClients(home);
-  assert.deepEqual(clients.map(({ label, added_at, journal }) => ({ label, added_at, journal })), [{ label: "Synthetic client one", added_at: "2026-11-24T08:00:00.000Z", journal: { corpus_id: null, consent: null } }]);
+  assert.deepEqual(clients.map(({ label, added_at, journal }) => ({ label, added_at, journal })), [{ label: "Synthetic client one", added_at: "2026-11-24T08:00:00.000Z", journal: { corpus_id: null, consent: null, tab_consent: null } }]);
   const clientCase = clients[0].case_id;
   assert.notEqual(clientCase, first.caseId);
   const keysAfterAdd = (await readJson(path.join(home, "credentials.json"))).case_keys;
@@ -189,7 +189,7 @@ test("each client gets a case with keys of its own, a grant of its own with a ne
   assert.deepEqual(credentials.grants[1].purposes, ["session_use"], "the journal purpose once the consent is confirmed");
   assert.equal(credentials.grants[0].purposes, undefined, "never for the owner's own case");
   assert.deepEqual(await setJournalConsent({ home, number: 1, action: "withdraw", now: () => new Date("2026-11-24T10:00:00.000Z") }), { changed: true, state: "withdrawn" });
-  assert.deepEqual((await readRunnerClients(home)).clients[0].journal.consent, { confirmed_at: "2026-11-24T09:00:00.000Z", withdrawn_at: "2026-11-24T10:00:00.000Z" });
+  assert.deepEqual((await readRunnerClients(home)).clients[0].journal.consent, { confirmed_at: "2026-11-24T09:00:00.000Z", withdrawn_at: "2026-11-24T10:00:00.000Z", words: 2 });
   await prepareTrialFolder({ home, provider: "codex" });
   assert.equal((await readJson(path.join(home, "credentials.json"))).grants[1].purposes, undefined, "dropped at the next start after a withdrawal");
   assert.ok(third.clientTokens[clientCase]);

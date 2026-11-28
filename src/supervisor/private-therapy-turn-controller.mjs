@@ -711,9 +711,11 @@ export function createPrivateTherapyTurnController({
       return queued(input?.caseId, () => executeRun(input));
     },
     // Only the runner trial's controller offers these: the turn's authorization, for the page's stream before it listens (it needs
-    // no queue: it reads nothing of the case); its page's reconcile and "Delete this case", which wait for the case's queue.
+    // no queue: it reads nothing of the case); its page's reconcile and "Delete this case", which wait for the case's queue; and the
+    // case's queue itself, for the trial's journal steps that change a case's record (src/runner-trial/journal-steps.mjs).
     ...(closesTurns ? {
       authorizeTurn,
+      inCaseQueue: (caseId, operation) => queued(caseId, operation),
       async reconcile({ caseId, afterExchangeId = null, currentConversation = false, authContext } = {}) {
         return queued(caseId, () => reconcileCase({ caseId, afterExchangeId, currentConversation: currentConversation === true, authContext }));
       },

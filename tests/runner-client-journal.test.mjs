@@ -749,7 +749,7 @@ test("Delete when the vault fails: with the case gone by then it's told as delet
   assert.deepEqual(page.shown(), ["This case was deleted"]);
   await assert.rejects(j.record(j.clientA), { code: "PRIVATE_CASE_NOT_FOUND" });
   assert.equal((await fs.readdir(locators)).length, named, "what the vault couldn't remove");
-  assert.deepEqual(Object.keys(await journalOf()).sort(), ["consent", "corpus_id"]);
+  assert.deepEqual(Object.keys(await journalOf()).sort(), ["consent", "corpus_id", "tab_consent"]);
   assert.equal((await journalOf()).corpus_id, null);
   for (const gone of [folder, log]) await assert.rejects(fs.readFile(gone), { code: "ENOENT" });
   // The runtime remembers nothing of the case's journal: a new message is answered, though the gate is closed.

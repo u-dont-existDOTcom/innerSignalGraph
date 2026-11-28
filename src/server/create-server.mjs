@@ -230,16 +230,31 @@ async function readJson(req, maxBytes = 2_000_000) {
 // authorization; a request that carries its own bearer token is an authenticated agent acting for someone, which does not make
 // it the owner.
 const SUPERVISOR_PATH = /^\/v1\/case\/supervisor\/(prepare|submit|export|report-sent)$/u;
-const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/clients", "/v1/runner/log", "/v1/runner/turn-details", "/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
-const RUNNER_PAGE_GETS = Object.freeze(["/v1/runner/clients", "/v1/runner/log", "/v1/runner/turn-details"]);
+const RUNNER_PAGE_ROUTES = new Set(["/v1/runner/clients", "/v1/runner/people", "/v1/runner/log", "/v1/runner/turn-details", "/v1/runner/reconcile", "/v1/case/delete", "/v1/runner/kept-plan/delete"]);
+const RUNNER_PAGE_GETS = Object.freeze(["/v1/runner/clients", "/v1/runner/people", "/v1/runner/log", "/v1/runner/turn-details"]);
 // The page's Restart and Stop (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md, sections 4.1 and 10), each
 // a JSON object of at most this many bytes that confirms it.
 const RUNNER_CONTROL_ROUTES = Object.freeze({ "/v1/runner/restart": "restart", "/v1/runner/stop": "stop" });
 const RUNNER_CONTROL_BODY_LIMIT = 1024;
+// The journal steps' routes (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md, 4.1; stage 1 of the build: people
+// and consent), each a JSON object of at most RUNNER_CONTROL_BODY_LIMIT bytes from the owner's page. No label goes in a URL.
+const RUNNER_JOURNAL_STEP_ROUTES = Object.freeze(["/v1/runner/people/add", "/v1/runner/consent"]);
 // What the page is told while it can't restart or stop, in fixed words.
 const RUNNER_BUSY_WORDS = "Restart and Stop wait while a reply is being written or a case is being deleted: try again when it has finished.";
 const RUNNER_STARTED_FROM_TERMINAL_WORDS = "This runner was started from a terminal: restart or stop it there.";
-const RUNNER_STATUS = Object.freeze({ RUNNER_BODY_TOO_LARGE: 413, RUNNER_CLOSING: 503 });
+const RUNNER_STATUS = Object.freeze({
+  RUNNER_BODY_TOO_LARGE: 413,
+  RUNNER_CLOSING: 503,
+  RUNNER_CASE_UNKNOWN: 404,
+  RUNNER_FOLDER_BUSY: 503,
+  RUNNER_TRIAL_NOT_READY: 409,
+  RUNNER_CLIENTS_FULL: 409,
+  RUNNER_CLIENT_LABEL_TAKEN: 409,
+  RUNNER_CONSENT_WORDS_OUTDATED: 409,
+  RUNNER_TAB_CONSENT_NEEDS_JOURNAL: 409,
+  RUNNER_JOURNAL_CASE_DELETING: 409,
+  RUNNER_JOURNAL_CASE_DELETED: 409
+});
 const LOOPBACK_HOST = /^(?:127\.0\.0\.1|localhost|\[::1\])(?::\d{1,5})?$/iu;
 const SUPERVISOR_STATUS = Object.freeze({
   SUPERVISOR_ARTIFACT_NOT_FOUND: 404,
@@ -709,6 +724,23 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         }
         return send(res, 202, { action, accepted: true });
       }
+      // The journal steps (design of 26 Nov 2026, 4.1 to 4.3): "Add a client" and a consent's record or withdrawal, only with the trial on
+      // and its journal steps built, only from the owner's page on this machine, as the Run log's routes are, and only as a small JSON
+      // object. A consent's case must be the owner's own or a client's on the trial's list, read under the folder's lock.
+      if (req.method === "POST" && RUNNER_JOURNAL_STEP_ROUTES.includes(url.pathname)) {
+        const steps = runnerEvents ? automaticPrivateTherapy?.journalSteps ?? null : null;
+        if (!steps) return send(res, 404, { error: "Not found" });
+        if (supervisorChannelFor(req) !== "owner_ui") throw supervisorError("SUPERVISOR_ORIGIN_REFUSED", "This action is only available from the application on this machine.");
+        assertOwnerChannelRequest(req);
+        const input = await readRunnerControlBody(req, res);
+        if (url.pathname === "/v1/runner/people/add") {
+          const added = await steps.addClient({ label: input.label });
+          return send(res, 200, { added: true, number: added.number, ready: false });
+        }
+        const caseId = readCaseId(input.caseId);
+        const recorded = await steps.recordConsent({ caseId, action: input.action, parts: input.parts, words: input.words ?? null });
+        return send(res, 200, { caseId, changed: recorded.changed });
+      }
       // The runner trial page's own routes (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections 6, 8 and 9): its
       // reconcile when it loads, "Delete this case" and, with the kept plan on, "Delete the kept plan". Only with the trial on (the
       // last only with the kept plan on too), only from the owner's page on this machine (no agent's bearer token, a loopback Host and
@@ -735,6 +767,13 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
             if (receipt?.rule === COLD_TEST_RULE.version && receipt.corpus_id === client.journal.corpus_id) passed.add(client.case_id);
           }
           return send(res, 200, runnerCasesView({ ownCaseId: runnerCaseId, clients, grantedCaseIds: granted, receiptsFor: (caseId) => passed.has(caseId) }));
+        }
+        if (url.pathname === "/v1/runner/people") {
+          // The People tab (design of 26 Nov 2026, section 2): "You" and each client on the list, with their labels and consents, for
+          // this page on this computer only.
+          const steps = automaticPrivateTherapy.journalSteps ?? null;
+          if (!steps) return send(res, 404, { error: "Not found" });
+          return send(res, 200, await steps.people());
         }
         const input = req.method === "GET" ? { caseId: url.searchParams.get("caseId") } : await readSupervisorBody(req);
         // A malformed or missing case id on the Details route gets the same fixed not-found as a malformed turn (Codex's review 5).

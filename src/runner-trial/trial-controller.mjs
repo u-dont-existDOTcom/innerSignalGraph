@@ -10,6 +10,7 @@ import { DEFAULT_RUNNER_SETTINGS, createRunnerTrialRuntime } from "./runtime.mjs
 import { JOURNAL_SEARCH_TIMEOUT_MS, createRunnerJournalGate } from "./journal-gate.mjs";
 import { RUNNER_TRIAL_SETTING, createRunnerWorkerFactory, loadRunnerTrialSettings, runnerArrangement } from "./settings.mjs";
 import { createRunnerWorkGate } from "./work-gate.mjs";
+import { createRunnerJournalSteps } from "./journal-steps.mjs";
 
 // What the server builds when INNER_SIGNAL_RUNNER_TRIAL is on (docs/superpowers/specs/2026-11-21-runner-trial-design.md, sections
 // 8 and 11): the turn controller over the trial's runtime, and the hub that carries the runtime's events to the page's stream.
@@ -173,6 +174,10 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
   // The runtime retries each worker itself (never after a plan limit, a lapsed sign-in or a refusal), so the controller tries once.
   const controller = createPrivateTherapyTurnController({ privateCaseSource: deletingSource, modelRuntime: runtime, runnerConfig, maximumInvocationAttempts: 1,
     ...(evidenceOn ? { responseEvidence: { enforced: true, journalTimeoutMs: JOURNAL_SEARCH_TIMEOUT_MS } } : {}), ...(evidenceOn && journalGate ? { journalEvidenceProvider: journalGate } : {}) });
+  // The journal steps' service (src/runner-trial/journal-steps.mjs; design of 26 Nov 2026, 4.1): only with the trial's folder, over the
+  // case's queue of this controller.
+  const journalSteps = trialDirectory ? createRunnerJournalSteps({ trialDir: trialDirectory, ownCaseId: config.runnerTrialCaseId ?? null, grantedCaseIds: [...clientCases],
+    inCaseQueue: controller.inCaseQueue }) : null;
   const logWriters = new Map();
   const logWriterFor = (caseId) => {
     const fileName = clientCases.has(caseId) ? runnerClientLogFile(caseId) : RUNNER_LOG_FILE;
@@ -200,16 +205,21 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
       });
     },
     // What the runtime remembers of the case and its own run log go with it (a client's place on the list and journal folder go in
-    // deletingSource above).
+    // deletingSource above). Delete wins (design of 26 Nov 2026, 4.1 and 4.10): the case's journal work is stopped and waited for before
+    // the case's queue is taken, and none is admitted until the deletion is over.
     async deleteCase(input) {
       return workGate.run("deletion", async () => {
-        const deleted = await controller.deleteCase(input);
-        const left = [];
-        await clearOrName(left, "RUNTIME_STATE", () => runtime.forgetCase(input.caseId));
-        await clearOrName(left, "RUN_LOG", () => logWriterFor(input.caseId).remove());
-        return withCleanupLeft(deleted, left);
+        const release = journalSteps ? await journalSteps.stopForDeletion(input?.caseId) : () => {};
+        try {
+          const deleted = await controller.deleteCase(input);
+          const left = [];
+          await clearOrName(left, "RUNTIME_STATE", () => runtime.forgetCase(input.caseId));
+          await clearOrName(left, "RUN_LOG", () => logWriterFor(input.caseId).remove());
+          return withCleanupLeft(deleted, left);
+        } finally { release(); }
       });
     },
+    journalSteps,
     // Only with the kept plan on, as the server asks of a controller (src/server/create-server.mjs).
     ...(typeof controller.deleteKeptPlan === "function" ? { deleteKeptPlan: (input) => workGate.run("deletion", () => controller.deleteKeptPlan(input)) } : {}),
     async runLog({ caseId, authContext }) { return runnerLogFromRecord(await loadExisting(caseId, authContext)); },
@@ -223,5 +233,5 @@ export function createRunnerTrialController({ privateCaseSource, config = {}, cl
   // Every case's log writes queued so far, the owner's and each client's (for a caller that must wait for them, such as a test that
   // then removes the trial folder).
   const flushLogs = async () => { await Promise.all([...logWriters.values()].map((writer) => writer.flush())); };
-  return Object.freeze({ controller: loggedController, events: hub, runtime, settings: trialSettings, runnerRules: rules.runnerRules, logWriter, flushLogs, workGate });
+  return Object.freeze({ controller: loggedController, events: hub, runtime, settings: trialSettings, runnerRules: rules.runnerRules, logWriter, flushLogs, workGate, journalSteps });
 }
