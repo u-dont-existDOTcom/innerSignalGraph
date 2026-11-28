@@ -234,12 +234,16 @@ A client's journal can inform their replies only through the session-use journal
    Until a consent in its new words names GPT's questions (pull request 3 of that design), they run only on an invented journal: in a
    trial folder set apart for invented journals by a file named `invented-journals-only` in it (mode 0600; no command writes it), never
    the default trial folder or a folder a runner starts from, one holding the icon's `launcher.json` (refused even with the file), and on
-   a copy that opens with the invented-journal sentinel: its first passage, of all its passages, is exactly the sentence `This journal
-   is invented for a test of InnerSignal, and nothing in it is anyone's: no person wrote it, no person is in it, and no reply to any
-   person will ever quote it.` An invented journal opens with that sentence as a paragraph of its own, a blank line after it; the
-   sentence anywhere else (inside other words, after another paragraph or a date line, or with the next line under it) doesn't count.
-   That passage goes to none of GPT's question calls. Elsewhere they are refused before any call. None of it has been run against a model: the measured run on an
-   invented journal comes once this is merged (i81 6a).
+   a copy whose first passage, in the copy's source order, is exactly this sentence of the code's, byte for byte (the invented-journal
+   sentinel):
+
+   ```text
+   This journal is invented for a test of InnerSignal, and nothing in it is anyone's: no person wrote it, no person is in it, and no reply to any person will ever quote it.
+   ```
+
+   A journal opens with that sentence only if someone put it there. The check is of the copy's first passage, not of the file it came
+   from. That passage goes to none of GPT's question calls. Elsewhere they are refused before any call. None of it has been run against
+   a model: the measured run on an invented journal comes once this is merged (i81 6a).
 
    For each question, the test gives a fresh call of the trial's writer's worker (with `--provider mixed`, GPT) exactly what a reply to
    that question as the message would get from the copy: the replies' reader's own search, at most six passages, each with when it was
