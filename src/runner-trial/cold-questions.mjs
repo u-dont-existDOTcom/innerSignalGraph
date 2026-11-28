@@ -52,8 +52,9 @@ export const COLD_QUESTIONS_TOOL = Object.freeze({
 });
 
 // The invented-journal sentinel (section 3): until a consent in its new words names GPT's questions, the command runs them only on a copy
-// whose first passage, in the copy's source order, is exactly this sentence, byte for byte; a journal opens with that sentence only if
-// someone put it there. The check is of the copy's first passage, not of the file it came from. That passage is never sampled.
+// whose first passage, in the copy's source order, is a passage a reply may quote whose stored words are exactly this sentence, byte for
+// byte; a journal opens with that sentence only if someone put it there. The check is of the copy's first passage, not of the file it
+// came from. That passage is never sampled.
 export const INVENTED_JOURNAL_SENTINEL = "This journal is invented for a test of InnerSignal, and nothing in it is anyone's: no person wrote it, no person is in it, and no reply to any person will ever quote it.";
 // A place in source order: [the page's place, the byte offset], or the single number an older index stored (graph.mjs).
 const isPlace = (order) => Number.isSafeInteger(order) || (Array.isArray(order) && order.length === 2 && order.every(Number.isSafeInteger));
@@ -374,11 +375,12 @@ const coded = (code) => Object.assign(new Error("The questions tool's worker gav
 // A phrase of an unanswerable question (3.2) is words alone, and its words ask nothing else. It is read with its white space trimmed
 // and each run of it as one space (unanswerableBatch), and the question is put together from it so read. Its characters, on an
 // allowlist: letters, combining marks and decimal digits, in any script; an apostrophe or a hyphen only inside a word ("l'été",
-// "rouge-gorge"); one space between words; nothing else, so no punctuation of any kind can start a second question or join one
-// ("after the abacus. Did I lend it", "after the abacus — did I lend it", "(after the abacus)"). Its words: no question word, no word
-// that joins two things, at most eight. Both languages' words are refused whatever the journal's language. It checks characters and
-// words, not meaning: words alone can still read as a second question ("after the abacus did I lend it"), a limit the design states
-// (section 12).
+// "rouge-gorge"); one space between words; nothing else, so no other punctuation can start a second question or join one ("after the
+// abacus. Did I lend it", "after the abacus — did I lend it", "(after the abacus)"). Its words: at most eight, a word being what spaces
+// separate; no part of one, read as the search reads words (an apostrophe or a hyphen parts it), a question word or a word that joins
+// two things. Both languages' words are refused whatever the journal's language. It checks characters and words, not meaning: words
+// alone, spaced or joined by hyphens, can still read as a second question ("after the abacus did I lend it"), a limit the design
+// states (section 12).
 const QUESTION_WORDS = new Set(("what when where who whom whose why how which whether "
   + "quand où qui que quoi pourquoi comment quel quelle quels quelles lequel laquelle lesquels lesquelles combien").split(" "));
 const JOINING_WORDS = new Set("or and rather instead besides nor ou et plutôt sinon ni".split(" "));
@@ -455,14 +457,14 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
   const held = new Set(heldBack);
   const report = {
     version: tool.version, language: null,
-    // held_back_in_run: the places in a writing batch left empty because a packet of this run that was dropped held their passage back
-    // (with fewer than sixty passages each is written about twice).
+    // held_back_in_run: the places in a writing batch left empty because their passage was held back after the run began, by a packet
+    // of this run that was dropped (with fewer than sixty passages each is written about twice) or by another run, read before a packet.
     passages: { usable: passages.length, excluded: 0, held_back: 0, population: 0, sent: 0, skipped: 0, replaced: 0, in_dropped_batches: 0, held_back_in_run: 0 },
     calls: { made: 0, asked_again: 0 },
     subjects: { eligible: 0, used: 0 },
     batches: { answerable: 0, unanswerable: 0, key_checks: 0, dropped_for_form: 0, refused: 0 },
-    // passage_held_back: questions dropped before their key check because a packet of this run that was dropped held back their passage,
-    // or another passage holding their evidence quote.
+    // passage_held_back: questions dropped before their key check because their passage, or another passage holding their evidence
+    // quote, was held back after the run began, by a packet of this run that was dropped or by another run, read before a packet.
     // passage_used_twice: a question whose evidence is a passage already the evidence of as many questions as allowed (one while there
     // are enough passages, two when not: 3.1). other_passage_words: a question that carries words of another passage of its batch, which
     // its key check, on its evidence passage alone, would send (3.4); a planted answer that does is counted in plant_invalid.
@@ -629,9 +631,10 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
 
   // GPT's check of each answerable key on its evidence passage alone (3.4): one it doubts is dropped, and so is a planted answer it
   // doesn't find contradicted. A check dropped for its form drops its questions, whose passages are held back. A question with any of
-  // its evidence passages (`group`, its own included) held back before its own check goes unchecked, so dropped: a passage written about
-  // twice is the evidence of two questions, and a question may carry the words of another passage holding its evidence quote, which its
-  // check would send. Each check's packet is guarded against all of them.
+  // its evidence passages (`group`, its own included) held back, as the run knows them before its check, goes unchecked, so dropped: a
+  // passage written about twice is the evidence of two questions, and a question may carry the words of another passage holding its
+  // evidence quote, which its check would send. Each check's packet is guarded against all of them, so that one another run held back
+  // meanwhile stops the run.
   async function checkKeys() {
     for (;;) {
       for (const candidate of candidates) {

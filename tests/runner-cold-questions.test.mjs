@@ -792,7 +792,7 @@ test("from the copy itself: the passages a reply may quote at the publication te
   }
 });
 
-test("GPT's questions run only on a copy whose first passage is exactly the code's sentence, byte for byte: the check reads the first passage the import makes, not the file, so files that open with the sentence in other ways run too, and a copy whose first passage is anything else is refused before any call", async (t) => {
+test("GPT's questions run only on a copy whose first passage, one a reply may quote, is exactly the code's sentence, byte for byte: the check reads the first passage the import makes, not the file, so files that open with the sentence in other ways run too, and a copy whose first passage is anything else is refused before any call", async (t) => {
   // Each journal is cut as the import cuts one (its own unit sizes). A file that opens with the sentence followed by a long run of spaces
   // and more words on its line (the import cuts in the spaces), or with a date line right under it, gives that first passage as one
   // that opens with the sentence as a paragraph does (review 4 found both): each opens with the code's sentence, and runs.
@@ -822,7 +822,8 @@ test("GPT's questions run only on a copy whose first passage is exactly the code
     ["under a date line", [S, ...LONG], { dates: new Map([[0, "March 1, 2019"]]) }],
     ["with more words on the next line", [`${S}\n${LONG[0]}`, ...LONG.slice(1)]],
     ["with a blank line inside it", [S.slice(0, colon), S.slice(colon + 1), ...LONG], { first: (stored) => stored[0] !== S && normal(stored[0]) === S }],
-    ["after a passage a reply may not quote", [LONG[0], S, ...LONG.slice(1)], { change: (node) => { if (node.data.quote === LONG[0]) node.lifecycle = "revoked"; } }]
+    ["after a passage a reply may not quote", [LONG[0], S, ...LONG.slice(1)], { change: (node) => { if (node.data.quote === LONG[0]) node.lifecycle = "revoked"; } }],
+    ["in a first passage a reply may not quote", [S, ...LONG], { first: (stored) => stored[0] === S, change: (node) => { if (node.data.quote === S) node.lifecycle = "revoked"; } }]
   ]) {
     const { run, stored } = await copyWith(t, paragraphs, { unitOptions: {}, ...options });
     if (first) assert.ok(first(stored), `${what}: ${JSON.stringify(stored.slice(0, 2))}`);
