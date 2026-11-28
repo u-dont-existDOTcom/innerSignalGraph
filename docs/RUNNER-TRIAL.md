@@ -145,9 +145,10 @@ does without a terminal what `--add-client` and `--journal-consent` do, through 
 - **Delete this case** first stops the case's journal work and admits none until it is over (`createRunnerJournalSteps`,
   `stopForDeletion`); both consents stay as recorded.
 
-A change of the list waits up to ten seconds for the trial folder's lock, then the page says the runner is busy. These routes are the
-owner page's only, with the Run log's checks and a 1 KiB JSON body (`/v1/runner/people`, `/v1/runner/people/add`, `/v1/runner/consent`);
-with the trial off they don't exist. Tests: `tests/runner-journal-steps.test.mjs`. Limit: the Journal-tab consent's words are new with this
+A change of the list waits up to ten seconds for the trial folder's lock, then the page says the runner is busy. A confirmation names the
+consent it was asked on, and one asked on a view that changed since (a withdrawal from the command, say) is refused; a withdrawal always
+holds. The routes are the owner page's only, with the Run log's checks (`GET /v1/runner/people`; `POST /v1/runner/people/add` and
+`/v1/runner/consent`, each a JSON object of at most 1 KiB); with the trial off they don't exist. Tests: `tests/runner-journal-steps.test.mjs`. Limit: the Journal-tab consent's words are new with this
 build and are the owner's to approve; nothing here uses the journal yet beyond what the consent already allowed.
 
 ## A client's journal

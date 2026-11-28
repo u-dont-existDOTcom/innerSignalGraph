@@ -1167,3 +1167,17 @@ usage, finding 2 below); eight P3s, each a sentence wider than the code; "VERDIC
 | 6 | P3: the not-enough stop said "for the rule", but the eight questions in other words are the tool's own need | The stop's words name both; the command's test reads them |
 | 7 | P3: 48 is what the tool needs (3.5), not what it aims at | The code's comment and 3.1 say "needs" |
 | 8 | P3: a test's title said that the order of the failures changes nothing; the third of either that comes first decides | The title says so |
+
+**Review 17** (28 Nov 2026, Codex, read-only and offline, of pull request 3's stage 1, `1e30523ad`): "not ready", two P2s and five P3s,
+all answered; recording a consent before the restart was found sound. GitHub's CodeQL also flagged the credentials' check and read as two
+steps, now one opened handle.
+
+| # | Finding | What changed after it |
+|---|---|---|
+| 1 | P2: a confirmation made on a stale view could undo a later withdrawal (and let an earlier tab consent count again) | A confirmation names the consent revision it was asked on (5.1's), the page's and the command's, and one asked on a view that changed since is refused under the lock (`RUNNER_CONSENT_CHANGED`); a withdrawal always holds |
+| 2 | P2: "from the next start" was false for a consent confirmed again while the grant already had `session_use` | The page and the command say it holds at once if it stood when the runner last started, otherwise from its next start |
+| 3 | P3: the page said "recorded" for a request that changed nothing, and kept "can't be read" after a good read | It says "Nothing changed"; a good read takes the line away |
+| 4 | P3: a failed write of the list sent the file system's message, which can name a path, and "not recorded" overstated what is known | Fixed words with the failure's code, saying to look again; the page reads the list again whenever the outcome can't be told |
+| 5 | P3: the Delete test's order came from two arrays put together, and a failing Delete was never made | One trace shared with the vault, the work held open after its last check, and a Delete the vault refuses |
+| 6 | P3: four tests would pass with their rule taken out (the order of the keys and the list, a label echoed in capitals, a streamed body over the limit, the command's words) | Each tested: the writes' order, a scan in any case, a body sent in chunks, the command's lines through stand-ins |
+| 7 | P3: the guide gave the People GET a JSON body | The two POST routes take one |
