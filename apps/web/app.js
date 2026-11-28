@@ -539,6 +539,10 @@ function applyRunnerTrial(on) {
       }
     }
   }
+  // The People tab is the trial's own (design of 26 Nov 2026, section 2): shown only with the trial on.
+  const peopleTab = $('[data-tab="people"]');
+  peopleTab.hidden = !on;
+  if (!on && peopleTab.classList.contains("active")) activateTab("therapy");
   $("#runner-tabs-note").hidden = !on;
   // The usual app's pipeline sentences and its reasoning-depth menu don't apply to the trial; "not emergency care" stays.
   $("#therapy-pipeline-description").hidden = on;
@@ -646,6 +650,288 @@ function initRunnerLauncherControls() {
   $("#runner-stop").addEventListener("click", () => { void askRunnerLauncher("stop"); });
 }
 // runner-launcher-controls:end
+
+// runner-people:start
+// The People tab (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md, section 2, steps 2, 3 and 13; 4.2 and 4.3):
+// "You" and each client by number and label, "Add a client", each consent recorded with both questions in the words the owner reads out,
+// and each withdrawn from the same place. Labels and words are set as text, never as markup; no label goes in a URL or in the browser's
+// storage, and the tab keeps nothing between loads. The server decides every change and gives the words.
+const RUNNER_PEOPLE_CASE_ID = /^case-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
+const RUNNER_CONSENT_STATES = Object.freeze(["none", "confirmed", "withdrawn"]);
+const RUNNER_PEOPLE_WORDS = Object.freeze({
+  own: Object.freeze({ none: "Your journal: no consent recorded.", confirmed: "Your journal: your consent is recorded.", withdrawn: "Your journal: your consent is withdrawn." }),
+  journal: Object.freeze({
+    none: "Journal: no consent recorded.",
+    confirmed: "Journal: consent recorded.",
+    earlier: "Journal: consent given in the earlier words, which don't name the reading of the whole journal by OpenAI's GPT: ask again in the new words before a journal file is added.",
+    withdrawn: "Journal: consent withdrawn. Nothing uses their journal; a case that has used it gives no replies until the consent is recorded again or the case is deleted."
+  }),
+  tab: Object.freeze({
+    none: "Journal tab: not allowed.",
+    confirmed: "Journal tab: allowed.",
+    hidden: "Journal tab: allowed, but hidden while the journal consent doesn't stand.",
+    withdrawn: "Journal tab: consent withdrawn."
+  }),
+  readyAfterRestart: "Ready after a restart.",
+  unreadable: "The people can't be read right now.",
+  unreachable: "the page can't reach the runner.",
+  nothingTicked: "Tick what was agreed to, or press Cancel.",
+  tabNeedsJournal: "The Journal-tab consent can be recorded only with the journal consent.",
+  tabCountsAgain: "Their Journal-tab consent recorded earlier counts again once this is recorded; withdraw it here if they no longer agree to it.",
+  recorded: "Recorded, with the time. It holds at once if it already stood when the runner last started, otherwise from its next start; a journal is used only once it has a copy that passed its cold test.",
+  recordedTab: "Recorded, with the time.",
+  withdrawn: "Withdrawn, with the time: it holds at once.",
+  alreadyRecorded: "Nothing changed: it was recorded already.",
+  alreadyWithdrawn: "Nothing changed: it was withdrawn already.",
+  lookAgain: "The list shows what is recorded now.",
+  typeLabel: "Type the label first."
+});
+
+// The server's view of the people, checked as the page checks its cases: only ids of the start script's form, labels as text, states
+// from their fixed lists. Null when it isn't readable.
+function runnerPeopleFrom(view) {
+  if (!view || !Array.isArray(view.people) || typeof view.words?.journal?.text !== "string" || !Number.isSafeInteger(view.words.journal.version) || typeof view.words?.tab?.text !== "string") return null;
+  const people = [];
+  for (const entry of view.people) {
+    if (!entry || typeof entry.caseId !== "string" || !RUNNER_PEOPLE_CASE_ID.test(entry.caseId) || people.some((person) => person.caseId === entry.caseId)) continue;
+    const consent = RUNNER_CONSENT_STATES.includes(entry.journal?.consent) ? entry.journal.consent : "none";
+    const words = [1, 2].includes(entry.journal?.words) ? entry.journal.words : null;
+    // The consent revision the page shows, which a confirmation names (design, 5.1).
+    const revision = typeof entry.revision === "string" && /^[0-9a-f]{16}$/u.test(entry.revision) ? entry.revision : null;
+    if (entry.kind === "own") people.push(Object.freeze({ caseId: entry.caseId, kind: "own", number: null, label: null, ready: true, consent, words, tabConsent: "none", revision }));
+    else if (entry.kind === "client" && Number.isSafeInteger(entry.number) && entry.number > 0 && typeof entry.label === "string" && entry.label.trim()) {
+      const tabConsent = RUNNER_CONSENT_STATES.includes(entry.journal?.tabConsent) ? entry.journal.tabConsent : "none";
+      people.push(Object.freeze({ caseId: entry.caseId, kind: "client", number: entry.number, label: entry.label.trim(), ready: entry.ready === true, consent, words, tabConsent, revision }));
+    }
+  }
+  return Object.freeze({ people, journalWords: view.words.journal.text, journalWordsVersion: view.words.journal.version, tabWords: view.words.tab.text });
+}
+
+const runnerPersonName = (person) => (person.kind === "own" ? "You" : `${person.number}. ${person.label}`);
+const runnerJournalCurrent = (person, version) => person.consent === "confirmed" && person.words === version;
+
+// The lines under a person: whether the running server can use them yet, and each consent's state.
+function runnerPersonLines(person, launcher) {
+  const lines = [];
+  if (!person.ready) lines.push(`${RUNNER_PEOPLE_WORDS.readyAfterRestart} ${launcher === "on" ? "Press Restart at the top." : "Start the runner again."}`);
+  if (person.kind === "own") return [...lines, RUNNER_PEOPLE_WORDS.own[person.consent]];
+  lines.push(person.consent === "confirmed" && person.words === 1 ? RUNNER_PEOPLE_WORDS.journal.earlier : RUNNER_PEOPLE_WORDS.journal[person.consent]);
+  lines.push(person.tabConsent === "confirmed" && person.consent !== "confirmed" ? RUNNER_PEOPLE_WORDS.tab.hidden : RUNNER_PEOPLE_WORDS.tab[person.tabConsent]);
+  return lines;
+}
+
+// The questions a person's consent form asks: the journal consent unless it stands in the current words, and, for a client, the tab
+// consent unless it stands.
+function runnerConsentQuestions(person, version) {
+  const parts = [];
+  if (!runnerJournalCurrent(person, version)) parts.push("journal");
+  if (person.kind === "client" && person.tabConsent !== "confirmed") parts.push("tab");
+  return parts;
+}
+
+// The buttons under a person, each with its own words.
+function runnerPersonActions(person, version) {
+  const actions = [];
+  const asks = runnerConsentQuestions(person, version);
+  if (person.kind === "own") {
+    if (asks.length) actions.push({ kind: "record", words: "Use my journal" });
+    if (person.consent === "confirmed") actions.push({ kind: "withdraw", part: "journal", words: "Withdraw my journal consent" });
+    return actions;
+  }
+  if (asks.length) actions.push({ kind: "record", words: person.consent === "confirmed" && person.words === 1 ? "Ask again in the new words" : "Record consent" });
+  if (person.consent === "confirmed") actions.push({ kind: "withdraw", part: "journal", words: "Withdraw journal consent" });
+  if (person.tabConsent === "confirmed") actions.push({ kind: "withdraw", part: "tab", words: "Withdraw Journal-tab consent" });
+  return actions;
+}
+
+// What the confirmation repeats before anything is recorded.
+function runnerConsentConfirmText(person, parts, view) {
+  const said = parts.map((part) => `"${part === "journal" ? view.journalWords : view.tabWords}"`).join("\n\n");
+  return person.kind === "own" ? `Record that you agree to:\n\n${said}\n\nThe time is recorded with it.` : `Record that ${runnerPersonName(person)} agreed to:\n\n${said}\n\nThe time is recorded with it.`;
+}
+
+function runnerWithdrawConfirmText(person, part) {
+  if (person.kind === "own") return "Withdraw your journal consent? From now on nothing uses your journal.";
+  return part === "tab"
+    ? `Withdraw ${runnerPersonName(person)}'s Journal-tab consent? Their Journal tab is hidden from now on.`
+    : `Withdraw ${runnerPersonName(person)}'s journal consent? From now on nothing uses their journal, also while the runner runs, and their Journal tab is hidden. A case that has used the journal gives no replies until the consent is recorded again or the case is deleted.`;
+}
+
+// `request`: the number of the last read asked for, so an earlier answer that comes back later is dropped. `form`: the person whose
+// consent form is open, with the parts it asks.
+const runnerPeople = { view: null, request: 0, form: null, afterChange: () => {} };
+
+function setRunnerPeopleStatus(words) {
+  const line = $("#runner-people-status");
+  line.textContent = words;
+  line.hidden = !words;
+}
+
+function closeRunnerConsentForm() {
+  runnerPeople.form = null;
+  $("#runner-consent-questions").replaceChildren();
+  $("#runner-consent-heading").textContent = "";
+  $("#runner-consent-form").hidden = true;
+}
+
+function renderRunnerPeople() {
+  const list = $("#runner-people");
+  const view = runnerPeople.view;
+  list.replaceChildren(...(view?.people ?? []).map((person) => {
+    const item = document.createElement("li");
+    item.className = "runner-person";
+    const name = document.createElement("h3");
+    name.textContent = runnerPersonName(person);
+    item.append(name);
+    for (const words of runnerPersonLines(person, runnerTrial.launcher)) {
+      const line = document.createElement("p");
+      line.className = "small";
+      line.textContent = words;
+      item.append(line);
+    }
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    for (const action of runnerPersonActions(person, view.journalWordsVersion)) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.textContent = action.words;
+      button.addEventListener("click", () => {
+        if (action.kind === "record") openRunnerConsentForm(person);
+        else void withdrawRunnerConsent(person, action.part);
+      });
+      actions.append(button);
+    }
+    if (actions.childElementCount) item.append(actions);
+    return item;
+  }));
+}
+
+async function loadRunnerPeople() {
+  const request = ++runnerPeople.request;
+  let view = null;
+  try {
+    const response = await fetch("/v1/runner/people", { headers: { accept: "application/json" }, referrerPolicy: "same-origin", cache: "no-store" });
+    view = response.ok ? runnerPeopleFrom(await response.json()) : null;
+  } catch { /* shown as unreadable below */ }
+  if (request !== runnerPeople.request) return;
+  runnerPeople.view = view;
+  if (!view) setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.unreadable);
+  else if ($("#runner-people-status").textContent === RUNNER_PEOPLE_WORDS.unreadable) setRunnerPeopleStatus("");
+  if (runnerPeople.form && !view?.people.some((person) => person.caseId === runnerPeople.form.person.caseId)) closeRunnerConsentForm();
+  renderRunnerPeople();
+}
+
+function openRunnerConsentForm(person) {
+  const view = runnerPeople.view;
+  const parts = view ? runnerConsentQuestions(person, view.journalWordsVersion) : [];
+  if (!parts.length) return;
+  runnerPeople.form = { person, parts };
+  $("#runner-consent-heading").textContent = person.kind === "own"
+    ? "Use my journal: read the words, and tick them if you agree to them."
+    : `Ask ${runnerPersonName(person)} each question in these words, and tick what they agreed to.`;
+  const questions = parts.map((part) => {
+    const box = document.createElement("fieldset");
+    const legend = document.createElement("legend");
+    legend.textContent = part === "journal" ? "Their journal in these sessions" : "Their Journal tab, which you may see (they may say no)";
+    if (person.kind === "own") legend.textContent = "Your journal in these sessions";
+    const words = document.createElement("p");
+    words.className = "runner-consent-words";
+    words.textContent = `"${part === "journal" ? view.journalWords : view.tabWords}"`;
+    const label = document.createElement("label");
+    const tick = document.createElement("input");
+    tick.type = "checkbox";
+    tick.dataset.part = part;
+    label.append(tick, ` ${person.kind === "own" ? "I agree to this" : "They agreed to this"}`);
+    box.append(legend, words, label);
+    if (part === "journal" && person.kind === "client" && person.tabConsent === "confirmed") {
+      const note = document.createElement("p");
+      note.className = "small";
+      note.textContent = RUNNER_PEOPLE_WORDS.tabCountsAgain;
+      box.append(note);
+    }
+    return box;
+  });
+  $("#runner-consent-questions").replaceChildren(...questions);
+  $("#runner-consent-form").hidden = false;
+  setRunnerPeopleStatus("");
+}
+
+async function sendRunnerPeopleChange(route, body) {
+  let response = null;
+  let payload = {};
+  try {
+    response = await fetch(route, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    payload = await response.json().catch(() => ({}));
+  } catch { /* the page can't reach the runner */ }
+  if (response?.ok) return { ok: true, payload };
+  return { ok: false, code: typeof payload?.code === "string" ? payload.code : null, words: typeof payload?.error === "string" && payload.error ? payload.error : RUNNER_PEOPLE_WORDS.unreachable };
+}
+
+// A change the server refused before it wrote anything is told with "Not …"; one whose outcome can't be told (the list may or may not have
+// been written, the lock was left after it, or the runner couldn't be reached) is told as it is, and the list is read again to show what
+// is recorded. Either way the people are read again.
+const RUNNER_PEOPLE_UNCERTAIN = Object.freeze(["RUNNER_CLIENTS_UNWRITTEN", "RUNNER_FOLDER_LOCK_LEFT", "UNEXPECTED_ERROR", null]);
+async function tellRunnerPeopleFailure(refusal, sent) {
+  setRunnerPeopleStatus(RUNNER_PEOPLE_UNCERTAIN.includes(sent.code) ? `${sent.words} ${RUNNER_PEOPLE_WORDS.lookAgain}` : `${refusal}: ${sent.words}`);
+  if (sent.code === "RUNNER_CONSENT_CHANGED") closeRunnerConsentForm();
+  const status = $("#runner-people-status").textContent;
+  await loadRunnerPeople();
+  if (runnerPeople.view) setRunnerPeopleStatus(status);
+}
+
+async function recordRunnerConsent() {
+  const form = runnerPeople.form;
+  const view = runnerPeople.view;
+  if (!form || !view) return;
+  const parts = [...document.querySelectorAll("#runner-consent-questions input[type=checkbox]")].filter((tick) => tick.checked).map((tick) => tick.dataset.part);
+  if (!parts.length) { setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.nothingTicked); return; }
+  if (parts.includes("tab") && !parts.includes("journal") && form.person.consent !== "confirmed") { setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.tabNeedsJournal); return; }
+  if (!confirm(runnerConsentConfirmText(form.person, parts, view))) return;
+  const sent = await sendRunnerPeopleChange("/v1/runner/consent", { caseId: form.person.caseId, action: "confirm", parts, words: view.journalWordsVersion, revision: form.person.revision });
+  if (!sent.ok) { await tellRunnerPeopleFailure("Not recorded", sent); return; }
+  closeRunnerConsentForm();
+  setRunnerPeopleStatus(sent.payload?.changed === false ? RUNNER_PEOPLE_WORDS.alreadyRecorded : parts.includes("journal") ? RUNNER_PEOPLE_WORDS.recorded : RUNNER_PEOPLE_WORDS.recordedTab);
+  await loadRunnerPeople();
+  await runnerPeople.afterChange();
+}
+
+async function withdrawRunnerConsent(person, part) {
+  if (!confirm(runnerWithdrawConfirmText(person, part))) return;
+  const sent = await sendRunnerPeopleChange("/v1/runner/consent", { caseId: person.caseId, action: "withdraw", parts: [part] });
+  if (!sent.ok) { await tellRunnerPeopleFailure("Not withdrawn", sent); return; }
+  if (runnerPeople.form?.person.caseId === person.caseId) closeRunnerConsentForm();
+  setRunnerPeopleStatus(sent.payload?.changed === false ? RUNNER_PEOPLE_WORDS.alreadyWithdrawn : RUNNER_PEOPLE_WORDS.withdrawn);
+  await loadRunnerPeople();
+  await runnerPeople.afterChange();
+}
+
+async function addRunnerClient() {
+  const field = $("#runner-add-client-label");
+  if (!field.value.trim()) { setRunnerPeopleStatus(RUNNER_PEOPLE_WORDS.typeLabel); return; }
+  const sent = await sendRunnerPeopleChange("/v1/runner/people/add", { label: field.value });
+  if (!sent.ok) { await tellRunnerPeopleFailure("Not added", sent); return; }
+  field.value = "";
+  const number = Number.isSafeInteger(sent.payload?.number) ? sent.payload.number : null;
+  setRunnerPeopleStatus(`Added${number ? ` client ${number}` : ""}. ${RUNNER_PEOPLE_WORDS.readyAfterRestart} ${runnerTrial.launcher === "on" ? "Press Restart at the top." : "Start the runner again."}`);
+  await loadRunnerPeople();
+  await runnerPeople.afterChange();
+}
+
+// `afterChange`: what else the page reads again after a change (the conversation's list of cases).
+function initRunnerPeople({ afterChange = () => {} } = {}) {
+  runnerPeople.afterChange = afterChange;
+  $("#runner-add-client").addEventListener("submit", (event) => {
+    event.preventDefault();
+    void addRunnerClient();
+  });
+  $("#runner-consent-record").addEventListener("click", () => { void recordRunnerConsent(); });
+  $("#runner-consent-cancel").addEventListener("click", () => {
+    closeRunnerConsentForm();
+    setRunnerPeopleStatus("");
+  });
+}
+// runner-people:end
 
 // The plan kept for next time (design, section 9): the question a new conversation opens with, its two answers, the line that says
 // what happened to the kept plan, and the button that deletes it. Every word is fixed and set with textContent.
@@ -1470,6 +1756,7 @@ async function exportDiagnosticZip(button) {
 
 function activateTab(id) {
   if (runnerTrial.on && ["hypnosis", "guides", "supervisor", "data"].includes(id)) return;
+  if (!runnerTrial.on && id === "people") return;
   if (id !== "hypnosis") speechPlayback.stop();
   for (const button of $$(".tab")) button.classList.toggle("active", button.dataset.tab === id);
   for (const panel of $$(".panel")) {
@@ -1477,6 +1764,7 @@ function activateTab(id) {
     panel.hidden = !active;
     panel.classList.toggle("active", active);
   }
+  if (id === "people") void loadRunnerPeople();
 }
 
 // The menu of cases (design, point 3), the line at the top of the conversation saying whose case it is, and whether Send works:
@@ -2137,6 +2425,7 @@ $("#guide-packet-rollback").addEventListener("click", async () => {
 $("#guide-packet-export").addEventListener("click", () => downloadResponse("/v1/guides/export", "inner-signal-guide-packet-installed.zip").catch((error) => alert(error.message)));
 
 initRunnerLauncherControls();
+initRunnerPeople({ afterChange: () => loadRunnerCases() });
 $("#dev-approve").addEventListener("click", () => submitDevelopmentDecision("approve").catch((error) => alert(error.message)));
 $("#dev-reject").addEventListener("click", () => submitDevelopmentDecision("reject").catch((error) => alert(error.message)));
 

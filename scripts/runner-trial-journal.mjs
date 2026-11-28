@@ -13,7 +13,6 @@
 
 import fsp from "node:fs/promises";
 import path from "node:path";
-import { randomBytes } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { withOpenedRegularFile } from "../src/core/opened-regular-file.mjs";
 import { isOutside } from "../src/core/private-path.mjs";
@@ -24,6 +23,7 @@ import { COLD_TEST_RULE } from "../src/runner-trial/cold-test-rule.mjs";
 import { COLD_QUESTIONS_TOOL } from "../src/runner-trial/cold-questions.mjs";
 import { COLD_TEST_JOB_WORDS, ColdTestJobError, createGptQuestionsWriter, runColdTestJob } from "../src/runner-trial/cold-test-job.mjs";
 import { validateColdQuestionsFile } from "../src/runner-trial/journal-cold-test.mjs";
+import { JOURNAL_STEP_GRANTS, oneTimeGrant } from "../src/runner-trial/journal-steps.mjs";
 import { SealedCodexWorker } from "../src/runner-trial/sealed-codex.mjs";
 import { createRunnerWorkerFactory } from "../src/runner-trial/settings.mjs";
 import { RUNNER_CLAUDE_CONFIG_DIR } from "../src/runner-trial/switch.mjs";
@@ -208,21 +208,11 @@ export async function ensureJournalCopyKey({ home, number, lockWaitMs = COMMAND_
   }, { waitMs: lockWaitMs });
 }
 
-// A grant made in this process for one command and one case alone, with a random token only this process knows: the copy step's
-// write with the archive, organize_search and session_use purposes the store asks (design, point 4), or the cold test's read
-// with session use. Nothing of it is written.
-export function oneTimeGrant(caseId, { scopes, purposes }) {
-  const token = randomBytes(32).toString("base64url");
-  const authorizationProvider = Object.freeze({
-    async authorize({ caseId: asked, authContext, requiredScope }) {
-      const allowed = asked === caseId && authContext?.bearerToken === token && scopes.includes(requiredScope);
-      return { allowed, principalId: "runner-trial-journal-step", scopes: allowed ? [requiredScope] : [], purposes: allowed ? [...purposes] : [] };
-    }
-  });
-  return { authorizationProvider, authContext: { bearerToken: token } };
-}
-
-export const IMPORT_PURPOSES = Object.freeze([PRIVATE_JOURNAL_PURPOSES.ARCHIVE, PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH, PRIVATE_JOURNAL_PURPOSES.SESSION_USE]);
+// A grant made in this process for one command and one case alone (src/runner-trial/journal-steps.mjs, shared with the server's journal
+// steps): the copy step's write with the archive, organize_search and session_use purposes the store asks (design, point 4), or the
+// cold test's read with session use. Nothing of it is written.
+export { oneTimeGrant };
+export const IMPORT_PURPOSES = JOURNAL_STEP_GRANTS.copy.purposes;
 
 // A file of the client's journal folder removed (their cold-test receipt, whatever copy it names, or the marker of the cold test started
 // last), and that made durable.
@@ -312,7 +302,7 @@ async function importOpenedCopy({ resolved, list, client, number, bundle }) {
     } catch (error) {
       throw new StartError(`Client ${number}'s cold-test receipt couldn't be removed for good (${codeOf(error) ?? "failed"}); nothing was imported.`);
     }
-    const grant = oneTimeGrant(client.case_id, { scopes: [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE], purposes: IMPORT_PURPOSES });
+    const grant = oneTimeGrant(client.case_id, JOURNAL_STEP_GRANTS.copy);
     const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, heldRootDir: providers.rootDir, authorizationProvider: grant.authorizationProvider,
       keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
     const result = await importJournalCopy({ caseAccessService: service, caseId: client.case_id, corpusId: journalCopyCorpusId(bundle), authContext: grant.authContext, bundle });

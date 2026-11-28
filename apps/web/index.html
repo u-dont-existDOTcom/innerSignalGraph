@@ -57,6 +57,7 @@
       <button class="tab" data-tab="supervisor" type="button">Supervisor drafts</button>
       <button class="tab" data-tab="case-state" type="button">State &amp; tracker</button>
       <button class="tab" data-tab="data" type="button">Local data</button>
+      <button class="tab" data-tab="people" type="button" hidden>People</button>
     </nav>
     <p id="runner-tabs-note" class="small" hidden>The runner trial is the therapy dialogue; the app's other tabs aren't part of it.</p>
 
@@ -117,6 +118,30 @@
         </div>
         <p id="runner-emergency-line" class="runner-emergency-line" role="note" hidden></p>
       </form>
+    </section>
+
+    <section id="people" class="panel" aria-labelledby="people-heading" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">RUNNER TRIAL</p>
+          <h2 id="people-heading">People</h2>
+        </div>
+      </div>
+      <ul id="runner-people" class="runner-people"></ul>
+      <section id="runner-consent-form" class="runner-consent-form" aria-labelledby="runner-consent-heading" hidden>
+        <h3 id="runner-consent-heading"></h3>
+        <div id="runner-consent-questions"></div>
+        <div class="actions">
+          <button id="runner-consent-record" type="button">Record</button>
+          <button id="runner-consent-cancel" class="secondary" type="button">Cancel</button>
+        </div>
+      </section>
+      <form id="runner-add-client" class="runner-add-client">
+        <label for="runner-add-client-label">Add a client: the label you'll know them by (initials or a code word), shown only on this page</label>
+        <input id="runner-add-client-label" type="text" autocomplete="off" spellcheck="false">
+        <button id="runner-add-client-button" type="submit">Add</button>
+      </form>
+      <p id="runner-people-status" class="small" role="status" aria-live="polite" hidden></p>
     </section>
 
     <section id="hypnosis" class="panel" aria-labelledby="hypnosis-heading" hidden>

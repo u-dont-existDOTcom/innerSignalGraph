@@ -835,7 +835,7 @@ test("the page's version, tabs, calm note and Run log are trial-only; State & tr
   p.context.health = health;
   assert.equal(vm.runInContext("runnerVersionText(health)", p.context), "Inner Signal runtime v0.15.2 · local repair 12345678");
   vm.runInContext("applyRunnerTrial(false)", p.context);
-  assert.ok([...p.document.querySelectorAll(".tab")].every((tab) => !tab.hidden));
+  assert.ok([...p.document.querySelectorAll(".tab")].every((tab) => tab.hidden === (tab.dataset.tab === "people")), "every tab but the trial's People tab");
   for (const id of ["#runner-run-log", "#runner-emergency-line", "#runner-tabs-note"]) assert.equal(p.document.querySelector(id).hidden, true);
   p.context.health = { version: "0.15.2", runnerTrial: "on", runnerRules: { version: "0.2.6", sha256: "2126edaf1234", source: "stable 123456789" } };
   assert.equal(vm.runInContext("runnerVersionText(health)", p.context), "InnerSignal runner trial · rules 0.2.6 (2126edaf) · page v0.15.2");
@@ -844,6 +844,7 @@ test("the page's version, tabs, calm note and Run log are trial-only; State & tr
   vm.runInContext("applyRunnerTrial(true)", p.context);
   for (const id of ["hypnosis", "guides", "supervisor", "data"]) assert.equal(p.document.querySelector(`[data-tab="${id}"]`).hidden, true);
   assert.equal(p.document.querySelector('[data-tab="case-state"]').hidden, false);
+  assert.equal(p.document.querySelector('[data-tab="people"]').hidden, false, "the People tab is the trial's");
   const line = p.document.querySelector("#runner-emergency-line");
   assert.equal(line.hidden, false); assert.equal(line.getAttribute("role"), "note");
   assert.ok(p.document.querySelector("#therapy-send").compareDocumentPosition(line) & p.document.defaultView.Node.DOCUMENT_POSITION_FOLLOWING);

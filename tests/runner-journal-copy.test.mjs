@@ -730,7 +730,7 @@ test("a client's copies come from one server case: named on the list before the 
   // list, not the vault.
   const imported = await importing(1, await sealedFor(first, 1));
   const tied = await journalOf(1);
-  assert.deepEqual(Object.keys(tied).sort(), ["consent", "corpus_id", "source_sha256"]);
+  assert.deepEqual(Object.keys(tied).sort(), ["consent", "corpus_id", "source_sha256", "tab_consent"]);
   const other = await sealedFor(second, 1);
   const before = await tree(home);
   await assert.rejects(importing(1, other), { message: "Client 1's journal copy comes from another server case; to import a different one, delete their case first. Nothing was changed." });
@@ -752,7 +752,7 @@ test("a client's copies come from one server case: named on the list before the 
   const begun = await journalOf(2);
   assert.deepEqual([begun.corpus_id, /^[0-9a-f]{64}$/u.test(begun.source_sha256), begun.source_sha256 === tied.source_sha256], [null, true, false]);
   await assert.rejects(importing(3, await sealedFor(second, 3)), /already copied for client 2 \(or a copy of it begun\); nothing was imported/u);
-  assert.deepEqual(await journalOf(3), { corpus_id: null, consent: null });
+  assert.deepEqual(await journalOf(3), { corpus_id: null, consent: null, tab_consent: null });
   const two = await importing(2, retried);
   assert.deepEqual(await journalOf(2), { ...begun, corpus_id: two.corpus_id });
 
@@ -964,7 +964,7 @@ test("Delete this case of a client takes their copies, their key and their place
   assert.equal(workers.sent.length, 2);
   await absent(trial.receiptPath);
   await absent(path.join(clientJournalFolder(home, clientOne), CLIENT_COPY_KEY_FILE));
-  assert.deepEqual((await readRunnerClients(home)).clients.map((client) => client.journal), [{ corpus_id: null, consent }, { corpus_id: null, consent: null }], "the consent stays as recorded");
+  assert.deepEqual((await readRunnerClients(home)).clients.map((client) => client.journal), [{ corpus_id: null, consent, tab_consent: null }, { corpus_id: null, consent: null, tab_consent: null }], "the consent stays as recorded");
   await assert.rejects(trial.copier(clientOne).inspectJournalCorpus(clientOne, trial.imported.corpus_id, { requiredScope: "case:read", requiredPurpose: "session_use" }, { bearerToken: "synthetic" }), { code: "PRIVATE_CASE_NOT_FOUND" });
   // A copy sealed for the old key can't be opened any more.
   await assert.rejects(importClientJournal({ home, number: 1, sealedPath: trial.sealedPath }), /has no key for journal copies yet/u);
@@ -985,7 +985,7 @@ test("Delete this case of a client takes their copies, their key and their place
   assert.deepEqual(await tree(home), before);
   await fs.unlink(lock);
   assert.equal((await deleteCase(clientTwo)).cleanup_left, undefined);
-  assert.deepEqual((await readRunnerClients(home)).clients[1].journal, { corpus_id: null, consent: null });
+  assert.deepEqual((await readRunnerClients(home)).clients[1].journal, { corpus_id: null, consent: null, tab_consent: null });
   await absent(path.join(clientJournalFolder(home, clientTwo), CLIENT_COPY_KEY_FILE));
   // A list that can't be written is told, and the case is deleted all the same: the key is gone, the list keeps the server case (nothing
   // else is imported against it), and deleting again finishes it.
@@ -1003,7 +1003,7 @@ test("Delete this case of a client takes their copies, their key and their place
   await assert.rejects(importClientJournal({ home, number: 2, sealedPath: await sealedFor(second, 2, "second-for-two.sealed.json") }), /already copied for client 1/u);
   const again = await deleteCase(clientOne);
   assert.deepEqual([again.case_file_removed, again.journal_corpora_removed, again.cleanup_left], [false, 0, undefined]);
-  assert.deepEqual((await readRunnerClients(home)).clients[0].journal, { corpus_id: null, consent });
+  assert.deepEqual((await readRunnerClients(home)).clients[0].journal, { corpus_id: null, consent, tab_consent: null });
   await importClientJournal({ home, number: 2, sealedPath: path.join(outside, "second-for-two.sealed.json") });
 });
 
@@ -1035,7 +1035,7 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
     await fs.writeFile(logOf(clientOne), "{}\n", { mode: 0o600 });
     assert.deepEqual((await fs.readdir(folder)).sort(), [COLD_TEST_ATTEMPT_FILE, COLD_TEST_RECEIPT_FILE, CLIENT_COPY_KEY_FILE].sort());
     const listed = await journalOf();
-    assert.deepEqual(Object.keys(listed).sort(), ["consent", "corpus_id", "source_sha256"]);
+    assert.deepEqual(Object.keys(listed).sort(), ["consent", "corpus_id", "source_sha256", "tab_consent"]);
     return listed;
   };
   // Each step that fails, by its code: the vault's own first removal after the case's file (its temporary file), the list that can't be
@@ -1078,7 +1078,7 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
     // The case is gone, and everything but what's named. Until the vault has finished, the list also keeps the server case the copy came from.
     await caseGone();
     const unfinished = codes.includes("VAULT_CLEANUP");
-    const cleared = { corpus_id: null, consent, ...(unfinished ? { source_sha256: listed.source_sha256 } : {}) };
+    const cleared = { corpus_id: null, consent, tab_consent: null, ...(unfinished ? { source_sha256: listed.source_sha256 } : {}) };
     assert.deepEqual(await journalOf(), codes.includes("JOURNAL_LIST") ? listed : cleared, codes.join());
     const inFolder = [CLIENT_COPY_KEY_FILE, COLD_TEST_RECEIPT_FILE, COLD_TEST_ATTEMPT_FILE].map((name) => [path.join(folder, name), "JOURNAL_FOLDER"]);
     for (const [place, code] of [...inFolder, [logOf(clientOne), "RUN_LOG"], [lock, "FOLDER_LOCK"]]) {
@@ -1103,7 +1103,7 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
     for (let time = 0; time < 2; time += 1) {
       const again = await deleteCase(clientOne);
       assert.deepEqual([again.case_file_removed, again.journal_corpora_removed, Object.hasOwn(again, "cleanup_left")], [false, 0, false], codes.join());
-      assert.deepEqual(await journalOf(), { corpus_id: null, consent });
+      assert.deepEqual(await journalOf(), { corpus_id: null, consent, tab_consent: null });
       for (const place of [folder, logOf(clientOne), lock]) await absent(place);
     }
     // Then it's nobody's: the other client can import it, and once they are deleted (a Delete that finishes lets go of it at once) this client
@@ -1111,7 +1111,7 @@ test("once the vault has deleted a client's case, Delete is done: what can't be 
     if (unfinished) {
       await importClientJournal({ home, number: 2, sealedPath: forTwo });
       assert.equal(Object.hasOwn(await deleteCase(clientTwo), "cleanup_left"), false);
-      assert.deepEqual((await readRunnerClients(home)).clients[1].journal, { corpus_id: null, consent: null });
+      assert.deepEqual((await readRunnerClients(home)).clients[1].journal, { corpus_id: null, consent: null, tab_consent: null });
     }
   }
   // A cold test in its last call meanwhile, with a list that can't be written: it gives no receipt and makes no folder again.
@@ -1238,7 +1238,7 @@ test("a client's journal folder is removed for good, as is their place on the li
     assert.deepEqual([steps, await journalOf()], [ORDER, { ...tied, corpus_id: null }]);
   }
   assert.equal(Object.hasOwn(await recorded(), "cleanup_left"), false);
-  assert.deepEqual([steps, await journalOf()], [ORDER, { corpus_id: null, consent: tied.consent }]);
+  assert.deepEqual([steps, await journalOf()], [ORDER, { corpus_id: null, consent: tied.consent, tab_consent: null }]);
   // No client of the trial has had a journal folder: nothing to remove or sync, and nothing to tell.
   const fresh = await trialWith(t);
   await absent(path.join(fresh.home, "journal"));
@@ -2036,7 +2036,7 @@ test("the client list, the cold-test receipt and its test's marker are each open
   }
   for (const mocked of looking) mocked.mock.restore();
   // Missing: no clients, no receipt, no marker.
-  await inPlaceOf(clients, async () => {}, async () => assert.deepEqual(await readRunnerClients(home), { schema_version: 1, clients: [] }));
+  await inPlaceOf(clients, async () => {}, async () => assert.deepEqual(await readRunnerClients(home), { schema_version: 2, own_journal: null, clients: [] }));
   await inPlaceOf(receiptPath, async () => {}, async () => assert.equal(await readColdTestReceipt(home, clientOne), null));
   await inPlaceOf(markerPath, async () => {}, async () => assert.equal(await readColdTestAttempt(home, clientOne), null));
   // A pipe nothing writes to: refused at once, never waited on (in a process of its own).

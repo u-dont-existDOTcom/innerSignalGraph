@@ -352,9 +352,10 @@ const ajv = new Ajv2020({ strict: true });
 const isConsumerAnswer = ajv.compile(COLD_CONSUMER_SCHEMA);
 const isJudgeAnswer = ajv.compile({ ...COLD_JUDGE_SCHEMA, properties: { ...COLD_JUDGE_SCHEMA.properties, reason: { type: "string", maxLength: COLD_JUDGE_REASON_MAX } } });
 
-// The consumer and the judge on two of the trial's own signed-in workers (`claude -p` or `codex exec`, sealed: no tools, an empty folder, no
-// session kept): one fresh call each time, with the instruction and the packet's own fields and nothing else. `beforeSend` runs right before
-// each packet leaves.
+// The consumer and the judge on two of the trial's own signed-in workers (`claude -p` or `codex exec`, sealed: an empty folder, no session
+// kept; `claude -p` is given no tools, while `codex exec` still offers some, so a call whose events show any action is refused, and its own
+// server's two tools only list MCP resources, of which the call's Codex home configures none: sealed-claude.mjs and sealed-codex.mjs): one
+// fresh call each time, with the instruction and the packet's own fields and nothing else. `beforeSend` runs right before each packet leaves.
 //
 // A call is made again, with the same packet, when it failed for a reason a reply's is made again for (RETRYABLE_WORKER_FAILURES) or its answer
 // is outside its schema or for another question: at most twice, and at most MAX_COLD_RETRIES times in a test, for its form alone and never for
