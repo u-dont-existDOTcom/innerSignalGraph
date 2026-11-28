@@ -555,14 +555,17 @@ test("a question whose evidence quote another passage holds too is dropped befor
 });
 
 test("a key check is guarded against every passage holding its questions' evidence quotes: one another run holds back right before it leaves stops the run, though it isn't one of the check's own passages", async () => {
-  // B has nothing to ask about (skipped), so no question of its own; another run holds B back right before the key check that holds A's
-  // question leaves.
-  let meanwhile = false;
-  const writer = carryingB({ skip: (words) => words === PASSAGE_B,
-    prepare: async (count, request) => { if (taskOf(request) === "check_keys" && request.user.includes(B_WORDS)) meanwhile = true; } });
-  const { code } = await outcomeOf(write(SHARING, writer, { seed: 1, readHeldBack: async () => (meanwhile ? [passageDigest(PASSAGE_B)] : []) }));
-  assert.deepEqual([meanwhile, code], [true, "COLD_QUESTIONS_HELD_BACK_MEANWHILE"]);
-  assert.equal(writer.packets("check_keys").some((packet) => JSON.stringify(packet).includes(B_WORDS)), false, "nothing of that packet is sent");
+  // B has no question of its own: it has nothing to ask about (skipped), or it is a passage the cold test reads a key in but a reply may
+  // not quote, never sampled. Another run holds B back right before the key check that holds A's question leaves.
+  const all = journalOf(SHARING);
+  for (const [what, passages, skip] of [["skipped", all, (words) => words === PASSAGE_B], ["a key passage only", all.filter(({ quote }) => quote !== PASSAGE_B), () => false]]) {
+    let meanwhile = false;
+    const writer = carryingB({ skip, prepare: async (count, request) => { if (taskOf(request) === "check_keys" && request.user.includes(B_WORDS)) meanwhile = true; } });
+    const { code } = await outcomeOf(writeColdQuestions({ passages, keyPassages: all, wordList: true, worker: writer, askReader: async () => 2, random: seededRandom(1),
+      readHeldBack: async () => (meanwhile ? [passageDigest(PASSAGE_B)] : []) }));
+    assert.deepEqual([meanwhile, code], [true, "COLD_QUESTIONS_HELD_BACK_MEANWHILE"], what);
+    assert.equal(writer.packets("check_keys").some((packet) => JSON.stringify(packet).includes(B_WORDS)), false, `${what}: nothing of that packet is sent`);
+  }
 });
 
 test("a passage another run held back after this one read the list stops this run before the packet that holds it leaves: nothing of that packet is sent, and the ask isn't counted", async () => {
