@@ -9,23 +9,16 @@ import { MAX_COLD_QUESTIONS, MAX_KEY_QUOTE_PASSAGES, MAX_QUESTIONS_OF_A_PASSAGE,
 import { RETRYABLE_WORKER_FAILURES } from "./worker-failures.mjs";
 
 // The tool that writes a journal copy's cold-test questions (docs/superpowers/specs/2026-11-26-runner-journal-upload-and-tab-design.md,
-// section 3; the owner's answer i77 3a: GPT writes each copy's questions and planted wrong answers from the journal's own quotes, part
-// of the questions in other words than the journal's, and Claude judges; i81 5b: passages about dying are sampled like any other).
+// section 3: the owner's i77 3a, GPT writes each copy's questions and planted wrong answers from the journal's own quotes, part of the
+// questions in other words than the journal's, and Claude judges; i81 5b, passages about dying are sampled like any other).
 //
-// What it makes is a `journal_cold_questions` value with `author: "openai"`, for one run of the cold test (journal-cold-test.mjs), held in
-// memory and kept nowhere. GPT writes, through the trial's own sealed Codex worker; the program samples, checks and decides:
-// - sampling (3.1): the passages a reply may quote, spread over the copy's source order, an equal share of each quarter, at random;
-// - answerable batches (3.2): fifteen passages to a call, under opaque names; for each, a question it answers, its evidence quote and
-//   whether the question uses the passage's words, and, where the program asks for one, a planted wrong answer of the kind it names;
-// - unanswerable batches (3.2): the program picks the subjects, from a fixed list, among those no usable passage names in any of their
-//   names; GPT gives a verb from the program's list and a short phrase; the program puts them into fixed shapes;
-// - its checks (3.3), and GPT's check of each answerable key on its evidence passage alone (3.4);
-// - enough of each kind (3.5), or one more batch of each kind that is short, or no test.
-// Every call of the worker counts against one budget (3.1, 3.8), and the person's consent and copy, and the held-back list, are read
-// again right before each packet leaves (`readHeldBack`, which the job runs in one hold of the folder's lock with the consent's check,
-// or `beforeSend` alone; 3.2, 3.7). A batch still without an answer in its schema after two more asks is dropped whole, and its
-// passages are held back from the tool's later calls, in this run and later ones (3.2): Codex gives no sign of a refusal, so that is
-// how one would come. The report holds numbers only.
+// writeColdQuestions makes a `journal_cold_questions` value with `author: "openai"` for one run of the cold test, held in memory and
+// kept nowhere; its report holds numbers only. GPT writes, through the trial's sealed Codex worker; the program samples (drawSpread),
+// checks what GPT gives (answerableBatch, unanswerableBatch), has GPT check each answerable key on its evidence passage alone
+// (checkKeys), and decides whether there are enough (3.5). Every call counts against one budget (3.8), and right before each packet
+// leaves, ask runs the caller's checks (`beforeSend`, `readHeldBack`). A packet still without an answer in its schema after two more
+// asks, or refused, is dropped whole and its passages are held back from the tool's later calls (holdBackPassages): Codex gives no sign
+// of a refusal, so that is how one would come.
 
 const invalid = (code, details) => { throw new ValidationError("The cold test's questions couldn't be written.", { code, ...(details ? { details } : {}) }); };
 
@@ -51,10 +44,9 @@ export const COLD_QUESTIONS_TOOL = Object.freeze({
   timeoutMs: 10 * 60_000
 });
 
-// The invented-journal sentinel (section 3): until a consent in its new words names GPT's questions, the command runs them only on a copy
-// whose first passage, in the copy's source order, is a passage a reply may quote whose stored words are exactly this sentence, byte for
-// byte; a journal opens with that sentence only if someone put it there. The check is of the copy's first passage, not of the file it
-// came from. That passage is never sampled.
+// The invented-journal sentinel (design, section 3): with `inventedOnly`, createGptQuestionsWriter runs GPT's questions only on a copy
+// whose first passage (openingPassageId) is a passage a reply may quote whose stored words are exactly this sentence
+// (inventedJournalOpening), and leaves that passage out of the sample. A journal opens with it only if someone put it there.
 export const INVENTED_JOURNAL_SENTINEL = "This journal is invented for a test of InnerSignal, and nothing in it is anyone's: no person wrote it, no person is in it, and no reply to any person will ever quote it.";
 // A place in source order: [the page's place, the byte offset], or the single number an older index stored (graph.mjs).
 const isPlace = (order) => Number.isSafeInteger(order) || (Array.isArray(order) && order.length === 2 && order.every(Number.isSafeInteger));
@@ -180,6 +172,8 @@ const sameWording = (question) => question.normalize("NFKC").toLowerCase().repla
 // A quotation as the cold test finds it in a passage: Unicode NFC, runs of white space as one, trimmed.
 const normal = (text) => text.normalize("NFC").replace(/\s+/gu, " ").trim();
 const wordsOf = (text) => normal(text).split(" ").filter(Boolean);
+// A text's plain words: runs of letters and digits, in lower case, whatever stands between them.
+const plainWords = (text) => normal(text).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 /** The digest a passage is held back by: of its words as the cold test reads them. */
 export const passageDigest = (text) => createHash("sha256").update(normal(text), "utf8").digest("hex");
 
@@ -227,12 +221,10 @@ const byOrder = (left, right) => {
 };
 
 /**
- * What the tool may draw from, read once from exactly the snapshot the test runs on (`before`): the passages a reply may quote, each
- * checked as the replies' search checks a candidate (`checkEvidenceQuotes`: a passage in a lifecycle a reply may use, not restricted,
- * its words the bytes stored for it), in source order, with when its entry says it was written; the passages the cold test resolves a
- * key against (`keyPassages`: neither deleted nor revoked, with words, as `runJournalColdTest` reads them); whether the generation
- * has a word list, which decides how the search reads words; and the id of the copy's first passage in source order, of all its
- * passages whatever their lifecycle (`openingId`: openingPassageId), whose words must be exactly the invented-journal sentinel (section 3).
+ * What the tool may draw from, read once from exactly the snapshot under test (`before`): the passages a reply may quote (the reader's
+ * own `checkEvidenceQuotes`), in source order, with when each entry says it was written; the passages the cold test resolves a key
+ * against (`keyPassages`, as `runJournalColdTest` reads them); whether the generation has a word list; and the id of the copy's first
+ * passage in source order, of all its passages whatever their lifecycle (`openingId`, openingPassageId).
  */
 export async function readQuestionPassages({ service, auth, caseId, corpusId, before }) {
   return service.withJournalCorpus(caseId, corpusId, ACCESS, async ({ corpusStore, cursorSecret, reference }) => {
@@ -281,9 +273,8 @@ export function journalLanguage(texts) {
 }
 
 /**
- * The subjects no usable passage names, in any of their names, read as the replies' search reads words and, whatever the copy's own
- * index, as it reads them with a word list too (3.2): on a copy without one, "camels" or "lighthouses" still names its subject, so a
- * question the journal answers is never keyed as one it doesn't.
+ * The subjects (3.2) none of whose names any of `texts` holds, read as the replies' search reads words (evidenceWordsHeldBy) and, on a
+ * copy without a word list, also as it reads them with one, so that "camels" rules out "camel" there too.
  */
 export function eligibleSubjects(texts, { wordList, subjects = QUESTION_SUBJECTS }) {
   const readings = [...new Set([wordList, true])].map((forms) => evidenceWordsHeldBy(texts, { wordList: forms }));
@@ -293,8 +284,7 @@ export function eligibleSubjects(texts, { wordList, subjects = QUESTION_SUBJECTS
 /**
  * The answerable questions a file keeps (3.5): of each wording, at most its aim, planted answers first. A wording with more planted
  * answers than its aim takes them kind by kind, the kind with the fewest kept so far first (what the other wording keeps counted), each
- * kind's in the run's order, so that the cut costs a kind its share only when no other choice would keep it. `kept` holds the
- * candidates that passed the checks, in the run's order.
+ * kind's in the run's order. `kept` holds the candidates that passed the checks, in the run's order.
  */
 export function answerableForFile(kept, aims) {
   const kinds = Object.fromEntries(PLANTED_KINDS.map((kind) => [kind, 0]));
@@ -372,15 +362,11 @@ const TASKS = Object.freeze({
 const FORM = "COLD_QUESTIONS_ANSWER_INVALID";
 const coded = (code) => Object.assign(new Error("The questions tool's worker gave no answer in its schema."), { code });
 
-// A phrase of an unanswerable question (3.2) is words alone, and its words ask nothing else. It is read with its white space trimmed
-// and each run of it as one space (unanswerableBatch), and the question is put together from it so read. Its characters, on an
-// allowlist: letters, combining marks and decimal digits, in any script; an apostrophe or a hyphen only inside a word ("l'été",
-// "rouge-gorge"); one space between words; nothing else, so no other punctuation can start a second question or join one ("after the
-// abacus. Did I lend it", "after the abacus — did I lend it", "(after the abacus)"). Its words: at most eight, a word being what spaces
-// separate; no part of one, read as the search reads words (an apostrophe or a hyphen parts it), a question word or a word that joins
-// two things. Both languages' words are refused whatever the journal's language. It checks characters and words, not meaning: words
-// alone, spaced or joined by hyphens, can still read as a second question ("after the abacus did I lend it"), a limit the design
-// states (section 12).
+// The check of an unanswerable question's phrase (3.2), on the phrase as unanswerableBatch reads it (trimmed, each run of white space one
+// space): every character on the allowlist PHRASE (letters, combining marks and decimal digits; an apostrophe or a hyphen only between
+// two of those; single spaces), so that no punctuation can start or join a second question; at most eight space-separated words; and
+// none of the terms lexicalTerms reads in it a question word or a joining word, of either language. It checks characters and words, not
+// meaning: words alone can still read as a second question (design, section 12).
 const QUESTION_WORDS = new Set(("what when where who whom whose why how which whether "
   + "quand où qui que quoi pourquoi comment quel quelle quels quelles lequel laquelle lesquels lesquelles combien").split(" "));
 const JOINING_WORDS = new Set("or and rather instead besides nor ou et plutôt sinon ni".split(" "));
@@ -433,17 +419,13 @@ function answerableSlots(passages, { other, plants }, random) {
 const chunks = (list, size) => Array.from({ length: Math.ceil(list.length / size) }, (_, index) => list.slice(index * size, index * size + size));
 
 /**
- * Writes one run's questions (section 3). `passages` are those a reply may quote, in source order (readQuestionPassages); `keyPassages`
- * those the cold test resolves a key against; `wordList` how the search reads words; `worker` the sealed Codex worker (`call`);
- * `askReader(question)` how many passages the replies' reader returns for the question as the message; `beforeSend` what must still hold
- * before each packet leaves; `heldBack` the digests of passages held back from the tool's calls, and `holdBack(digests)` adds to them;
- * `readHeldBack()` reads them again right before each packet leaves (another run on the copy may have added some since): the job's
- * runs the consent's check too, in the same hold of the folder's lock, and then gives no `beforeSend` (createGptQuestionsWriter);
- * `exclude` ids never sampled (the invented-journal sentinel's passage). `budget` is the tool's own (3.1, 3.8), given otherwise only by
- * tests: the run's draws never reach its 150 passages (at most 135), so only a smaller one shows the stop. So are `fileAims`, the most of
- * each wording the file keeps (the tool's aims): the file's own check against the rule after its cut (3.5) can't fail with the tool's,
- * unless GPT words most planted questions in none of their passages' words, so only smaller ones show it. Returns
- * `{ questions, report }`, or stops with a code and a report of numbers only.
+ * Writes one run's questions (section 3). `passages`: those a reply may quote, in source order (readQuestionPassages); `keyPassages`:
+ * those the cold test resolves a key against; `wordList`: how the search reads words; `worker`: the sealed Codex worker (`call`);
+ * `askReader(question)`: how many passages the replies' reader returns for the question as the message; `beforeSend()`: what must still
+ * hold right before each packet leaves; `heldBack`: the digests of passages held back, `holdBack(digests)` adds to them, and
+ * `readHeldBack()` reads them again right before each packet leaves (the job's checks the consent too, in the same hold of the folder's
+ * lock: createGptQuestionsWriter); `exclude`: ids never sampled. `budget` and `fileAims` are the tool's own, given otherwise only by
+ * tests. Returns `{ questions, report }`, or stops with a code and a report of numbers only.
  */
 export async function writeColdQuestions({ passages, keyPassages, wordList, worker, askReader, beforeSend = null, heldBack = new Set(),
   holdBack = async () => {}, readHeldBack = null, exclude = new Set(), random = seededRandom(randomSeed()), timeoutMs = COLD_QUESTIONS_TOOL.timeoutMs, budget = COLD_QUESTIONS_TOOL.budget,
@@ -457,20 +439,20 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
   const held = new Set(heldBack);
   const report = {
     version: tool.version, language: null,
-    // held_back_in_run: the places in a writing batch left empty because their passage was held back after the run began, by a packet
-    // of this run that was dropped (with fewer than sixty passages each is written about twice) or by another run, read before a packet.
+    // held_back_in_run: places of a writing batch left empty because their passage was held back after the batch was drawn
+    // (answerableBatch).
     passages: { usable: passages.length, excluded: 0, held_back: 0, population: 0, sent: 0, skipped: 0, replaced: 0, in_dropped_batches: 0, held_back_in_run: 0 },
     calls: { made: 0, asked_again: 0 },
     subjects: { eligible: 0, used: 0 },
     batches: { answerable: 0, unanswerable: 0, key_checks: 0, dropped_for_form: 0, refused: 0 },
-    // passage_held_back: questions dropped before their key check because their passage, or another passage holding their evidence
-    // quote, was held back after the run began, by a packet of this run that was dropped or by another run, read before a packet.
-    // passage_used_twice: a question whose evidence is a passage already the evidence of as many questions as allowed (one while there
-    // are enough passages, two when not: 3.1). other_passage_words: a question that carries words of another passage of its batch, which
-    // its key check, on its evidence passage alone, would send (3.4); a planted answer that does is counted in plant_invalid.
+    // Dropped before a key check (checkKeys): passage_held_back, a question one of whose evidence passages (its own included) is held
+    // back; held_back_words, a question that holds all the words of a held-back passage (holdsHeldWords), and plant_held_back_words, a
+    // planted answer that does (the planted answer alone). passage_used_twice: a question one of whose evidence passages is already the
+    // evidence of as many questions as allowed (usesOfAPassage). other_passage_words: a question that carries six words in a row of
+    // another passage of its batch (carriesOther); a planted answer that does is counted in plant_invalid.
     dropped: { question_invalid: 0, quote_not_in_passage: 0, quote_length: 0, quote_not_specific: 0, passage_used_twice: 0, other_passage_words: 0, repeated: 0,
       verb_not_on_list: 0, phrase_invalid: 0, phrase_not_from_batch: 0, reader_found_nothing: 0, key_doubted: 0, in_dropped_key_checks: 0,
-      passage_held_back: 0, plant_not_written: 0, plant_invalid: 0, plant_doubted: 0 },
+      passage_held_back: 0, held_back_words: 0, plant_held_back_words: 0, plant_not_written: 0, plant_invalid: 0, plant_doubted: 0 },
     kept: null
   };
   const snapshot = () => structuredClone({ ...report, passages: { ...report.passages, sent: sent.size }, calls: { made: calls, asked_again: again } });
@@ -509,13 +491,26 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     const text = passageById.get(id)?.quote ?? keyText.get(id);
     return typeof text === "string" && held.has(passageDigest(text));
   };
+  // Each passage of the copy (those a reply may quote and those a key resolves against), by its digest, as its plain words.
+  const passageWords = new Map();
+  for (const { quote } of [...keyPassages, ...passages]) {
+    const words = plainWords(quote);
+    if (words.length) passageWords.set(passageDigest(quote), ` ${words.join(" ")} `);
+  }
+  // Whether `text`, a question or a planted answer GPT wrote, holds all the plain words of a held-back passage, in order (3.4): its key
+  // check would send them.
+  const holdsHeldWords = (text) => {
+    const words = ` ${plainWords(text).join(" ")} `;
+    for (const [digest, passage] of passageWords) if (held.has(digest) && words.includes(passage)) return true;
+    return false;
+  };
 
-  // One packet: the passages it sends and the call count against the budget, then the call, asked again at most twice for its form and
-  // at most twice for a passing failure (a timeout), the two counted apart so that their order changes nothing, each ask counted against
-  // the budget. A packet whose third answer is outside its schema, or that is refused, comes back dropped; a third passing failure stops
-  // the tool with its code. `guarded` are the ids of passages whose words the packet may carry besides its own (a key check's questions'
-  // other evidence passages, 3.4): guarded as its own are, not counted as sent.
-  async function ask(task, packet, ids, guarded = []) {
+  // One packet (`ids`: the passages it sends), and its call, asked again at most twice for its form and at most twice for a passing
+  // failure, the two counted apart; every ask counts against the budget. A third answer outside its schema, or a refusal, comes back as
+  // `dropped`; a third passing failure stops the tool with its code. `guarded`: other passages whose words the packet may carry (a key
+  // check's questions' other evidence passages), guarded like its own and not counted as sent; `carried`: the texts GPT wrote that it
+  // carries (a key check's questions and planted answers).
+  async function ask(task, packet, ids, guarded = [], carried = []) {
     const fresh = [...new Set(ids)].filter((id) => !sent.has(id));
     if (calls + 1 > budget.calls) stop("COLD_QUESTIONS_CALL_BUDGET");
     if (sent.size + fresh.length > budget.passages) stop("COLD_QUESTIONS_PASSAGE_BUDGET");
@@ -525,15 +520,14 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     const names = spec.names(packet);
     const failures = { form: 0, passing: 0 };
     const watched = [...new Set([...ids, ...guarded])];
-    // What must still hold right before the packet leaves: the caller's (consent and copy: `beforeSend`, or the job's check inside
-    // `readHeldBack`, in the same hold of the folder's lock), and the held-back list read again, since another run on the copy may have
-    // held a passage back after this one read it (3.2). A passage the packet holds or guards, held back meanwhile, stops the tool, and
-    // nothing of the packet is sent: this ask isn't counted as made.
+    // Right before the packet leaves: the caller's check (`beforeSend`, or the job's inside `readHeldBack`), and the held-back list read
+    // again. A packet that holds or guards a held-back passage, or carries all the words of one, stops the tool before it is sent, and
+    // this ask isn't counted as made.
     const guard = async () => {
       if (beforeSend) await beforeSend();
       if (!readHeldBack) return;
       for (const digest of await readHeldBack()) held.add(digest);
-      if (!watched.some(isHeldId)) return;
+      if (!watched.some(isHeldId) && !carried.some(holdsHeldWords)) return;
       calls -= 1;
       if (failures.form + failures.passing === 0) { for (const id of fresh) sent.delete(id); } else again -= 1;
       stop("COLD_QUESTIONS_HELD_BACK_MEANWHILE");
@@ -571,11 +565,10 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     for (const id of candidate.group) uses.set(id, uses.get(id) - 1);
   };
 
-  // Whether `text` (a question or a planted answer GPT wrote for `slot`) carries words of another passage of the batch: a run of six of
-  // its words, read as words of letters and digits, that another passage holds and none of its own evidence passages does. Its key
-  // check gets the evidence passage alone (3.4), so such a text would send the other passage's words with it.
+  // Whether `text` (a question or a planted answer GPT wrote for `slot`) carries words of another passage of the batch: six plain words
+  // in a row that another passage of the batch holds and none of its own evidence passages does (3.4).
   const runsOf = (text) => {
-    const words = normal(text).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+    const words = plainWords(text);
     return new Set(words.slice(0, Math.max(0, words.length - CARRIED_WORDS + 1)).map((_, index) => words.slice(index, index + CARRIED_WORDS).join(" ")));
   };
   function carriesOther(text, slots, slot, group) {
@@ -583,8 +576,8 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
     const runs = [...runsOf(text)].filter((run) => !own.has(run));
     return runs.length > 0 && slots.some((other) => other !== slot && !group.includes(other.passage.id) && runs.some((run) => runsOf(other.passage.quote).has(run)));
   }
-  // An answerable batch (3.2, 3.3): each answer checked by the program; a skipped passage handed back for a replacement. A passage a
-  // dropped packet of this run held back, after its batch was drawn, goes in no packet again: its place stays empty.
+  // An answerable batch (3.2, 3.3): each answer checked by the program; a skipped passage handed back for a replacement. A passage held
+  // back after the batch was drawn leaves its place empty.
   async function answerableBatch(drawn) {
     const slots = drawn.filter(({ passage }) => !isHeld(passage));
     report.passages.held_back_in_run += drawn.length - slots.length;
@@ -630,18 +623,24 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
   }
 
   // GPT's check of each answerable key on its evidence passage alone (3.4): one it doubts is dropped, and so is a planted answer it
-  // doesn't find contradicted. A check dropped for its form drops its questions, whose passages are held back. A question with any of
-  // its evidence passages (`group`, its own included) held back, as the run knows them before its check, goes unchecked, so dropped: a
-  // passage written about twice is the evidence of two questions, and a question may carry the words of another passage holding its
-  // evidence quote, which its check would send. Each check's packet is guarded against all of them, so that one another run held back
-  // meanwhile stops the run.
+  // doesn't find contradicted. A check dropped for its form drops its questions, whose passages are held back. Before each check, with
+  // the held-back passages the run knows then: a question with any of its evidence passages held back (`group`, its own included) is
+  // dropped, and so is one that holds all the words of a held-back passage, or the planted answer alone when that holds them. The
+  // check's packet is guarded against its questions' evidence passages and the texts it carries, so that a passage another run held back
+  // meanwhile stops the run (ask).
   async function checkKeys() {
     for (;;) {
       for (const candidate of candidates) {
-        if (candidate.dropped || candidate.checked || !candidate.group.some(isHeldId)) continue;
-        candidate.checked = true;
-        release(candidate);
-        report.dropped.passage_held_back += 1;
+        if (candidate.dropped || candidate.checked) continue;
+        const reason = candidate.group.some(isHeldId) ? "passage_held_back" : holdsHeldWords(candidate.question) ? "held_back_words" : null;
+        if (reason) {
+          candidate.checked = true;
+          release(candidate);
+          report.dropped[reason] += 1;
+        } else if (candidate.plant && holdsHeldWords(candidate.plant.answer)) {
+          candidate.plant = null;
+          report.dropped.plant_held_back_words += 1;
+        }
       }
       const chunk = candidates.filter((candidate) => !candidate.dropped && !candidate.checked).slice(0, tool.batch);
       if (!chunk.length) return;
@@ -649,7 +648,8 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
         evidence_quote: candidate.quote, passage: { words: candidate.passage.quote, written: candidate.passage.written },
         planted: candidate.plant ? { kind: candidate.plant.kind, answer: candidate.plant.answer } : null })) };
       report.batches.key_checks += 1;
-      const outcome = await ask("check_keys", packet, chunk.map(({ passage }) => passage.id), chunk.flatMap(({ group }) => group));
+      const outcome = await ask("check_keys", packet, chunk.map(({ passage }) => passage.id), chunk.flatMap(({ group }) => group),
+        chunk.flatMap(({ question, plant }) => (plant ? [question, plant.answer] : [question])));
       for (const candidate of chunk) candidate.checked = true;
       if (outcome.dropped) {
         for (const candidate of chunk) { release(candidate); report.dropped.in_dropped_key_checks += 1; }
@@ -707,8 +707,8 @@ export async function writeColdQuestions({ passages, keyPassages, wordList, work
   const enough = (counts) => counts.same >= tool.needs.same && counts.other >= tool.needs.other && counts.unanswerable >= tool.needs.unanswerable
     && counts.planted >= tool.needs.planted && PLANTED_KINDS.every((kind) => counts.byKind[kind] >= tool.needs.plantedOfEachKind);
 
-  // 3.1: sixty answerable slots, each passage once while there are enough, twice (in a later batch) when there aren't; thirty context
-  // passages, drawn apart, which may be another question's evidence too.
+  // 3.1: up to sixty answerable slots: up to sixty passages drawn, then, when fewer were, the first of them drawn again (in a later
+  // batch) for the slots left, up to twice their number.
   const taken = new Set();
   const first = drawSpread(quarters, tool.answerableBatches * tool.batch, taken, random);
   const slotCount = Math.min(tool.answerableBatches * tool.batch, 2 * population.length);

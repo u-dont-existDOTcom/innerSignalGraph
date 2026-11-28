@@ -47,7 +47,7 @@ const WEEKDAYS = Object.freeze(["Sunday.", "Monday.", "Tuesday.", "Wednesday.", 
 const DATE_LINE = /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\.$/u;
 const NO_DROPS = Object.freeze({ question_invalid: 0, quote_not_in_passage: 0, quote_length: 0, quote_not_specific: 0, passage_used_twice: 0, other_passage_words: 0, repeated: 0,
   verb_not_on_list: 0, phrase_invalid: 0, phrase_not_from_batch: 0, reader_found_nothing: 0, key_doubted: 0, in_dropped_key_checks: 0,
-  passage_held_back: 0, plant_not_written: 0, plant_invalid: 0, plant_doubted: 0 });
+  passage_held_back: 0, held_back_words: 0, plant_held_back_words: 0, plant_not_written: 0, plant_invalid: 0, plant_doubted: 0 });
 const SKIP = Object.freeze({ skip: true, question: "", evidence_quote: "", wording: "none", planted_kind: "none", planted_answer: "" });
 const taskOf = (request) => JSON.parse(request.user).task;
 
@@ -96,7 +96,7 @@ test("a run's questions: sixty passages to write about, fifteen of each quarter,
     assert.ok(packet.passages.every(({ name, words }, index) => name === `p${index + 1}` && LONG.includes(words)));
   }
   assert.deepEqual(writer.packets("check_keys").map(({ items }) => items.length), [15, 15, 15, 15]);
-  // The sentinel's passage goes to no call.
+  // The sentinel's passage goes to none of the tool's calls.
   assert.equal([...passagesSent(writer)].some((words) => words.includes(INVENTED_JOURNAL_SENTINEL)), false);
   // The report: numbers, the tool's version and the questions' language.
   assert.equal(writer.sent.length, 10);
@@ -580,6 +580,54 @@ test("a key check is guarded against every passage holding its questions' eviden
   assert.equal(report.passages.sent, passagesSent(going).size);
 });
 
+// Sixty passages, each written about once. One of four words has nothing to ask about (skipped), and a question or a planted answer GPT
+// wrote in its batch holds its words whole, in other letters, which the six-word check can't find in a passage that short.
+const SHORT_HELD = "Goats chewed the kazoo.", SHORT_WORDS = "goats chewed the kazoo";
+const WITH_SHORT = Object.freeze(Array.from({ length: 60 }, (_, place) => (place === 40 ? SHORT_HELD : lentEntry(place))));
+const carryingShort = (where, options) => {
+  const carrier = { question: null };
+  const writer = questionWriter({ ...options, skip: (words) => words === SHORT_HELD, reply: async (count, request, usual) => {
+    const packet = JSON.parse(request.user);
+    const value = await usual();
+    if (packet.task === "answerable" && carrier.question === null && packet.passages.some(({ words }) => words === SHORT_HELD)) {
+      const item = value.items.find((entry, index) => packet.passages[index].words !== SHORT_HELD && (where === "question" || entry.planted_kind !== "none"));
+      if (where === "question") item.question = `${item.question.slice(0, -1)}, when the ${SHORT_WORDS}?`;
+      else item.planted_answer = `${PLANTED}: the ${SHORT_WORDS}`;
+      carrier.question = item.question;
+    }
+    return value;
+  } });
+  return { writer, carrier };
+};
+const holdsShort = (packets) => JSON.stringify(packets).toLowerCase().includes(SHORT_WORDS);
+
+test("a question or a planted answer that holds all the words of a held-back passage goes to no key check: dropped before it (the planted answer alone) once the run knows the passage is held back, and one another run holds back right before the check leaves stops the run", async () => {
+  for (const where of ["question", "plant"]) {
+    // Another run holds the short passage back after the writing batches, read before a context packet that doesn't hold it.
+    let holding = false;
+    const { writer, carrier } = carryingShort(where, { prepare: async (count, request) => {
+      if (taskOf(request) === "unanswerable" && !request.user.includes(SHORT_HELD)) holding = true;
+    } });
+    const { code, report } = await outcomeOf(write(WITH_SHORT, writer, { readHeldBack: async () => (holding ? [passageDigest(SHORT_HELD)] : []) }));
+    assert.deepEqual([code, holding, carrier.question !== null], [null, true, true], where);
+    assert.deepEqual([report.dropped.held_back_words, report.dropped.plant_held_back_words, report.dropped.passage_held_back],
+      where === "question" ? [1, 0, 0] : [0, 1, 0], where);
+    assert.equal(holdsShort(writer.packets("check_keys")), false, `${where}: no key check holds its words`);
+    const checked = writer.packets("check_keys").flatMap(({ items }) => items).filter(({ question }) => question === carrier.question);
+    assert.deepEqual(checked.map(({ planted }) => planted), where === "question" ? [] : [null], `${where}: the question checked without the planted answer`);
+  }
+  for (const where of ["question", "plant"]) {
+    // Another run holds it back right before the key check that holds those words leaves.
+    let meanwhile = false;
+    const { writer } = carryingShort(where, { prepare: async (count, request) => {
+      if (taskOf(request) === "check_keys" && request.user.toLowerCase().includes(SHORT_WORDS)) meanwhile = true;
+    } });
+    const { code } = await outcomeOf(write(WITH_SHORT, writer, { readHeldBack: async () => (meanwhile ? [passageDigest(SHORT_HELD)] : []) }));
+    assert.deepEqual([meanwhile, code], [true, "COLD_QUESTIONS_HELD_BACK_MEANWHILE"], where);
+    assert.equal(holdsShort(writer.packets("check_keys")), false, `${where}: nothing of that packet is sent`);
+  }
+});
+
 test("a passage another run held back after this one read the list stops this run before the packet that holds it leaves: nothing of that packet is sent, and the ask isn't counted", async () => {
   const writer = questionWriter();
   const all = LONG.map(passageDigest);
@@ -599,7 +647,7 @@ test("a passage another run held back after this one read the list stops this ru
   assert.deepEqual([again.report.calls.made, again.report.calls.asked_again, again.report.passages.sent], [1, 0, 15]);
 });
 
-test("with fewer than sixty passages each is written about twice: one a dropped packet held back goes in no later packet of the run, the writing batch that held it again leaves it out, and its other question goes unchecked, so dropped", async () => {
+test("with thirty passages each is written about twice: one a dropped packet held back goes in no later packet of the run, the writing batch that held it again leaves it out, and its other question goes unchecked, so dropped", async () => {
   // Thirty passages: the first writing batch and the third hold the same fifteen, and so do the first and the third key checks.
   const texts = Array.from({ length: 30 }, (_, place) => lentEntry(place));
   for (const task of ["answerable", "check_keys"]) {
@@ -734,7 +782,7 @@ async function copyWith(t, paragraphs, { dates = new Map(), unitOptions = undefi
   return { reference, trialDir, run, service, stored: passages.map((node) => node.data.quote), ids: passages.map((node) => node.id) };
 }
 
-test("from the copy itself: the passages a reply may quote at the publication tested, the sentinel required as the first passage and never sent, packets with their words and dates and nothing that names the case, passages held back for good", async (t) => {
+test("from the copy itself: the passages a reply may quote at the publication tested, the sentinel required as the first passage and never sampled, packets with their words and dates and nothing that names the case, passages held back for good", async (t) => {
   // The sentinel first, then entries, twenty of them under date lines.
   const paragraphs = [INVENTED_JOURNAL_SENTINEL, ...LONG];
   const { run, reference, trialDir, stored, ids } = await copyWith(t, paragraphs, { dates: new Map(Array.from({ length: 20 }, (_, index) => [index * 5 + 1, `March ${index + 1}, 2019`])) });
@@ -888,7 +936,7 @@ test("a caller that gives the writer no consent check of its own gives beforeSen
   assert.equal(refusing.sent.length, 2);
 });
 
-test("the job reads the client's held-back passages again right before each packet leaves: another run's hold-back, written while this one runs, stops it before the packet goes", async (t) => {
+test("the job reads the client's held-back passages again right before each packet leaves: another run's hold-back of the next packet's passages, written while this one runs, stops it before that packet goes", async (t) => {
   const { run, trialDir } = await copyWith(t, [INVENTED_JOURNAL_SENTINEL, ...LONG]);
   // Another run on the copy holds back the passages of this run's second packet just before it leaves.
   const racing = questionWriter({ prepare: async (count, request) => {

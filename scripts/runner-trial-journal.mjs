@@ -75,12 +75,13 @@ number (the one --journal-consent shows) and prints no label, no question id and
                      It sends excerpts of the client's journal to the companies running those workers (with --provider mixed,
                      Anthropic and OpenAI; claude, Anthropic; codex, OpenAI), so it needs the client's confirmed journal consent.
   --gpt-questions    in place of FILE: GPT writes this run's questions and planted wrong answers (the trial's sealed Codex worker,
-                     on your ChatGPT plan, whatever --provider says), from passages of the copy sampled across it: about 90 and at
-                     most ${COLD_QUESTIONS_TOOL.budget.passages} passages, in at most ${COLD_QUESTIONS_TOOL.budget.calls} calls, before the test's own. The questions and their key
+                     on your ChatGPT plan, whatever --provider says) from passages of the copy it samples: at most
+                     ${COLD_QUESTIONS_TOOL.budget.passages} passages, in at most ${COLD_QUESTIONS_TOOL.budget.calls} calls, before the test's own. The questions and their key
                      are kept nowhere. Not with --provider codex, whose judge is GPT too. Until a consent in new words names it, it
-                     runs only on an invented journal: in a trial folder holding the file ${INVENTED_JOURNALS_ONLY_FILE} (mode 0600, which
-                     no command writes), never the default trial folder or one a runner starts from (holding ${LAUNCHER_SETTINGS_FILE}),
-                     and on a copy that holds the invented-journal sentinel.
+                     runs only on an invented journal: in a trial folder holding the file ${INVENTED_JOURNALS_ONLY_FILE} (no permission
+                     for group or others; no command writes it), never the default trial folder or one a runner starts from (holding
+                     ${LAUNCHER_SETTINGS_FILE}), and on a copy whose first passage is exactly the invented-journal sentinel
+                     (docs/RUNNER-TRIAL.md).
   --provider mixed|claude|codex  the cold test's workers: mixed (the answers from GPT, judged by Claude), claude (both through
                      \`claude -p\`, signed in at ${RUNNER_CLAUDE_CONFIG_DIR}) or codex (both through \`codex exec\`, signed in)
   --dir PATH         the trial folder (default ${defaultTrialHome()})`;
@@ -362,20 +363,19 @@ function coldTestWorkers(settings, environment) {
     { environment, claudeCommand: environment.CLAUDE_COMMAND || "claude", codexCommand: environment.CODEX_COMMAND || "codex" });
 }
 
-// GPT's questions, until a consent in its new words names them (design, section 3): only in a trial folder set apart for invented
-// journals, which holds this file (mode 0600, written by no command) and isn't the default trial folder, the one the owner's runner uses,
-// however it is named (a link to it is it), nor a folder a runner starts from (one holding the icon's launcher.json, wherever it is). The
-// shared job then also asks for the invented-journal sentinel in the very copy under test, before any call.
+// GPT's questions, until a consent in its new words names them (design, section 3): only in a trial folder that holds this file, a
+// regular file with no permission for group or others, and that is neither the default trial folder (the owner's runner's, by its real
+// path) nor one holding the icon's launcher.json. The shared job then checks the copy's first passage (createGptQuestionsWriter).
 const realFolder = async (folder) => {
   try { return await fsp.realpath(folder); } catch { return path.resolve(folder); }
 };
 async function requireInventedFolder(resolved) {
-  const refusal = `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, mode 0600), never the default trial folder or one a runner starts from (holding ${LAUNCHER_SETTINGS_FILE}). Nothing was changed.`;
+  const refusal = `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, with no permission for group or others), never the default trial folder or one a runner starts from (holding ${LAUNCHER_SETTINGS_FILE}). Nothing was changed.`;
   if (await realFolder(resolved) === await realFolder(defaultTrialHome())) throw new StartError(refusal);
   const launcher = await fsp.lstat(path.join(resolved, LAUNCHER_SETTINGS_FILE)).then(() => true, (error) => error?.code !== "ENOENT");
   if (launcher) throw new StartError(refusal);
   const marked = await readOpenedFileOrNull(path.join(resolved, INVENTED_JOURNALS_ONLY_FILE), (handle, info) => {
-    if ((info.mode & 0o077) !== 0) throw new StartError(`${INVENTED_JOURNALS_ONLY_FILE} must be readable by you alone (mode 0600). Nothing was changed.`);
+    if ((info.mode & 0o077) !== 0) throw new StartError(`${INVENTED_JOURNALS_ONLY_FILE} must give group and others no permission (chmod 600 does). Nothing was changed.`);
     return true;
   });
   if (marked !== true) throw new StartError(refusal);
@@ -383,13 +383,13 @@ async function requireInventedFolder(resolved) {
 
 // What a stop of the questions tool tells, in fixed words, with its counts (numbers only).
 const QUESTIONS_TOOL_STOPS = Object.freeze({
-  COLD_QUESTIONS_TOO_FEW_PASSAGES: `the copy has fewer passages a reply may quote than the tool needs (${COLD_QUESTIONS_TOOL.floor})`,
+  COLD_QUESTIONS_TOO_FEW_PASSAGES: `the copy has fewer than ${COLD_QUESTIONS_TOOL.floor} passages to draw from (those a reply may quote, less the invented-journal sentinel's and those held back), the tool's floor`,
   COLD_QUESTIONS_TOO_FEW_SUBJECTS: "the journal names too many of the subjects the tool asks about for questions it doesn't answer",
   COLD_QUESTIONS_NOT_ENOUGH: "too few of GPT's questions passed the checks for the rule",
   COLD_QUESTIONS_CALL_BUDGET: `the tool's ${COLD_QUESTIONS_TOOL.budget.calls} calls were spent before the questions were complete`,
   COLD_QUESTIONS_PASSAGE_BUDGET: `the tool's ${COLD_QUESTIONS_TOOL.budget.passages} passages were spent before the questions were complete`,
   COLD_QUESTIONS_SNAPSHOT_CHANGED: "the copy changed while the questions were written",
-  COLD_QUESTIONS_HELD_BACK_MEANWHILE: "another run on this copy held back a passage of the packet this one was about to send, or a passage holding the evidence quote of one of that packet's questions; nothing of that packet was sent, and this run has no test"
+  COLD_QUESTIONS_HELD_BACK_MEANWHILE: "another run held back, after this one last read the list, a passage of the packet this one was about to send, or one holding the evidence quote of one of its questions, or one whose words a question or planted answer of it holds whole; nothing of that packet was sent, and this run has no test"
 });
 const numbersOnly = (report) => JSON.stringify(report ?? null);
 
@@ -406,14 +406,12 @@ const numbersOnly = (report) => JSON.stringify(report ?? null);
 // folder's lock.
 //
 // The boundary: the consent is read under the trial folder's lock, the one --journal-consent takes, right before each packet is handed to
-// the worker's process (for the questions tool's packets, in the same hold as its held-back list), and the lock is released before that
-// hand-over (a call can take minutes, and holding the lock through it would stop every other action on the folder). So a withdrawal lands
-// wholly before that reading, and the packet doesn't leave, or after it, and it stops the run at the next packet, of the tool or the
-// test, or before the receipt is written, again under the lock. The held-back list is read when the questions tool starts and again
-// right before each of its packets, and by nothing else: a packet that holds or guards a passage the read finds held back stops the run
-// before it leaves; the packets the tool prepares after a read leave out the passages it found; a hold-back that lands after the read
-// before a packet doesn't stop that packet. Neither the test's packets nor the receipt step read the list. `workerFor` (a worker for a role of the trial's) and `questionWorker` (GPT's, for the
-// questions) replace the signed-in workers in tests; `random` sets the questions tool's draws.
+// the worker's process, and the lock is released before that hand-over (a call can take minutes, and holding the lock through it would
+// stop every other action on the folder). So a withdrawal lands wholly before that reading, and the packet doesn't leave, or after it,
+// and then it stops the run at its next packet, or before the receipt is written. For the questions tool's packets the held-back list is
+// read in the same hold (readHeldBack in createGptQuestionsWriter; what a packet is checked against: ask in writeColdQuestions).
+// `workerFor` (a worker for a role of the trial's) and `questionWorker` (GPT's, for the questions) replace the signed-in workers in tests;
+// `random` sets the questions tool's draws.
 export async function runClientColdTest({ home, number, questionsPath = null, gptQuestions = false, provider = null, workerFor = null, questionWorker = null,
   environment = process.env, now = () => new Date(), lockWaitMs = COMMAND_LOCK_WAIT_MS, random = undefined }) {
   const resolved = checkTrialHome(home);

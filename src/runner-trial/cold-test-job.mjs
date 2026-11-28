@@ -139,12 +139,12 @@ export async function runColdTestJob({ trialDir, findClient, readClients, underL
 
 /**
  * GPT's questions for one run (section 3), as `runColdTestJob`'s `writeQuestions`: the copy's passages read from exactly the snapshot
- * under test; with `inventedOnly` (pull request 1, until a consent in its new words names the questions), the copy's first passage in
- * source order, of all its passages, required to be a passage a reply may quote whose words are exactly the invented-journal sentinel,
- * byte for byte, before any call, and that passage left out of the sample; the client's held-back passages read (`readHeld`), and added to, under the folder's lock; right before each packet leaves,
- * one hold of that lock in which the job's consent check (`check`) runs and the held-back list is read again (a caller with no `check`
- * gives `beforeSend`, which takes the lock on its own); the replies' reader asked with each unanswerable question, on that same snapshot;
- * and `worker`, the sealed Codex worker, for every call.
+ * under test; with `inventedOnly` (pull request 1, until a consent in its new words names the questions), a refusal before any call
+ * unless the copy's first passage is the invented-journal sentinel (inventedJournalOpening), and that passage left out of the sample;
+ * the client's held-back passages read (`readHeld`) and added to under the folder's lock; right before each packet leaves, one hold of
+ * that lock in which the job's consent check (`check`) runs and the held-back list is read again (a caller with no `check` gives
+ * `beforeSend`, which takes the lock on its own); the replies' reader asked with each unanswerable question, on that same snapshot; and
+ * `worker`, the sealed Codex worker, for every call.
  */
 export function createGptQuestionsWriter({ trialDir, worker, inventedOnly = true, readerFor = openSessionUseReader, readHeld = readQuestionsHeldBack, random = undefined,
   timeoutMs = undefined }) {

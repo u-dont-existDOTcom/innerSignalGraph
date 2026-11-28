@@ -2098,14 +2098,15 @@ test("--gpt-questions: refused before any call with codex, outside a trial folde
   const plain = await copiedClient(t);
   const idle = questionWriter(), unasked = standIns();
   const gpt = (home, options = {}) => runClientColdTest({ home, number: 1, gptQuestions: true, provider: "mixed", questionWorker: idle, ...using(unasked), ...options });
-  const notSetApart = { message: `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, mode 0600), never the default trial folder or one a runner starts from (holding ${LAUNCHER_SETTINGS_FILE}). Nothing was changed.` };
+  const notSetApart = { message: `GPT's questions run only on an invented journal until a consent in its new words names them: in a trial folder set apart for invented journals (one holding the file ${INVENTED_JOURNALS_ONLY_FILE}, with no permission for group or others), never the default trial folder or one a runner starts from (holding ${LAUNCHER_SETTINGS_FILE}). Nothing was changed.` };
   await assert.rejects(gpt(plain.home, { provider: "codex" }), { message: "GPT writes the questions, and one of OpenAI's judges the answers with --provider codex: choose mixed or claude. Nothing was changed." });
   await assert.rejects(gpt(plain.home), notSetApart);
   await assert.rejects(gpt(plain.home, { questionsPath: plain.questionsPath }), { message: "Give a questions file or --gpt-questions, not both." });
   const marker = path.join(plain.home, INVENTED_JOURNALS_ONLY_FILE);
   await fs.writeFile(marker, "", { mode: 0o644 });
-  await assert.rejects(gpt(plain.home), { message: `${INVENTED_JOURNALS_ONLY_FILE} must be readable by you alone (mode 0600). Nothing was changed.` });
-  await fs.chmod(marker, 0o600);
+  await assert.rejects(gpt(plain.home), { message: `${INVENTED_JOURNALS_ONLY_FILE} must give group and others no permission (chmod 600 does). Nothing was changed.` });
+  // No permission for group or others is what is asked: one only its owner may read, and none may write, sets the folder apart too.
+  await fs.chmod(marker, 0o400);
   // A folder a runner starts from (one holding the icon's launcher.json), wherever it is and even with the file: refused before any call.
   const launcherFile = path.join(plain.home, LAUNCHER_SETTINGS_FILE);
   await fs.writeFile(launcherFile, "{}", { mode: 0o600 });
@@ -2235,7 +2236,7 @@ test("with GPT's questions too: a withdrawal before any kind of packet stops the
   // Too few passages: no call at all.
   const small = await inventedClient(t, { count: 20 });
   const idle = questionWriter(), unasked = gptAnswers();
-  await assert.rejects(small.gptTest(idle, unasked), { message: /^The questions tool stopped: the copy has fewer passages a reply may quote than the tool needs \(24\) \(COLD_QUESTIONS_TOO_FEW_PASSAGES\)\. No test ran, and no receipt was given\. Its counts: \{/u });
+  await assert.rejects(small.gptTest(idle, unasked), { message: /^The questions tool stopped: the copy has fewer than 24 passages to draw from \(those a reply may quote, less the invented-journal sentinel's and those held back\), the tool's floor \(COLD_QUESTIONS_TOO_FEW_PASSAGES\)\. No test ran, and no receipt was given\. Its counts: \{/u });
   assert.deepEqual([idle.sent.length, unasked.sent.length], [0, 0]);
   await absent(small.receiptPath);
 });
